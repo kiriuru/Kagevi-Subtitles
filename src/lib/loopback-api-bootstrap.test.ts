@@ -13,10 +13,14 @@ describe("loopback-api bootstrap / Tauri invoke", () => {
   beforeEach(() => {
     vi.resetModules();
     invokeMock.mockReset();
+    delete window.__KAGEVI_SUBTITLES_API_TOKEN__;
+    delete window.__KAGEVI_VOICE_API_TOKEN__;
     delete window.__VOICESUB_API_TOKEN__;
   });
 
   afterEach(() => {
+    delete window.__KAGEVI_SUBTITLES_API_TOKEN__;
+    delete window.__KAGEVI_VOICE_API_TOKEN__;
     delete window.__VOICESUB_API_TOKEN__;
   });
 
@@ -67,10 +71,23 @@ describe("loopback-api bootstrap / Tauri invoke", () => {
 
     releaseInvoke();
     await expect(initPromise).resolves.toBe("late-token");
+    expect(new Headers(loopbackApiHeaders()).get("x-kagevi-subtitles-token")).toBe("late-token");
+    expect(new Headers(loopbackApiHeaders()).get("x-kagevi-voice-token")).toBe("late-token");
     expect(new Headers(loopbackApiHeaders()).get("x-voicesub-token")).toBe("late-token");
   });
 
   it("prefers injected HTML token before Tauri invoke", async () => {
+    window.__KAGEVI_SUBTITLES_API_TOKEN__ = "html-injected-token";
+    invokeMock.mockRejectedValue(new Error("invoke should not run"));
+
+    const { initLoopbackApiToken, loopbackApiToken } = await loadLoopbackModules();
+    await initLoopbackApiToken();
+
+    expect(loopbackApiToken()).toBe("html-injected-token");
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to legacy injected HTML token", async () => {
     window.__VOICESUB_API_TOKEN__ = "html-injected-token";
     invokeMock.mockRejectedValue(new Error("invoke should not run"));
 

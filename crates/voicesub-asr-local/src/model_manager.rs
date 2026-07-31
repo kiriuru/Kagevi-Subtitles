@@ -380,7 +380,7 @@ pub async fn download_model(
     reporter.register_cleanup_dir(model_dir.clone());
 
     let client = reqwest::Client::builder()
-        .user_agent("VoiceSub-LocalAsr/0.6.0")
+        .user_agent(concat!("VoiceSub-LocalAsr/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| ModelError::Download(e.to_string()))?;
 

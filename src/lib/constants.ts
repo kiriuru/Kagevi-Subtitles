@@ -73,11 +73,10 @@ export const PROVIDERS = {
     fields: ["base_url", "model", "custom_prompt"] as const,
     baseUrlPlaceholder: "http://127.0.0.1:11434/v1",
   },
-  public_libretranslate_mirror: {
-    label: "Public LibreTranslate Mirror",
+  microsoft_edge: {
+    label: "Microsoft Edge Translate (no key)",
     group: "Experimental / Emergency",
-    fields: ["api_url"] as const,
-    apiUrlPlaceholder: "https://translate.fedilab.app/translate",
+    fields: [] as const,
   },
   free_web_translate: {
     label: "Free Web Translate",
@@ -203,7 +202,9 @@ export const BROWSER_RECOGNITION_LANGUAGE_CODES = BROWSER_RECOGNITION_LANGUAGES.
   (entry) => entry.code
 );
 
-export const OVERLAY_PRESETS = ["single", "dual-line", "stacked", "compact"] as const;
+/** Canonical overlay row layouts. Legacy `compact` is not a preset — it maps to
+ * `stacked` + `overlay.compact=true` in config normalize (checkbox in Subtitles). */
+export const OVERLAY_PRESETS = ["single", "dual-line", "stacked"] as const;
 
 export const UI_LOCALES = [
   { code: "en", labelKey: "language.en" },

@@ -2,15 +2,34 @@
 
 use serde_json::{Value, json};
 
-/// Product version — single source until crate-only policy is enforced.
-pub const PROJECT_VERSION: &str = "0.6.0";
+/// Canonical product version — edit here only, then run `npm run version:sync`
+/// (also runs from `npm run build`) to update Cargo / package.json / tauri.conf.json /
+/// `src/lib/project-version.ts`.
+pub const PROJECT_VERSION: &str = "0.6.1";
 pub const RELEASE_TRACK: &str = "stable";
 pub const DEFAULT_UPDATE_PROVIDER: &str = "github_releases";
 pub const DEFAULT_RELEASE_CHANNEL: &str = "stable";
-/// Canonical GitHub repo for update checks and release download links.
-pub const DEFAULT_GITHUB_REPO: &str = "kiriuru/VoiceSub";
+/// Canonical GitHub repo (`owner/name`) for update checks and release links.
+/// Frontend `src/lib/brand.ts` is synced from this via `npm run version:sync`.
+pub const DEFAULT_GITHUB_REPO: &str = "kiriuru/Kagevi-Subtitles";
+/// Previous VoiceSub repo slug — migrated on config load.
+pub const LEGACY_VOICESUB_GITHUB_REPO: &str = "kiriuru/VoiceSub";
 /// Legacy SST repo slug — migrated on config load.
 pub const LEGACY_GITHUB_REPO: &str = "kiriuru/stream_sub_translator";
+
+/// True when `repo` is the current or a known legacy product GitHub slug.
+pub fn is_product_github_repo(repo: &str) -> bool {
+    let repo = repo.trim();
+    repo == DEFAULT_GITHUB_REPO
+        || repo == LEGACY_VOICESUB_GITHUB_REPO
+        || repo == LEGACY_GITHUB_REPO
+}
+
+/// `https://github.com/{owner}/{name}` for a repo slug.
+pub fn github_repo_url(repo: &str) -> String {
+    let repo = repo.trim().trim_matches('/');
+    format!("https://github.com/{repo}")
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct SemVer {
@@ -231,7 +250,7 @@ pub fn build_version_info_payload(config: Option<&Value>) -> Value {
         "ok": true,
         "current_version": PROJECT_VERSION,
         "version": PROJECT_VERSION,
-        "product": "VoiceSub",
+        "product": "Kagevi Subtitles",
         "release_track": RELEASE_TRACK,
         "sync": {
             "provider": provider,
@@ -252,6 +271,15 @@ pub fn build_version_info_payload(config: Option<&Value>) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn project_version_matches_cargo_pkg() {
+        assert_eq!(
+            PROJECT_VERSION,
+            env!("CARGO_PKG_VERSION"),
+            "PROJECT_VERSION drifted from Cargo.toml — run npm run version:sync"
+        );
+    }
 
     #[test]
     fn parse_semver_accepts_four_part_versions() {
@@ -291,6 +319,23 @@ mod tests {
     }
 
     #[test]
+    fn product_github_repo_helpers() {
+        assert_eq!(DEFAULT_GITHUB_REPO, "kiriuru/Kagevi-Subtitles");
+        assert!(is_product_github_repo(DEFAULT_GITHUB_REPO));
+        assert!(is_product_github_repo(LEGACY_VOICESUB_GITHUB_REPO));
+        assert!(is_product_github_repo(LEGACY_GITHUB_REPO));
+        assert!(!is_product_github_repo("example/repo"));
+        assert_eq!(
+            github_repo_url(DEFAULT_GITHUB_REPO),
+            "https://github.com/kiriuru/Kagevi-Subtitles"
+        );
+        assert_eq!(
+            release_url_for(DEFAULT_GITHUB_REPO, "0.6.1"),
+            "https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.6.1"
+        );
+    }
+
+    #[test]
     fn build_version_payload_no_update_when_github_behind_local() {
         let payload = build_version_info_payload(Some(&json!({
             "updates": {
@@ -311,20 +356,20 @@ mod tests {
                 "tag_name": "v0.5.0",
                 "draft": false,
                 "prerelease": false,
-                "html_url": "https://github.com/kiriuru/VoiceSub/releases/tag/v0.5.0"
+                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.5.0")
             },
             {
-                "tag_name": "v0.6.1",
+                "tag_name": "v0.6.2",
                 "draft": false,
                 "prerelease": false,
-                "html_url": "https://github.com/kiriuru/VoiceSub/releases/tag/v0.6.1"
+                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.2")
             }
         ]);
         let (latest, _, url) = extract_latest_github_release(&releases, "stable");
-        assert_eq!(latest.as_deref(), Some("0.6.1"));
+        assert_eq!(latest.as_deref(), Some("0.6.2"));
         assert_eq!(
             url.as_deref(),
-            Some("https://github.com/kiriuru/VoiceSub/releases/tag/v0.6.1")
+            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.2").as_str())
         );
         assert!(is_remote_version_newer(
             PROJECT_VERSION,
@@ -342,7 +387,7 @@ mod tests {
         assert_eq!(payload["sync"]["update_available"], true);
         assert_eq!(
             payload["sync"]["release_url"],
-            "https://github.com/kiriuru/VoiceSub/releases/tag/v0.6.1"
+            release_url_for(DEFAULT_GITHUB_REPO, "0.6.2")
         );
     }
 
@@ -353,7 +398,7 @@ mod tests {
                 "enabled": true,
                 "provider": "github_releases",
                 "github_repo": "example/repo",
-                "latest_known_version": "0.6.1"
+                "latest_known_version": "0.6.2"
             }
         })));
         assert_eq!(payload["current_version"], PROJECT_VERSION);

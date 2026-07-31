@@ -17,12 +17,11 @@ use crate::providers::{
 };
 
 const DEFAULT_PROVIDER: &str = "google_translate_v2";
-const CANONICAL_SLOTS: [&str; 5] = [
+const CANONICAL_SLOTS: [&str; 4] = [
     "translation_1",
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
 ];
 const RETRY_BACKOFF_BASE_SECONDS: f64 = 0.3;
 const RETRY_BACKOFF_MAX_SECONDS: f64 = 2.0;
@@ -43,12 +42,29 @@ pub struct NormalizedLine {
     pub label: String,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TranslateTargetOptions {
     pub slot_id: Option<String>,
     pub label: Option<String>,
     pub budget_seconds: Option<f64>,
     pub retries: u32,
+    /// When false, successful translations are not written to the cache.
+    pub write_cache: bool,
+    /// When `write_cache` is true and this is false, write memory-only (no disk dirty).
+    pub persist_cache_write: bool,
+}
+
+impl Default for TranslateTargetOptions {
+    fn default() -> Self {
+        Self {
+            slot_id: None,
+            label: None,
+            budget_seconds: None,
+            retries: DEFAULT_TRANSLATION_RETRIES,
+            write_cache: true,
+            persist_cache_write: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -104,6 +120,7 @@ pub struct PreparedLine {
     pub provider_group: String,
     pub experimental: bool,
     pub local_provider: bool,
+    pub supports_live_partial: bool,
     pub label: String,
 }
 
@@ -239,6 +256,9 @@ impl TranslationEngine {
                 .unwrap_or_else(|| "experimental".into());
             let experimental = provider.map(|p| p.info().experimental).unwrap_or(true);
             let local_provider = provider.map(|p| p.info().local_provider).unwrap_or(false);
+            let supports_live_partial = provider
+                .map(|p| p.info().supports_live_partial)
+                .unwrap_or(false);
             let provider_settings = provider_settings_map
                 .get(&provider_name)
                 .cloned()
@@ -251,6 +271,7 @@ impl TranslationEngine {
                 provider_group,
                 experimental,
                 local_provider,
+                supports_live_partial,
                 label: line.label,
             });
         }
@@ -300,8 +321,12 @@ impl TranslationEngine {
             LineTranslatePlan::Fetch(work) => {
                 let cache_key = work.cache_key.clone();
                 let cache = Arc::clone(&self.cache);
+                let write_cache = options.write_cache;
+                let persist = options.persist_cache_write;
                 let (item, diagnostics) = Self::run_line_fetch(work).await;
-                Self::cache_translation_result(&cache, &cache_key, &item);
+                if write_cache {
+                    Self::cache_translation_result(&cache, &cache_key, &item, persist);
+                }
                 (item, diagnostics)
             }
         }
@@ -325,8 +350,12 @@ impl TranslationEngine {
             LineTranslatePlan::Done(item, diagnostics) => (item, diagnostics),
             LineTranslatePlan::Fetch(work) => {
                 let cache_key = work.cache_key.clone();
+                let write_cache = options.write_cache;
+                let persist = options.persist_cache_write;
                 let (item, diagnostics) = Self::run_line_fetch(work).await;
-                Self::cache_translation_result(&cache, &cache_key, &item);
+                if write_cache {
+                    Self::cache_translation_result(&cache, &cache_key, &item, persist);
+                }
                 (item, diagnostics)
             }
         }
@@ -402,8 +431,13 @@ impl TranslationEngine {
             &normalized_target,
             source_text,
         );
+        let cached = if options.persist_cache_write {
+            self.cache.get_promoting_ephemeral(&key)
+        } else {
+            self.cache.get(&key)
+        };
         if self.cache.enabled()
-            && let Some(cached) = self.cache.get(&key)
+            && let Some(cached) = cached
         {
             let diagnostics = provider.diagnostics(&line.provider_settings);
             return LineTranslatePlan::Done(
@@ -458,9 +492,18 @@ impl TranslationEngine {
         .await
     }
 
-    fn cache_translation_result(cache: &TranslationCache, cache_key: &str, item: &TranslationItem) {
+    fn cache_translation_result(
+        cache: &TranslationCache,
+        cache_key: &str,
+        item: &TranslationItem,
+        persist: bool,
+    ) {
         if item.success && !item.text.is_empty() && cache.enabled() {
-            cache.insert(cache_key.to_string(), item.text.clone());
+            if persist {
+                cache.insert(cache_key.to_string(), item.text.clone());
+            } else {
+                cache.insert_ephemeral(cache_key.to_string(), item.text.clone());
+            }
         }
     }
 
@@ -551,6 +594,7 @@ impl TranslationEngine {
                 provider_group: info.group.to_string(),
                 experimental: info.experimental,
                 local_provider: info.local_provider,
+                supports_live_partial: info.supports_live_partial,
                 label: target_lang.to_ascii_uppercase(),
             };
             let provider = provider.clone();

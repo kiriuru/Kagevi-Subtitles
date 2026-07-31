@@ -11,9 +11,11 @@
   import brandAvatar from "../../assets/brand-avatar.png";
   import brandAvatarHover from "../../assets/brand-avatar-hover.png";
   import CreditsDialog from "./CreditsDialog.svelte";
+  import { PROJECT_VERSION } from "../project-version";
+  import { BRAND_MAIN, BRAND_SUB } from "../brand";
 
   export let active: NavDestinationId = "live";
-  export let version = "0.6.0";
+  export let version = PROJECT_VERSION;
   export let onSelect: (dest: NavDestinationId) => void = () => {};
 
   let creditsOpen = false;
@@ -45,7 +47,8 @@
 
 <nav class="nav-rail" aria-label={tr("nav.rail.label")}>
   <div class="nav-rail__brand">
-    <span class="nav-rail__title">VoiceSub</span>
+    <span class="nav-rail__title nav-rail__title--main">{BRAND_MAIN}</span>
+    <span class="nav-rail__title nav-rail__title--sub">{BRAND_SUB}</span>
   </div>
 
   <div class="nav-rail__items">

@@ -440,7 +440,7 @@ mod tests {
             ..Default::default()
         };
         let registry = EmoteRegistry::new();
-        let raw = "https://github.com/kiriuru/VoiceSub";
+        let raw = "https://github.com/kiriuru/Kagevi-Subtitles";
         let after_emotes =
             registry.clean_message_text(raw, None, &settings.emote_sources, settings.strip_emoji);
         assert_eq!(after_emotes, raw, "emote pass mangled URL");
@@ -461,14 +461,17 @@ mod tests {
         };
         let registry = EmoteRegistry::new();
         for (sample, expected) in [
-            ("github.com/kiriuru/VoiceSub", "github.com/kiriuru/VoiceSub"),
             (
-                "https://github.com/kiriuru/VoiceSub",
-                "https://github.com/kiriuru/VoiceSub",
+                "github.com/kiriuru/Kagevi-Subtitles",
+                "github.com/kiriuru/Kagevi-Subtitles",
             ),
             (
-                "https://github.com/kiriuru/VoiceSub\u{034F}",
-                "https://github.com/kiriuru/VoiceSub",
+                "https://github.com/kiriuru/Kagevi-Subtitles",
+                "https://github.com/kiriuru/Kagevi-Subtitles",
+            ),
+            (
+                "https://github.com/kiriuru/Kagevi-Subtitles\u{034F}",
+                "https://github.com/kiriuru/Kagevi-Subtitles",
             ),
         ] {
             let out = process_chat_message(

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PRODUCT_NAME } from "../src/lib/brand";
   import "./worker.css";
   import { locale } from "../src/lib/i18n/index";
   import type { WorkerUiStore } from "./lib/stores/worker-ui.svelte";
@@ -141,7 +142,7 @@
 
   <footer class="worker-footer app-footer">
     <span class="app-footer__line">
-      VoiceSub <span class="app-footer__version">v{ui.appVersion}</span>
+      {PRODUCT_NAME} <span class="app-footer__version">v{ui.appVersion}</span>
       <span class="app-footer__sep" aria-hidden="true">·</span>
       Powered by Kiriuru
     </span>

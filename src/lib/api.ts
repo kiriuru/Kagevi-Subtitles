@@ -1,5 +1,6 @@
 import type { ConfigPayload, RuntimeStatus, VersionInfo } from "./types";
 import { apiFetch } from "./loopback-api-client";
+import { PRODUCT_NAME } from "./brand";
 
 /** Dashboard HTTP calls hit the embedded Rust Axum server (`/api/*`), not Python. */
 
@@ -11,7 +12,7 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
     const reason = err instanceof Error ? err.message : String(err);
     if (/failed to fetch|networkerror|load failed/i.test(reason)) {
       throw new Error(
-        `${url} -> backend unavailable (${reason}). Is VoiceSub running at http://127.0.0.1:8765 ?`,
+        `${url} -> backend unavailable (${reason}). Is ${PRODUCT_NAME} running at http://127.0.0.1:8765 ?`,
       );
     }
     throw err instanceof Error ? err : new Error(reason);
@@ -132,7 +133,7 @@ export async function downloadDiagnostics(): Promise<{ filename: string }> {
   const blob = await res.blob();
   const disposition = res.headers.get("Content-Disposition") || "";
   const match = disposition.match(/filename="([^"]+)"/);
-  const filename = match?.[1] || "voicesub-diagnostics.zip";
+  const filename = match?.[1] || "kagevi-subtitles-diagnostics.zip";
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

@@ -104,6 +104,7 @@ pub enum DepDownloadKind {
     OrtCpu,
     OrtGpu,
     CudaRedist,
+    SileroVad,
 }
 
 impl DepDownloadKind {
@@ -112,9 +113,15 @@ impl DepDownloadKind {
             "ort_cpu" | "onnxruntime_cpu" => Some(Self::OrtCpu),
             "ort_gpu" | "onnxruntime_gpu" => Some(Self::OrtGpu),
             "cuda_redist" | "cuda" => Some(Self::CudaRedist),
+            "silero_vad" | "silero" => Some(Self::SileroVad),
             _ => None,
         }
     }
+}
+
+/// Silero ONNX present under the module runtime tree (~2 MB).
+pub fn is_silero_vad_ready(module_dir: &Path) -> bool {
+    crate::silero_vad::is_silero_vad_installed(module_dir)
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -510,6 +517,10 @@ pub async fn download_dependency(
             reporter.begin("cuda_redist", "CUDA runtime");
             download_cuda_redist(module_dir, reporter).await
         }
+        DepDownloadKind::SileroVad => {
+            reporter.begin("silero_vad", "Silero VAD");
+            download_silero_vad(module_dir, reporter).await
+        }
     }
 }
 
@@ -519,7 +530,62 @@ pub fn delete_dependency(module_dir: &Path, kind: DepDownloadKind) -> Result<(),
         DepDownloadKind::OrtCpu => remove_path_or_defer(&layout.cpu),
         DepDownloadKind::OrtGpu => remove_path_or_defer(&layout.gpu),
         DepDownloadKind::CudaRedist => remove_path_or_defer(&layout.cuda),
+        DepDownloadKind::SileroVad => {
+            let dir = crate::silero_vad::silero_vad_dir(module_dir);
+            remove_path_or_defer(&dir)
+        }
     }
+}
+
+async fn download_silero_vad(
+    module_dir: &Path,
+    reporter: &mut TransferReporter,
+) -> Result<(), DepError> {
+    use crate::silero_vad::{SILERO_VAD_URL, silero_vad_dir, silero_vad_model_path};
+    use futures_util::StreamExt;
+    use std::io::Write;
+
+    let dest = silero_vad_model_path(module_dir);
+    fs::create_dir_all(silero_vad_dir(module_dir))?;
+    let tmp = dest.with_extension("part");
+    reporter.register_cleanup_file(tmp.clone());
+    reporter.set_total(Some(2_200_000));
+
+    let client = reqwest::Client::builder()
+        .user_agent(concat!("KageviSubtitles/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .map_err(|err| DepError::Download(err.to_string()))?;
+    let response = client
+        .get(SILERO_VAD_URL)
+        .send()
+        .await
+        .map_err(|err| DepError::Download(err.to_string()))?;
+    if !response.status().is_success() {
+        return Err(DepError::Download(format!(
+            "HTTP {} for {SILERO_VAD_URL}",
+            response.status()
+        )));
+    }
+    if let Some(len) = response.content_length().filter(|n| *n > 0) {
+        reporter.set_total(Some(len));
+    }
+    let mut file = fs::File::create(&tmp)?;
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        reporter.check_cancelled()?;
+        let chunk = chunk.map_err(|err| DepError::Download(err.to_string()))?;
+        file.write_all(&chunk)?;
+        reporter.add_bytes(chunk.len() as u64);
+    }
+    file.sync_all()?;
+    fs::rename(&tmp, &dest)?;
+    reporter.set_phase(TransferPhase::Finalizing);
+    info!(
+        target: "voicesub.asr_local.deps",
+        path = %dest.display(),
+        "downloaded Silero VAD model"
+    );
+    Ok(())
 }
 
 /// Remove runtime trees left over from a prior session when DLL locks are gone.
@@ -716,7 +782,7 @@ fn resolve_wheel_bytes(result: Result<u64, DepError>, fallback: u64) -> u64 {
 
 async fn fetch_content_length(url: &str) -> Result<u64, DepError> {
     let client = reqwest::Client::builder()
-        .user_agent("VoiceSub-LocalAsr/0.6.0")
+        .user_agent(concat!("VoiceSub-LocalAsr/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| DepError::Download(e.to_string()))?;
     let response = client
@@ -741,7 +807,7 @@ async fn http_get_bytes(
     total_policy: HttpTotalPolicy,
 ) -> Result<Vec<u8>, DepError> {
     let client = reqwest::Client::builder()
-        .user_agent("VoiceSub-LocalAsr/0.6.0")
+        .user_agent(concat!("VoiceSub-LocalAsr/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| DepError::Download(e.to_string()))?;
     let response = client
@@ -980,6 +1046,10 @@ mod tests {
         assert_eq!(
             DepDownloadKind::parse("cuda_redist"),
             Some(DepDownloadKind::CudaRedist)
+        );
+        assert_eq!(
+            DepDownloadKind::parse("silero_vad"),
+            Some(DepDownloadKind::SileroVad)
         );
         assert_eq!(DepDownloadKind::parse("nope"), None);
     }

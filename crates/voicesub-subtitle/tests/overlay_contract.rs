@@ -31,6 +31,27 @@ fn overlay_keeps_completed_block_for_completed_with_partial() {
 }
 
 #[test]
+fn overlay_keeps_live_partial_rows_outside_completed_block() {
+    let source = read_workspace_file("bin/overlay/overlay.js");
+    assert_contains(&source, "livePartialItems", "live partial state");
+    assert_contains(
+        &source,
+        "lifecycleState === \"partial_only\"",
+        "live partial retention gate",
+    );
+    assert_contains(
+        &source,
+        "completed_block_visible: completedItems.length > 0",
+        "live partial rows must not be reported as a completed block",
+    );
+    assert_contains(
+        &source,
+        "visible_items: completedItems.length ? completedItems : liveItems",
+        "live partial rows must reach the renderer",
+    );
+}
+
+#[test]
 fn dashboard_overlay_normalizer_preserves_lifecycle_state() {
     let source = read_workspace_file("src/lib/overlay-normalizer.ts");
     assert_contains(&source, "lifecycle_state", "overlay normalizer");

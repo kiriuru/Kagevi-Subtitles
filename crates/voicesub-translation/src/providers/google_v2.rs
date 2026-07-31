@@ -69,6 +69,7 @@ impl TranslationProvider for GoogleTranslateV2Provider {
             group: "stable",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

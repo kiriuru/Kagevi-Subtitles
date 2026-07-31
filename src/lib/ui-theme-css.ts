@@ -1,10 +1,18 @@
 /** Apply dashboard UI accent palette / font CSS variables to document root. */
 
-export const UI_THEME_STORAGE_KEY = "voicesub.ui.theme";
+import { readMigratedLocalStorage, writeBrandLocalStorage } from "./brand";
+
+export const UI_THEME_STORAGE_KEY = "kagevi-subtitles.ui.theme";
+const UI_THEME_STORAGE_KEY_PREV = "kagevi-voice.ui.theme";
+const UI_THEME_STORAGE_KEY_LEGACY = "voicesub.ui.theme";
 
 export function readStoredUiTheme(): "dark" | "light" | null {
   try {
-    const value = localStorage.getItem(UI_THEME_STORAGE_KEY);
+    const value = readMigratedLocalStorage(
+      UI_THEME_STORAGE_KEY,
+      UI_THEME_STORAGE_KEY_PREV,
+      UI_THEME_STORAGE_KEY_LEGACY,
+    );
     if (value === "light" || value === "dark") {
       return value;
     }
@@ -17,6 +25,8 @@ export function readStoredUiTheme(): "dark" | "light" | null {
 function persistUiTheme(theme: "dark" | "light"): void {
   try {
     localStorage.setItem(UI_THEME_STORAGE_KEY, theme);
+    localStorage.removeItem(UI_THEME_STORAGE_KEY_PREV);
+    localStorage.removeItem(UI_THEME_STORAGE_KEY_LEGACY);
   } catch {
     // ignore quota / private mode
   }

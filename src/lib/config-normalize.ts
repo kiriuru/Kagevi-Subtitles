@@ -9,11 +9,24 @@ const CANONICAL_TRANSLATION_SLOTS = [
   "translation_2",
   "translation_3",
   "translation_4",
-  "translation_5",
 ] as const;
 
-function normalizeTranslationProvider(value: string | undefined, fallback: string): string {
-  const provider = String(value || fallback).trim();
+/**
+ * Providers dropped from the product, each with an optional replacement. Entries without a
+ * replacement fall back to the caller's default provider. Mirrors
+ * `resolve_translation_provider` in `crates/voicesub-config/src/translation_normalize.rs`.
+ */
+const REMOVED_TRANSLATION_PROVIDERS: Record<string, string | null> = {
+  mymemory: null,
+  public_libretranslate_mirror: "microsoft_edge",
+};
+
+function resolveTranslationProvider(value: unknown, fallback: string): string {
+  const provider = String(value ?? "").trim();
+  if (!provider) return fallback;
+  if (provider in REMOVED_TRANSLATION_PROVIDERS) {
+    return REMOVED_TRANSLATION_PROVIDERS[provider] ?? fallback;
+  }
   return provider in PROVIDERS ? provider : fallback;
 }
 
@@ -36,7 +49,7 @@ function normalizeTranslationLines(
         slot_id: slotId,
         enabled: rawLine.enabled !== false,
         target_lang: targetLang,
-        provider: normalizeTranslationProvider(rawLine.provider, fallbackProvider),
+        provider: resolveTranslationProvider(rawLine.provider, fallbackProvider),
         label: String(rawLine.label || "").trim() || targetLang.toUpperCase(),
       });
     });
@@ -85,10 +98,10 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
     config.translation.lines = config.translation.lines ? [config.translation.lines as never] : [];
   }
   const translation = config.translation;
-  const providerFallback =
-    String(translation.provider || "google_translate_v2").trim() === "mymemory"
-      ? "google_translate_v2"
-      : String(translation.provider || "google_translate_v2").trim() || "google_translate_v2";
+  const providerFallback = resolveTranslationProvider(
+    translation.provider,
+    "google_translate_v2",
+  );
   translation.provider = providerFallback;
   translation.lines = normalizeTranslationLines(
     translation.lines,
@@ -109,6 +122,20 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
   if (!translation.provider_limits || typeof translation.provider_limits !== "object") {
     translation.provider_limits = {};
   }
+  if (!translation.live_partial || typeof translation.live_partial !== "object") {
+    translation.live_partial = {};
+  }
+  const livePartial = translation.live_partial as Record<string, unknown>;
+  if (livePartial.enabled === undefined) livePartial.enabled = false;
+  livePartial.min_interval_ms = Math.max(
+    0,
+    Math.min(5_000, intOr(livePartial.min_interval_ms, 400)),
+  );
+  livePartial.min_delta_chars = Math.max(
+    0,
+    Math.min(64, intOr(livePartial.min_delta_chars, 6)),
+  );
+  if (livePartial.word_growth === undefined) livePartial.word_growth = false;
   translation.provider_settings = normalizeTranslationProviderSettings(
     translation.provider_settings as Record<string, unknown> | undefined,
   );
@@ -121,13 +148,35 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
   const output = config.subtitle_output;
   if (output.show_source === undefined) output.show_source = true;
   if (output.show_translations === undefined) output.show_translations = true;
+  // Visible translation count follows enabled Translation lines (not a separate UI cap).
+  const enabledTranslationCount = (translation.lines || []).filter(
+    (line) => line.enabled !== false,
+  ).length;
   output.max_translation_languages = Math.max(
     0,
-    Math.min(5, intOr(output.max_translation_languages, 2)),
+    Math.min(CANONICAL_TRANSLATION_SLOTS.length, enabledTranslationCount),
   );
   if (!Array.isArray(output.display_order)) {
     output.display_order = ["source", "translation_1"];
   }
+  const enabledSlots = (translation.lines || [])
+    .filter((line) => line.enabled !== false)
+    .map((line) => line.slot_id);
+  const filteredOrder = output.display_order.filter(
+    (item) =>
+      item === "source" ||
+      (CANONICAL_TRANSLATION_SLOTS.includes(item as (typeof CANONICAL_TRANSLATION_SLOTS)[number]) &&
+        enabledSlots.includes(item)),
+  );
+  if (!filteredOrder.includes("source")) {
+    filteredOrder.push("source");
+  }
+  for (const slotId of enabledSlots) {
+    if (!filteredOrder.includes(slotId)) {
+      filteredOrder.push(slotId);
+    }
+  }
+  output.display_order = filteredOrder;
 
   if (!config.asr) config.asr = { mode: ASR_MODE_BROWSER };
   const asr = config.asr as Record<string, unknown>;
@@ -269,14 +318,16 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
     "first_visible_line",
   ] as const;
   const obs = (config.obs_closed_captions || {}) as Record<string, unknown>;
   const connection = (obs.connection || {}) as Record<string, unknown>;
   const debugMirror = (obs.debug_mirror || {}) as Record<string, unknown>;
   const timing = (obs.timing || {}) as Record<string, unknown>;
-  const rawOutputMode = String(obs.output_mode || "disabled");
+  let rawOutputMode = String(obs.output_mode || "disabled");
+  if (rawOutputMode === "translation_5") {
+    rawOutputMode = "translation_4";
+  }
   const outputMode = OBS_OUTPUT_MODES.includes(
     rawOutputMode as (typeof OBS_OUTPUT_MODES)[number],
   )

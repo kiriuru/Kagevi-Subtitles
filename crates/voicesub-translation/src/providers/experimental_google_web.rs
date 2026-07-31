@@ -11,16 +11,40 @@ use super::{
     http::SharedHttpClient, normalize_source_lang,
 };
 
-fn build_google_translate_url(text: &str, source_lang: &str, target_lang: &str) -> String {
-    format!(
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl={}&tl={}&dt=t&q={}",
-        urlencoding::encode(source_lang),
-        urlencoding::encode(target_lang),
-        urlencoding::encode(text),
-    )
+/// Keyless Google web paths. The two hosts throttle independently, so a client blocked
+/// on one still has a working fallback on the other.
+#[derive(Clone, Copy)]
+enum GoogleWebEndpoint {
+    /// `translate.googleapis.com/translate_a/single` — the page widget path.
+    TranslateSingle,
+    /// `clients5.google.com/translate_a/t` — the Chrome extension dictionary path.
+    DictChromeEx,
 }
 
-fn extract_google_translation_text(payload: &Value) -> String {
+impl GoogleWebEndpoint {
+    fn build_url(self, text: &str, source_lang: &str, target_lang: &str) -> String {
+        let source = urlencoding::encode(source_lang);
+        let target = urlencoding::encode(target_lang);
+        let query = urlencoding::encode(text);
+        match self {
+            Self::TranslateSingle => format!(
+                "https://translate.googleapis.com/translate_a/single?client=gtx&sl={source}&tl={target}&dt=t&q={query}"
+            ),
+            Self::DictChromeEx => format!(
+                "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl={source}&tl={target}&q={query}"
+            ),
+        }
+    }
+
+    fn extract(self, payload: &Value) -> String {
+        match self {
+            Self::TranslateSingle => extract_translate_single_text(payload),
+            Self::DictChromeEx => extract_dict_chrome_ex_text(payload),
+        }
+    }
+}
+
+fn extract_translate_single_text(payload: &Value) -> String {
     let mut translated_parts = Vec::new();
     if let Some(first) = payload.as_array().and_then(|items| items.first())
         && let Some(chunks) = first.as_array()
@@ -33,12 +57,33 @@ fn extract_google_translation_text(payload: &Value) -> String {
             }
         }
     }
-    translated_parts.join("").trim().to_string()
+    translated_parts.concat().trim().to_string()
+}
+
+/// `sl=auto` answers `[[text, detected_lang]]`; an explicit `sl` answers `[text]`.
+fn extract_dict_chrome_ex_text(payload: &Value) -> String {
+    let Some(items) = payload.as_array() else {
+        return String::new();
+    };
+    let mut translated_parts = Vec::new();
+    for item in items {
+        if let Some(text) = item.as_str() {
+            translated_parts.push(text);
+        } else if let Some(text) = item
+            .as_array()
+            .and_then(|inner| inner.first())
+            .and_then(|value| value.as_str())
+        {
+            translated_parts.push(text);
+        }
+    }
+    translated_parts.concat().trim().to_string()
 }
 
 struct GoogleWebLikeProvider {
     transport: Arc<SharedHttpClient>,
     info: ProviderInfo,
+    endpoint: GoogleWebEndpoint,
     error_prefix: &'static str,
     status_message: &'static str,
 }
@@ -49,7 +94,9 @@ impl GoogleWebLikeProvider {
         request: TranslateRequest<'_>,
     ) -> Result<String, ProviderError> {
         let source = normalize_source_lang(request.source_lang);
-        let url = build_google_translate_url(request.text, &source, request.target_lang);
+        let url = self
+            .endpoint
+            .build_url(request.text, &source, request.target_lang);
         let payload = http::request_json(
             &self.transport.client(),
             Method::GET,
@@ -63,7 +110,7 @@ impl GoogleWebLikeProvider {
         )
         .await?;
 
-        let translated = extract_google_translation_text(&payload);
+        let translated = self.endpoint.extract(&payload);
         if translated.is_empty() {
             return Err(ProviderError::Message(format!(
                 "{} returned an empty translation.",
@@ -96,7 +143,9 @@ impl GoogleWebProvider {
                     group: "experimental",
                     experimental: true,
                     local_provider: false,
+                    supports_live_partial: true,
                 },
+                endpoint: GoogleWebEndpoint::TranslateSingle,
                 error_prefix: "Google Web request failed",
                 status_message: "Experimental Google Web provider. Best-effort only.",
             },
@@ -133,9 +182,13 @@ impl FreeWebTranslateProvider {
                     group: "experimental",
                     experimental: true,
                     local_provider: false,
+                    supports_live_partial: true,
                 },
+                endpoint: GoogleWebEndpoint::DictChromeEx,
                 error_prefix: "Free Web Translate request failed",
-                status_message: "Experimental free web provider. Best-effort only.",
+                status_message:
+                    "Experimental free web provider on a separate Google host from Google Web. \
+                     Best-effort only.",
             },
         }
     }
@@ -162,12 +215,38 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn extract_google_translation_text_joins_chunks() {
+    fn extract_translate_single_text_joins_chunks() {
         let payload = json!([
             [["Hello ", null, null, null], ["world", null, null, null],],
             null,
             "en",
         ]);
-        assert_eq!(extract_google_translation_text(&payload), "Hello world");
+        assert_eq!(extract_translate_single_text(&payload), "Hello world");
+    }
+
+    #[test]
+    fn extract_dict_chrome_ex_text_reads_auto_detect_shape() {
+        let payload = json!([["Привет, мир", "en"]]);
+        assert_eq!(extract_dict_chrome_ex_text(&payload), "Привет, мир");
+    }
+
+    #[test]
+    fn extract_dict_chrome_ex_text_reads_explicit_source_shape() {
+        let payload = json!(["Привет, мир"]);
+        assert_eq!(extract_dict_chrome_ex_text(&payload), "Привет, мир");
+    }
+
+    #[test]
+    fn extract_dict_chrome_ex_text_is_empty_for_unexpected_shape() {
+        assert_eq!(extract_dict_chrome_ex_text(&json!({})), "");
+        assert_eq!(extract_dict_chrome_ex_text(&json!([])), "");
+    }
+
+    #[test]
+    fn endpoints_target_distinct_hosts() {
+        let single = GoogleWebEndpoint::TranslateSingle.build_url("hi", "auto", "ru");
+        let dict = GoogleWebEndpoint::DictChromeEx.build_url("hi", "auto", "ru");
+        assert!(single.starts_with("https://translate.googleapis.com/"));
+        assert!(dict.starts_with("https://clients5.google.com/"));
     }
 }

@@ -7,12 +7,15 @@ use std::time::{Duration, Instant};
 use tracing::warn;
 
 pub(crate) const DEFAULT_MAX_ENTRIES: usize = 5000;
+const MAX_EPHEMERAL_ENTRIES: usize = 256;
 const FLUSH_INTERVAL: Duration = Duration::from_secs(2);
 
 #[derive(Debug)]
 struct CacheState {
     entries: HashMap<String, String>,
     order: VecDeque<String>,
+    ephemeral_entries: HashMap<String, String>,
+    ephemeral_order: VecDeque<String>,
     max_entries: usize,
     enabled: bool,
     persist: bool,
@@ -36,6 +39,8 @@ impl CacheState {
         Self {
             entries: HashMap::new(),
             order: VecDeque::new(),
+            ephemeral_entries: HashMap::new(),
+            ephemeral_order: VecDeque::new(),
             max_entries,
             enabled: true,
             persist: cache_file.is_some(),
@@ -73,6 +78,13 @@ impl CacheState {
             self.order.remove(pos);
         }
         self.order.push_back(key.to_string());
+    }
+
+    fn touch_ephemeral_locked(&mut self, key: &str) {
+        if let Some(pos) = self.ephemeral_order.iter().position(|item| item == key) {
+            self.ephemeral_order.remove(pos);
+        }
+        self.ephemeral_order.push_back(key.to_string());
     }
 
     fn evict_locked(&mut self) {
@@ -113,15 +125,46 @@ impl CacheState {
         }
     }
 
-    fn get_locked(&mut self, key: &str) -> Option<String> {
-        let value = self.entries.get(key).cloned()?;
-        self.touch_locked(key);
+    fn insert_ephemeral_locked(&mut self, key: String, value: String) {
+        if self.max_entries == 0 {
+            return;
+        }
+        if self.ephemeral_entries.get(&key) == Some(&value) {
+            self.touch_ephemeral_locked(&key);
+            return;
+        }
+        self.ephemeral_entries.insert(key.clone(), value);
+        self.touch_ephemeral_locked(&key);
+        let limit = self.max_entries.min(MAX_EPHEMERAL_ENTRIES);
+        while self.ephemeral_entries.len() > limit {
+            if let Some(oldest) = self.ephemeral_order.pop_front() {
+                self.ephemeral_entries.remove(&oldest);
+            }
+        }
+    }
+
+    fn get_locked(&mut self, key: &str, promote_ephemeral: bool) -> Option<String> {
+        if let Some(value) = self.entries.get(key).cloned() {
+            self.touch_locked(key);
+            return Some(value);
+        }
+        let value = self.ephemeral_entries.get(key).cloned()?;
+        self.touch_ephemeral_locked(key);
+        if promote_ephemeral {
+            self.ephemeral_entries.remove(key);
+            if let Some(position) = self.ephemeral_order.iter().position(|item| item == key) {
+                self.ephemeral_order.remove(position);
+            }
+            self.insert_locked(key.to_string(), value.clone(), true);
+        }
         Some(value)
     }
 
     fn clear_locked(&mut self) {
         self.entries.clear();
         self.order.clear();
+        self.ephemeral_entries.clear();
+        self.ephemeral_order.clear();
         self.dirty = false;
         if self.persist
             && let Some(path) = self.cache_file.clone()
@@ -192,7 +235,19 @@ impl TranslationCache {
             return None;
         }
         state.ensure_loaded();
-        state.get_locked(key)
+        state.get_locked(key, false)
+    }
+
+    /// Read a cached value and promote an exact live-preview hit to persistent final cache.
+    pub fn get_promoting_ephemeral(&self, key: &str) -> Option<String> {
+        let mut state = self.state.lock().expect("cache lock");
+        if !state.enabled {
+            return None;
+        }
+        state.ensure_loaded();
+        let value = state.get_locked(key, true);
+        state.maybe_flush();
+        value
     }
 
     pub fn insert(&self, key: String, value: String) {
@@ -201,8 +256,23 @@ impl TranslationCache {
             return;
         }
         state.ensure_loaded();
+        state.ephemeral_entries.remove(&key);
+        if let Some(position) = state.ephemeral_order.iter().position(|item| item == &key) {
+            state.ephemeral_order.remove(position);
+        }
         state.insert_locked(key, value, true);
         state.maybe_flush();
+    }
+
+    /// Memory-only insert (no disk dirty bit). Used by live-partial MT so finals can
+    /// reuse the last draft via cache hit without persisting incomplete phrases.
+    pub fn insert_ephemeral(&self, key: String, value: String) {
+        let mut state = self.state.lock().expect("cache lock");
+        if !state.enabled || state.max_entries == 0 {
+            return;
+        }
+        state.ensure_loaded();
+        state.insert_ephemeral_locked(key, value);
     }
 
     pub fn update_settings(&self, enabled: bool, persist: bool, max_entries: Option<usize>) {
@@ -216,6 +286,12 @@ impl TranslationCache {
         if let Some(max) = max_entries {
             state.max_entries = max;
             state.evict_locked();
+            let ephemeral_limit = max.min(MAX_EPHEMERAL_ENTRIES);
+            while state.ephemeral_entries.len() > ephemeral_limit {
+                if let Some(oldest) = state.ephemeral_order.pop_front() {
+                    state.ephemeral_entries.remove(&oldest);
+                }
+            }
         }
         if !persist {
             state.persist = false;
@@ -316,6 +392,53 @@ mod tests {
             Some("bonjour".into())
         );
         let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn ephemeral_entries_never_leak_into_persistent_snapshot() {
+        let dir = temp_cache_dir();
+        let ephemeral_key = cache_key("stub", "en", "fr", "hello");
+        let persistent_key = cache_key("stub", "en", "fr", "final");
+        {
+            let cache = TranslationCache::with_dir(Some(dir.clone()), DEFAULT_MAX_ENTRIES);
+            cache.insert_ephemeral(ephemeral_key.clone(), "bonjour".into());
+            cache.insert(persistent_key.clone(), "final-fr".into());
+            cache.flush_now();
+        }
+        let reloaded = TranslationCache::with_dir(Some(dir.clone()), DEFAULT_MAX_ENTRIES);
+        assert_eq!(reloaded.get(&ephemeral_key), None);
+        assert_eq!(reloaded.get(&persistent_key), Some("final-fr".into()));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn exact_final_hit_promotes_ephemeral_entry() {
+        let dir = temp_cache_dir();
+        let key = cache_key("stub", "en", "fr", "hello");
+        {
+            let cache = TranslationCache::with_dir(Some(dir.clone()), DEFAULT_MAX_ENTRIES);
+            cache.insert_ephemeral(key.clone(), "bonjour".into());
+            assert_eq!(
+                cache.get_promoting_ephemeral(&key),
+                Some("bonjour".into())
+            );
+            cache.flush_now();
+        }
+        let reloaded = TranslationCache::with_dir(Some(dir.clone()), DEFAULT_MAX_ENTRIES);
+        assert_eq!(reloaded.get(&key), Some("bonjour".into()));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn ephemeral_churn_cannot_evict_persistent_lru() {
+        let cache = TranslationCache::with_dir(None, 2);
+        cache.insert("final-a".into(), "a".into());
+        cache.insert("final-b".into(), "b".into());
+        for index in 0..20 {
+            cache.insert_ephemeral(format!("draft-{index}"), index.to_string());
+        }
+        assert_eq!(cache.get("final-a"), Some("a".into()));
+        assert_eq!(cache.get("final-b"), Some("b".into()));
     }
 
     #[test]

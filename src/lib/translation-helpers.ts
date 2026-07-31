@@ -15,7 +15,6 @@ export const CANONICAL_TRANSLATION_SLOTS = [
   "translation_2",
   "translation_3",
   "translation_4",
-  "translation_5",
 ] as const;
 
 export const REQUIRED_PROVIDER_FIELDS: Partial<Record<ProviderId, readonly string[]>> = {
@@ -265,9 +264,15 @@ export function getLineCards(config: ConfigPayload): TranslationLine[] {
 
 export function syncTranslationTargetLanguages(draft: ConfigPayload): void {
   if (!draft.translation) draft.translation = {};
-  draft.translation.target_languages = getLineCards(draft)
-    .filter((row) => isTranslationLineEnabled(row))
-    .map((row) => row.target_lang);
+  const enabledLines = getLineCards(draft).filter((row) => isTranslationLineEnabled(row));
+  draft.translation.target_languages = enabledLines.map((row) => row.target_lang);
+  draft.subtitle_output = {
+    ...(draft.subtitle_output || {}),
+    max_translation_languages: Math.max(
+      0,
+      Math.min(CANONICAL_TRANSLATION_SLOTS.length, enabledLines.length),
+    ),
+  };
 }
 
 export function setTranslationLineEnabled(
@@ -394,7 +399,21 @@ export function formatTranslationConfigError(
     return translate("translation.validation.duplicate_target", { langs });
   }
   if (errorKey.startsWith("missing_provider_fields:")) {
-    const fields = errorKey.slice("missing_provider_fields:".length);
+    const raw = errorKey.slice("missing_provider_fields:".length);
+    const fields = raw
+      .split(";")
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const dot = entry.indexOf(".");
+        if (dot <= 0) return entry;
+        const provider = entry.slice(0, dot);
+        const field = entry.slice(dot + 1);
+        const providerLabel = PROVIDERS[provider as ProviderId]?.label || provider;
+        const fieldLabel = getProviderFieldLabel(provider, field, (key) => translate(key));
+        return `${providerLabel} · ${fieldLabel}`;
+      })
+      .join("; ");
     return translate("translation.validation.missing_provider_fields", { fields });
   }
   return errorKey;

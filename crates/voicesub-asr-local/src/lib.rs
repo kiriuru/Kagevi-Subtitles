@@ -29,6 +29,8 @@ mod setup;
 mod status;
 mod test_session;
 mod transfer;
+pub mod silero_vad;
+pub mod utterance_complete;
 pub mod vad_engine;
 pub mod vad_tuning;
 
@@ -37,14 +39,15 @@ pub use capture::{
 };
 pub use config::{
     EXECUTION_PROVIDER_CPU, EXECUTION_PROVIDER_CUDA, LocalAsrConfig, LocalAsrConfigError,
-    LocalAsrConfigStore, LocalAsrRecognitionConfig, LocalAsrVadConfig,
+    LocalAsrConfigStore, LocalAsrRecognitionConfig, LocalAsrVadBackend, LocalAsrVadConfig,
 };
 pub use decode_pacing::{adaptive_partial_decode_interval_ms, max_segment_ms_for_preset};
 pub use decode_timing::DecodeTimingBreakdown;
 pub use deps::{
     CUDA_TOOLKIT_URL, DepDownloadKind, LocalAsrEnvCheck, delete_dependency, download_dependency,
-    env_check, ort_dll_path_for_provider, prepare_ort_runtime, runtime_layout,
+    env_check, is_silero_vad_ready, ort_dll_path_for_provider, prepare_ort_runtime, runtime_layout,
 };
+pub use silero_vad::{SILERO_VAD_URL, is_silero_vad_installed, silero_vad_model_path};
 pub use diagnostics::{
     LocalAsrDiagnosticsInput, assemble_local_asr_diagnostics, partial_emit_from_config,
 };

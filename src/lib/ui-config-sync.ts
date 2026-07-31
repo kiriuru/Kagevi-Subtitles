@@ -2,8 +2,8 @@ import type { ConfigPayload, LocaleCode } from "./types";
 import { apiFetch } from "./loopback-api-client";
 import { loopbackApiToken } from "./loopback-api";
 
-export const UI_CONFIG_CHANNEL = "voicesub:ui-config";
-export const UI_LOCALE_CHANNEL = "voicesub:ui-locale";
+export const UI_CONFIG_CHANNEL = "kagevi-subtitles:ui-config";
+export const UI_LOCALE_CHANNEL = "kagevi-subtitles:ui-locale";
 export const UI_CONFIG_WS_EVENT = "ui_config_sync";
 
 const UI_CONFIG_SERVER_SYNC_DEBOUNCE_MS = 120;
@@ -171,7 +171,7 @@ function subscribeUiConfigWebSocket(handler: (payload: ConfigPayload) => void): 
   };
 }
 
-/** Push live UI locale to other VoiceSub windows (TTS module, etc.). */
+/** Push live UI locale to other Kagevi Subtitles windows (TTS module, etc.). */
 export function publishUiLocaleSync(locale: LocaleCode): void {
   if (typeof BroadcastChannel === "undefined") return;
   try {

@@ -179,7 +179,69 @@ async fn settings_save_accepts_libretranslate_provider() {
 }
 
 #[tokio::test]
-async fn settings_save_accepts_public_libretranslate_mirror_provider() {
+async fn settings_save_accepts_microsoft_edge_provider() {
+    let _guard = integration_lock();
+    let runtime = EphemeralRuntime::new();
+    let handle = runtime.start().await;
+    let addr = handle.bind_addr;
+
+    let client = reqwest::Client::new();
+    let load = runtime
+        .authed(&client)
+        .get(format!("http://{addr}/api/settings/load"))
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+        .expect("settings load");
+    let loaded: serde_json::Value = load.json().await.expect("json");
+    let mut payload = loaded["payload"].clone();
+    payload["translation"]["enabled"] = serde_json::json!(true);
+    payload["translation"]["provider"] = serde_json::json!("microsoft_edge");
+    payload["translation"]["lines"] = serde_json::json!([
+        {
+            "slot_id": "translation_1",
+            "enabled": true,
+            "target_lang": "ja",
+            "provider": "microsoft_edge",
+            "label": "JA"
+        },
+        {
+            "slot_id": "translation_2",
+            "enabled": true,
+            "target_lang": "en",
+            "provider": "google_web",
+            "label": "EN"
+        }
+    ]);
+    payload["obs_closed_captions"]["enabled"] = serde_json::json!(true);
+
+    let save = runtime
+        .authed(&client)
+        .post(format!("http://{addr}/api/settings/save"))
+        .json(&serde_json::json!({ "payload": payload }))
+        .timeout(Duration::from_secs(5))
+        .send()
+        .await
+        .expect("settings save");
+    assert!(
+        save.status().is_success(),
+        "settings save failed: {} body={:?}",
+        save.status(),
+        save.text().await.ok()
+    );
+    let saved: serde_json::Value = save.json().await.expect("json");
+    assert_eq!(saved["ok"], true);
+    assert_eq!(
+        saved["payload"]["translation"]["lines"][0]["provider"],
+        "microsoft_edge"
+    );
+    assert_eq!(saved["live_applied"], true);
+
+    handle.shutdown().await;
+}
+
+#[tokio::test]
+async fn settings_save_migrates_removed_public_mirror_to_microsoft_edge() {
     let _guard = integration_lock();
     let runtime = EphemeralRuntime::new();
     let handle = runtime.start().await;
@@ -204,19 +266,8 @@ async fn settings_save_accepts_public_libretranslate_mirror_provider() {
             "target_lang": "ja",
             "provider": "public_libretranslate_mirror",
             "label": "JA"
-        },
-        {
-            "slot_id": "translation_2",
-            "enabled": true,
-            "target_lang": "en",
-            "provider": "google_web",
-            "label": "EN"
         }
     ]);
-    payload["translation"]["provider_settings"]["public_libretranslate_mirror"] = serde_json::json!({
-        "api_url": "https://translate.fedilab.app/translate"
-    });
-    payload["obs_closed_captions"]["enabled"] = serde_json::json!(true);
 
     let save = runtime
         .authed(&client)
@@ -233,12 +284,11 @@ async fn settings_save_accepts_public_libretranslate_mirror_provider() {
         save.text().await.ok()
     );
     let saved: serde_json::Value = save.json().await.expect("json");
-    assert_eq!(saved["ok"], true);
+    assert_eq!(saved["payload"]["translation"]["provider"], "microsoft_edge");
     assert_eq!(
         saved["payload"]["translation"]["lines"][0]["provider"],
-        "public_libretranslate_mirror"
+        "microsoft_edge"
     );
-    assert_eq!(saved["live_applied"], true);
 
     handle.shutdown().await;
 }

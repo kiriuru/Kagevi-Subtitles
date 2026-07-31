@@ -1,3 +1,5 @@
+import { readMigratedLocalStorage, writeBrandLocalStorage } from "./brand";
+
 export interface FontCatalogEntry {
   id: string;
   label: string;
@@ -15,7 +17,9 @@ export interface FontCatalog {
   system?: FontCatalogEntry[];
 }
 
-const SYSTEM_FONTS_CACHE_KEY = "voicesub.system_fonts.v1";
+const SYSTEM_FONTS_CACHE_KEY = "kagevi-subtitles.system_fonts.v1";
+const SYSTEM_FONTS_CACHE_KEY_PREV = "kagevi-voice.system_fonts.v1";
+const SYSTEM_FONTS_CACHE_KEY_LEGACY = "voicesub.system_fonts.v1";
 
 export function mergeFontCatalogPreservingSystem(
   incoming: FontCatalog,
@@ -27,7 +31,11 @@ export function mergeFontCatalogPreservingSystem(
 
 export function loadCachedSystemFonts(): FontCatalogEntry[] {
   try {
-    const raw = localStorage.getItem(SYSTEM_FONTS_CACHE_KEY);
+    const raw = readMigratedLocalStorage(
+      SYSTEM_FONTS_CACHE_KEY,
+      SYSTEM_FONTS_CACHE_KEY_PREV,
+      SYSTEM_FONTS_CACHE_KEY_LEGACY,
+    );
     if (!raw) return [];
     const parsed = JSON.parse(raw) as FontCatalogEntry[];
     return Array.isArray(parsed) ? parsed : [];
@@ -37,7 +45,12 @@ export function loadCachedSystemFonts(): FontCatalogEntry[] {
 }
 
 export function saveCachedSystemFonts(entries: FontCatalogEntry[]): void {
-  localStorage.setItem(SYSTEM_FONTS_CACHE_KEY, JSON.stringify(entries));
+  writeBrandLocalStorage(
+    SYSTEM_FONTS_CACHE_KEY,
+    JSON.stringify(entries),
+    SYSTEM_FONTS_CACHE_KEY_PREV,
+    SYSTEM_FONTS_CACHE_KEY_LEGACY,
+  );
 }
 
 export async function refreshSystemFonts(): Promise<FontCatalogEntry[]> {

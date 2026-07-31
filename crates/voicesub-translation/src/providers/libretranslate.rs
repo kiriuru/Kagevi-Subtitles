@@ -29,6 +29,7 @@ impl TranslationProvider for LibreTranslateProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

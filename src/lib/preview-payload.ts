@@ -51,8 +51,12 @@ export function buildPreviewPayload(input: {
   const tr = (key: string) => t(key, undefined, locale as import("./types").LocaleCode | undefined);
 
   if (shouldUseLiveOverlayPreview(runtime, overlayPayload)) {
+    // Prefer in-memory overlay layout from config so Subtitles panel changes
+    // preview immediately (same as style), even before Save applies them live.
     return {
       ...(overlayPayload || {}),
+      preset: config.overlay?.preset || (overlayPayload as { preset?: string } | null)?.preset || "single",
+      compact: Boolean(config.overlay?.compact),
       style: getResolvedSubtitleStyle(config, subtitleStylePresets),
     };
   }
@@ -63,7 +67,7 @@ export function buildPreviewPayload(input: {
     : [];
   const maxTranslations = Math.max(
     0,
-    Math.min(5, Number(config.subtitle_output?.max_translation_languages || 0)),
+    Math.min(4, Number(config.subtitle_output?.max_translation_languages || 0)),
   );
   const lineMap = new Map(
     (Array.isArray(config.translation?.lines) ? config.translation.lines : [])

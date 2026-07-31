@@ -43,7 +43,7 @@ pub async fn local_asr_open_window(
     let _ = std::fs::create_dir_all(&data_dir);
 
     WebviewWindowBuilder::new(&app, LOCAL_ASR_WINDOW_LABEL, WebviewUrl::External(parsed))
-        .title("VoiceSub Local ASR")
+        .title("Kagevi Subtitles Local ASR")
         .inner_size(820.0, 720.0)
         .min_inner_size(640.0, 520.0)
         .data_directory(data_dir)

@@ -72,6 +72,8 @@
   import { startRuntimeEventChannelWithHandler } from "../src/lib/runtime-events";
   import type { WsMessage } from "../src/lib/types";
   import { setLocale, t, locale, getLocale } from "../src/lib/i18n";
+  import { PROJECT_VERSION } from "../src/lib/project-version";
+  import { PRODUCT_NAME } from "../src/lib/brand";
   import type { LocaleCode } from "../src/lib/types";
   import type { ConfigPayload } from "../src/lib/types";
   import type {
@@ -95,7 +97,7 @@
 
   let externalOAuthDone = $state(false);
   let tab = $state<TtsTab>("speech");
-  let version = $state("0.6.0");
+  let version = $state(PROJECT_VERSION);
   let config = $state<TtsConfig>({
     enabled: false,
     tts_provider: "browser_google",
@@ -149,7 +151,11 @@
   const activeTranslationLines = $derived(getActiveTranslationLines(appSpeech));
   const obsResourceTelemetry = $derived(findWatchedProcess(resourceTelemetry, "obs64.exe"));
   const shellResourceTelemetry = $derived(
-    findWatchedProcess(resourceTelemetry, "voicesub-app.exe"),
+    findWatchedProcess(resourceTelemetry, "Kagevi Subtitles.exe") ??
+      findWatchedProcess(resourceTelemetry, "kagevi-subtitles.exe") ??
+      findWatchedProcess(resourceTelemetry, "Kagevi Voice.exe") ??
+      findWatchedProcess(resourceTelemetry, "kagevi-voice.exe") ??
+      findWatchedProcess(resourceTelemetry, "voicesub-app.exe"),
   );
   let currentLocale = $state<LocaleCode>(getLocale());
 
@@ -374,7 +380,7 @@
     }
   }
 
-  const NATIVE_DEVICE_HINT_KEY = "voicesub-tts-native-hint-dismissed";
+  const NATIVE_DEVICE_HINT_KEY = "kagevi-subtitles-tts-native-hint-dismissed";
   let nativeDeviceHint = $state(false);
 
   const nativePlayback = $derived(isNativePlaybackMode(config.playback_mode));
@@ -817,7 +823,7 @@
     </section>
     <footer class="app-footer tts-module-footer">
       <span class="app-footer__line">
-        VoiceSub <span class="app-footer__version">v{version}</span>
+        {PRODUCT_NAME} <span class="app-footer__version">v{version}</span>
         <span class="app-footer__sep" aria-hidden="true">·</span>
         Powered by Kiriuru
       </span>
@@ -1191,7 +1197,7 @@
 
   <footer class="app-footer tts-module-footer">
     <span class="app-footer__line">
-      VoiceSub <span class="app-footer__version">v{version}</span>
+      {PRODUCT_NAME} <span class="app-footer__version">v{version}</span>
       <span class="app-footer__sep" aria-hidden="true">·</span>
       Powered by Kiriuru
     </span>

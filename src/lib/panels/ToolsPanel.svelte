@@ -21,7 +21,7 @@
   export let onChange: (next: ConfigPayload) => void;
   export let onConfigLoad: (next: ConfigPayload, presets?: StylePresetCatalog) => void;
 
-  const CONFIG_EXPORT_FILENAME = "voicesub-config.json";
+  const CONFIG_EXPORT_FILENAME = "kagevi-subtitles-config.json";
 
   $: fullLoggingEnabled = config.logging?.full_enabled === true;
 

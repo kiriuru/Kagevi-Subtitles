@@ -145,7 +145,7 @@ pub fn run() {
 
     let handle = http_runtime
         .block_on(runtime_service.start())
-        .expect("failed to start VoiceSub runtime");
+        .expect("failed to start Kagevi Subtitles runtime");
 
     let bind_addr = handle.bind_addr;
     info!(%bind_addr, "runtime started for Tauri shell");
@@ -403,5 +403,5 @@ pub fn run() {
             _ => {}
         })
         .run(tauri::generate_context!())
-        .expect("error while running VoiceSub");
+        .expect("error while running Kagevi Subtitles");
 }

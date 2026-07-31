@@ -1,7 +1,20 @@
-export const LOOPBACK_TOKEN_HEADER = "x-voicesub-token";
+import {
+  LOOPBACK_TOKEN_HEADER,
+  LOOPBACK_TOKEN_HEADER_LEGACY,
+  LOOPBACK_TOKEN_HEADER_PREV,
+  PRODUCT_NAME,
+} from "./brand";
+
+export {
+  LOOPBACK_TOKEN_HEADER,
+  LOOPBACK_TOKEN_HEADER_LEGACY,
+  LOOPBACK_TOKEN_HEADER_PREV,
+};
 
 declare global {
   interface Window {
+    __KAGEVI_SUBTITLES_API_TOKEN__?: string;
+    __KAGEVI_VOICE_API_TOKEN__?: string;
     __VOICESUB_API_TOKEN__?: string;
   }
 }
@@ -12,8 +25,16 @@ function readInjectedToken(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
-  const token = window.__VOICESUB_API_TOKEN__;
-  return typeof token === "string" && token.trim() ? token.trim() : null;
+  for (const token of [
+    window.__KAGEVI_SUBTITLES_API_TOKEN__,
+    window.__KAGEVI_VOICE_API_TOKEN__,
+    window.__VOICESUB_API_TOKEN__,
+  ]) {
+    if (typeof token === "string" && token.trim()) {
+      return token.trim();
+    }
+  }
+  return null;
 }
 
 export function loopbackApiToken(): string | null {
@@ -46,7 +67,7 @@ function requireLoopbackApiToken(): string {
   const token = loopbackApiToken();
   if (!token) {
     throw new Error(
-      "VoiceSub loopback API token is missing. Reload the app or reopen the dashboard page.",
+      `${PRODUCT_NAME} loopback API token is missing. Reload the app or reopen the dashboard page.`,
     );
   }
   return token;
@@ -54,7 +75,11 @@ function requireLoopbackApiToken(): string {
 
 export function loopbackApiHeaders(extra?: HeadersInit): HeadersInit {
   const headers = new Headers(extra);
-  headers.set(LOOPBACK_TOKEN_HEADER, requireLoopbackApiToken());
+  const token = requireLoopbackApiToken();
+  headers.set(LOOPBACK_TOKEN_HEADER, token);
+  // Dual-write during transition so mixed old/new clients still authenticate.
+  headers.set(LOOPBACK_TOKEN_HEADER_PREV, token);
+  headers.set(LOOPBACK_TOKEN_HEADER_LEGACY, token);
   return headers;
 }
 

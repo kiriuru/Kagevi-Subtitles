@@ -115,6 +115,7 @@ impl TranslationProvider for OpenAICompatibleChatProvider {
             group: self.group,
             experimental: false,
             local_provider: self.local_provider,
+            supports_live_partial: false,
         }
     }
 

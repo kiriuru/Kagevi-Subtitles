@@ -125,6 +125,7 @@ fn translation_line_item(text: &str, slot: &str, lang: &str, label: &str) -> Sub
         visible: true,
         success: true,
         error: None,
+        is_live_draft: false,
     }
 }
 
@@ -141,6 +142,7 @@ fn source_line_item(text: &str) -> SubtitleLineItem {
         visible: true,
         success: true,
         error: None,
+        is_live_draft: false,
     }
 }
 
@@ -219,6 +221,7 @@ fn translation_payload(text: &str) -> SubtitlePayloadEvent {
             visible: true,
             success: true,
             error: None,
+            is_live_draft: false,
         }],
         visible_items: vec![SubtitleLineItem {
             kind: "translation".into(),
@@ -232,6 +235,7 @@ fn translation_payload(text: &str) -> SubtitlePayloadEvent {
             visible: true,
             success: true,
             error: None,
+            is_live_draft: false,
         }],
         lifecycle_state: LifecycleState::CompletedOnly,
         completed_block_visible: true,

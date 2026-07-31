@@ -2,7 +2,7 @@
 name = "voicesub-asr-local"
 version.workspace = true
 edition.workspace = true
-description = "VoiceSub Local ASR module — ONNX Runtime deps, config, readiness (parakeet-rs pipeline planned)"
+description = "Kagevi Subtitles Local ASR module — ONNX Runtime deps, config, readiness (parakeet-rs pipeline planned)"
 
 [dependencies]
 serde = { workspace = true }

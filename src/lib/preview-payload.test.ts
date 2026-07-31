@@ -91,4 +91,29 @@ describe("preview payload idle/live gating", () => {
     expect(preview?.active_partial_text).toBe("live");
     expect(preview?.sequence).toBe(7);
   });
+
+  it("overlays in-memory layout preset onto live preview payload", () => {
+    const livePayload = {
+      ...idleEmptyPayload,
+      sequence: 3,
+      preset: "stacked",
+      compact: false,
+      lifecycle_state: "partial_only",
+      active_partial_text: "live",
+      visible_items: [{ kind: "source", text: "live" }],
+    };
+    const preview = buildPreviewPayload({
+      config: {
+        ...config,
+        overlay: { preset: "dual-line", compact: true },
+      },
+      runtime: { is_running: true, running: true },
+      overlayPayload: livePayload,
+      subtitleStylePresets: {},
+      locale: "en",
+    });
+    expect(preview?.preset).toBe("dual-line");
+    expect(preview?.compact).toBe(true);
+    expect(preview?.active_partial_text).toBe("live");
+  });
 });

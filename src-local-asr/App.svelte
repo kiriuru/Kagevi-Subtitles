@@ -38,6 +38,8 @@
     type TestBenchSnapshot,
   } from "./lib/local-asr-api";
   import { apiFetch } from "./lib/loopback-api-client";
+  import { PROJECT_VERSION } from "../src/lib/project-version";
+  import { PRODUCT_NAME } from "../src/lib/brand";
 
   function defaultModuleConfig(): LocalAsrConfig {
     return defaultLocalAsrModuleConfig();
@@ -68,11 +70,11 @@
   let loadingModel = $state(false);
   let cancelTransferBusy = $state(false);
   let showDevTools = $state(false);
-  let version = $state("0.6.0");
+  let version = $state(PROJECT_VERSION);
   let transferPollTimer: ReturnType<typeof setInterval> | null = null;
   let testPollTimer: ReturnType<typeof setInterval> | null = null;
 
-  const DEV_TOOLS_STORAGE_KEY = "voicesub.local-asr.devTools";
+  const DEV_TOOLS_STORAGE_KEY = "kagevi-subtitles.local-asr.devTools";
 
   function readShowDevTools(): boolean {
     try {
@@ -283,11 +285,11 @@
     });
   }
 
-  async function onDownload(kind: "ort_cpu" | "ort_gpu" | "cuda_redist") {
+  async function onDownload(kind: "ort_cpu" | "ort_gpu" | "cuda_redist" | "silero_vad") {
     await runWithTransfer(() => downloadLocalAsrDep(kind));
   }
 
-  async function onDeleteDep(kind: "ort_cpu" | "ort_gpu" | "cuda_redist") {
+  async function onDeleteDep(kind: "ort_cpu" | "ort_gpu" | "cuda_redist" | "silero_vad") {
     await run(async () => {
       status = await deleteLocalAsrDep(kind);
       transfer = await fetchLocalAsrTransfer();
@@ -552,7 +554,16 @@
       <p class="status-line section-note">{tr("local_asr.ep.note")}</p>
     </section>
 
-    <RealtimeTuning config={moduleConfig} {busy} {tr} onSave={onSaveRealtime} />
+    <RealtimeTuning
+      config={moduleConfig}
+      {busy}
+      transferBusy={transferBusy}
+      sileroVadInstalled={Boolean(status?.sileroVadInstalled)}
+      {tr}
+      onSave={onSaveRealtime}
+      onDownloadSilero={() => onDownload("silero_vad")}
+      onDeleteSilero={() => onDeleteDep("silero_vad")}
+    />
 
     <section class="surface-card">
       <label class="checkbox-row">
@@ -757,7 +768,7 @@
 
   <footer class="app-footer local-asr-module-footer">
     <span class="app-footer__line">
-      VoiceSub <span class="app-footer__version">v{version}</span>
+      {PRODUCT_NAME} <span class="app-footer__version">v{version}</span>
       <span class="app-footer__sep" aria-hidden="true">·</span>
       Powered by Kiriuru
     </span>

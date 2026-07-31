@@ -42,6 +42,7 @@
     preset: preset === "compact" ? "stacked" : preset,
     compact: compact || presetParam === "compact",
     completedItems: [],
+    livePartialItems: [],
     activePartialText: "",
     showSource: true,
     showTranslations: true,
@@ -301,6 +302,7 @@
     }
     cancelPendingOverlayPayload();
     overlayState.completedItems = [];
+    overlayState.livePartialItems = [];
     overlayState.activePartialText = "";
     overlayState.lifecycleState = "idle";
     if (reason) {
@@ -341,19 +343,25 @@
     // Preserve backend slot identity (style_slot / slot_id / lang). Stripping
     // to kind+text made inferStyleSlot reindex by arrival order, so a lone
     // translation_2 row wrongly picked up translation_1 line overrides.
-    const completedItems = overlayState.completedItems.map((item) => ({
+    const normalizeItem = (item) => ({
       kind: item.kind || "source",
       text: item.text || "",
       style_slot: item.style_slot || "",
       lang: item.lang || "",
       slot_id: item.slot_id || "",
       target_lang: item.target_lang || "",
-    }));
+    });
+    const completedItems = overlayState.completedItems.map(normalizeItem);
+    // partial_only with live-partial MT: the backend rows (growing source +
+    // draft translation) are the only content, and they are not a completed block.
+    const liveItems = completedItems.length
+      ? []
+      : overlayState.livePartialItems.map(normalizeItem);
     return {
       preset: overlayState.preset,
       compact: overlayState.compact,
       completed_block_visible: completedItems.length > 0,
-      visible_items: completedItems,
+      visible_items: completedItems.length ? completedItems : liveItems,
       active_partial_text: overlayState.activePartialText,
       // Forward the backend's lifecycle_state so composeRenderRows can
       // detect the "completed_with_partial" mix and mark the live partial
@@ -472,6 +480,9 @@
     } else {
       overlayState.completedItems = [];
     }
+    overlayState.livePartialItems = lifecycleState === "partial_only"
+      ? visibleItems.filter((item) => item && item.text)
+      : [];
     if (lifecycleState === "idle" && !hasRenderableOverlayContent(payload)) {
       clearOverlayPresentation("idle empty overlay");
       return;

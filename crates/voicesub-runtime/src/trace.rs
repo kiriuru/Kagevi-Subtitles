@@ -166,6 +166,88 @@ impl RuntimePipelineLog {
             Value::Object(fields),
         );
     }
+
+    pub fn live_partial_seen(
+        &self,
+        sequence: u64,
+        segment_id: &str,
+        revision: Option<u64>,
+        text_len: usize,
+    ) {
+        self.emit(
+            "translation_live_partial",
+            "transcript_controller",
+            "live_partial_asr_seen",
+            json!({
+                "sequence": sequence,
+                "segment_id": segment_id,
+                "revision": revision,
+                "text_len": text_len,
+            }),
+        );
+    }
+
+    pub fn live_partial_gate(
+        &self,
+        sequence: u64,
+        segment_id: &str,
+        reason: &str,
+        text_len: usize,
+        submitted: bool,
+    ) {
+        self.emit(
+            "translation_live_partial",
+            "transcript_controller",
+            "live_partial_gate",
+            json!({
+                "sequence": sequence,
+                "segment_id": segment_id,
+                "reason": reason,
+                "text_len": text_len,
+                "submitted": submitted,
+            }),
+        );
+    }
+
+    pub fn live_partial_enqueued(
+        &self,
+        sequence: u64,
+        segment_id: &str,
+        revision: Option<u64>,
+        text_len: usize,
+        preview_lineage_key: Option<&str>,
+    ) {
+        self.emit(
+            "translation_live_partial",
+            "transcript_controller",
+            "live_partial_enqueued",
+            json!({
+                "sequence": sequence,
+                "segment_id": segment_id,
+                "revision": revision,
+                "text_len": text_len,
+                "preview_lineage_key": preview_lineage_key,
+            }),
+        );
+    }
+
+    pub fn live_partial_final_submit(
+        &self,
+        sequence: u64,
+        text_len: usize,
+        preview_lineage_key: Option<&str>,
+    ) {
+        self.emit(
+            "translation_live_partial",
+            "transcript_controller",
+            "live_partial_final_submit",
+            json!({
+                "sequence": sequence,
+                "text_len": text_len,
+                "preview_lineage_key": preview_lineage_key,
+            }),
+        );
+    }
 }
 
 #[cfg(test)]

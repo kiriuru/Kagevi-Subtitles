@@ -16,6 +16,7 @@ import type {
   VersionInfo,
   WsMessage,
 } from "../types";
+import { PROJECT_VERSION } from "../project-version";
 
 export interface AppSnapshot {
   config: ConfigPayload;
@@ -56,7 +57,7 @@ export const appStore = writable<AppSnapshot>({
   wsConnected: false,
   activeTab: "translation",
   saveStatus: { tone: "default" },
-  version: "0.6.0",
+  version: PROJECT_VERSION,
   versionInfo: null,
   updateBannerDismissed: false,
   busy: false,

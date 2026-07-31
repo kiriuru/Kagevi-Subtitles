@@ -187,10 +187,39 @@ impl Default for LocalAsrRealtimeConfig {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum LocalAsrVadBackend {
+    #[default]
+    Webrtc,
+    Silero,
+}
+
+impl LocalAsrVadBackend {
+    pub fn parse(raw: &str) -> Self {
+        match raw.trim().to_ascii_lowercase().as_str() {
+            "silero" => Self::Silero,
+            _ => Self::Webrtc,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Webrtc => "webrtc",
+            Self::Silero => "silero",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LocalAsrVadConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
+    /// `webrtc` (default) or optional `silero` (ONNX, lazy download).
+    #[serde(default, alias = "backend")]
+    pub backend: LocalAsrVadBackend,
+    #[serde(default = "default_silero_threshold", alias = "sileroThreshold")]
+    pub silero_threshold: f32,
     #[serde(default = "default_vad_mode", alias = "vadMode")]
     pub vad_mode: u8,
     #[serde(default = "default_true_optional", alias = "energyGateEnabled")]
@@ -222,6 +251,11 @@ pub struct LocalAsrVadConfig {
     pub silence_hold_ms: u32,
     #[serde(default = "default_speech_pad_ms", alias = "speechPadMs")]
     pub speech_pad_ms: u32,
+    /// Extend finalize silence when ASR draft looks grammatically incomplete.
+    #[serde(default = "default_true", alias = "textHoldEnabled")]
+    pub text_hold_enabled: bool,
+    #[serde(default = "default_text_hold_extra_ms", alias = "textHoldExtraMs")]
+    pub text_hold_extra_ms: u32,
     #[serde(default = "default_max_segment_ms", alias = "maxSegmentMs")]
     pub max_segment_ms: u32,
 }
@@ -230,6 +264,8 @@ impl Default for LocalAsrVadConfig {
     fn default() -> Self {
         Self {
             enabled: true,
+            backend: LocalAsrVadBackend::Webrtc,
+            silero_threshold: default_silero_threshold(),
             vad_mode: default_vad_mode(),
             energy_gate_enabled: false,
             min_rms_for_recognition: default_min_rms_for_recognition(),
@@ -242,6 +278,8 @@ impl Default for LocalAsrVadConfig {
             min_silence_ms: default_min_silence_ms(),
             silence_hold_ms: default_silence_hold_ms(),
             speech_pad_ms: default_speech_pad_ms(),
+            text_hold_enabled: true,
+            text_hold_extra_ms: default_text_hold_extra_ms(),
             max_segment_ms: default_max_segment_ms(),
         }
     }
@@ -285,6 +323,14 @@ fn default_silence_hold_ms() -> u32 {
 
 fn default_speech_pad_ms() -> u32 {
     0
+}
+
+fn default_silero_threshold() -> f32 {
+    0.5
+}
+
+fn default_text_hold_extra_ms() -> u32 {
+    350
 }
 
 fn default_max_segment_ms() -> u32 {

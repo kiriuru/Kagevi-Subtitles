@@ -90,10 +90,11 @@ fn provider_endpoint_summary(
             let api_url = settings.get("api_url").map(|s| s.as_str()).unwrap_or("");
             Some(resolve_deepl_api_url(api_key, api_url))
         }
-        "libretranslate" | "public_libretranslate_mirror" => settings
+        "libretranslate" => settings
             .get("api_url")
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty()),
+        "microsoft_edge" => Some("https://api-edge.cognitive.microsofttranslator.com".into()),
         "baidu_translate" => Some("https://fanyi-api.baidu.com/api/trans/vip/translate".into()),
         "youdao_translate" => Some("https://openapi.youdao.com/api".into()),
         "tencent_tmt" => Some("https://tmt.tencentcloudapi.com".into()),

@@ -2,12 +2,11 @@ use serde_json::{Map, Value, json};
 
 use crate::defaults::CURRENT_CONFIG_VERSION;
 
-const CANONICAL_SLOTS: [&str; 5] = [
+const CANONICAL_SLOTS: [&str; 4] = [
     "translation_1",
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
 ];
 
 fn as_object(value: &Value) -> Map<String, Value> {

@@ -1,26 +1,28 @@
-# VoiceSub
+# Kagevi Subtitles
 
 **Живые переводимые субтитры для стримеров — локально, privacy-first, готово для OBS.**
 
-[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](./docs/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](./docs/CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#системные-требования)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](./docs/CHANGELOG.md)
+[![Поддержать](https://img.shields.io/badge/%D0%9F%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C-DonationAlerts-ff4747.svg)](https://www.donationalerts.com/r/kiriuru)
 
 <p align="center">
+  <a href="https://kiriuru.github.io/Kagevi-Subtitles/">Сайт</a> ·
   <a href="./README.md">English</a> ·
   <a href="./README.ru.md">Русский</a> ·
   <a href="./docs/WIKI.ru.md">Wiki</a> ·
   <a href="./docs/TECHNICAL_ARCHITECTURE.md">Архитектура</a> ·
-  <a href="./docs/CHANGELOG.md">Changelog</a>
+  <a href="./docs/CHANGELOG.md">Список изменений</a>
 </p>
 
-VoiceSub — Windows desktop-приложение, которое превращает речь в субтитры в реальном времени с опциональным переводом. Распознавание — через **Google Chrome Web Speech** или опциональный офлайн **Local ASR** (Parakeet / ONNX). Всё работает локально: bind по умолчанию `127.0.0.1:8765`, без cloud backend и аккаунтов.
+Kagevi Subtitles — Windows desktop-приложение, которое превращает речь в субтитры в реальном времени с опциональным переводом. Распознавание — через **Google Chrome Web Speech** или опциональный офлайн **Local ASR** (Parakeet / ONNX). Всё работает локально: bind по умолчанию `127.0.0.1:8765`, без cloud backend и аккаунтов.
 
-Преемник SST Desktop `0.4.4`. Первый релиз VoiceSub: **`0.5.0`**. Текущая линия: **`0.6.0`**.
+Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.6.1`**.
 
 <p align="center">
-  <img src="./Images/Live_window.jpg" alt="Вкладка Live в VoiceSub" width="860">
+  <img src="./Images/kagevi_live.png" alt="Вкладка Live в Kagevi Subtitles" width="860">
   <br>
   <em>Live — Start/Stop, статус распознавания, транскрипт и превью субтитров</em>
 </p>
@@ -43,8 +45,8 @@ VoiceSub — Windows desktop-приложение, которое превращ
 | Область | Что даёт |
 | --- | --- |
 | **Речь** | Google Chrome Web Speech worker или офлайн Local ASR (Parakeet / ONNX, CPU или CUDA) |
-| **Перевод** | 17 провайдеров (в т.ч. Baidu / Youdao / Tencent / Caiyun), до 5 линий перевода |
-| **OBS** | Browser Source overlay + опциональные Closed Captions (WebSocket) |
+| **Перевод** | 17 провайдеров (в т.ч. Baidu / Youdao / Tencent / Caiyun), до **4** линий перевода (исходник отдельно). Опциональный **realtime**-перевод для классического MT (по умолчанию выкл.). Три работают **без API key**: Google Web, Free Web Translate и Microsoft Edge Translate |
+| **OBS** | Browser Source overlay + опциональные Closed Captions через OBS WebSocket (в основном для Twitch) |
 | **Стиль** | Анимированные пресеты, стили по слотам, палитра темы |
 | **TTS** | Native / Sonic playback; озвучка субтитров + Twitch chat TTS (до 5 каналов) |
 | **Local ASR** | Wizard на `/local-asr`; режим `local_parakeet` на Эфире при `ready` |
@@ -57,67 +59,79 @@ VoiceSub — Windows desktop-приложение, которое превращ
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./Images/Translation_window.jpg" alt="Вкладка Translation" width="420"><br>
+      <img src="./Images/kagevi_translation.png" alt="Вкладка Translation" width="420"><br>
       <strong>Перевод</strong><br>
-      <sub>Провайдеры, кэш и до 5 линий перевода</sub>
+      <sub>Провайдеры, кэш и до 4 линий перевода</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./Images/Subtitles_window.jpg" alt="Вкладка Subtitles" width="420"><br>
+      <img src="./Images/kagevi_subtitles.png" alt="Вкладка Subtitles" width="420"><br>
       <strong>Субтитры</strong><br>
       <sub>Пресет overlay, видимость, порядок и TTL</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/Subtitle_Style_window.jpg" alt="Вкладка Subtitle Style" width="420"><br>
+      <img src="./Images/kagevi_style.png" alt="Вкладка Subtitle Style" width="420"><br>
       <strong>Стиль субтитров</strong><br>
       <sub>Шрифты, цвета, эффекты и стили по слотам</sub>
     </td>
     <td align="center">
-      <img src="./Images/OBS_window.jpg" alt="Вкладка OBS" width="420"><br>
+      <img src="./Images/kagevi_obs.png" alt="Вкладка OBS" width="420"><br>
       <strong>OBS</strong><br>
-      <sub>URL overlay и Closed Captions</sub>
+      <sub>URL overlay и Closed Captions (Twitch)</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/modules_window.jpg" alt="Вкладка Modules" width="420"><br>
+      <img src="./Images/kagevi_modules_main.png" alt="Вкладка Modules" width="420"><br>
       <strong>Модули</strong><br>
       <sub>Открытие sidecar-окон TTS и Local ASR</sub>
     </td>
     <td align="center">
-      <img src="./Images/Web_Speech_Window.jpg" alt="Настройки Web Speech" width="420"><br>
-      <strong>Web Speech</strong><br>
-      <sub>Язык Chrome worker и расширенные опции распознавания</sub>
+      <img src="./Images/kagevi_settings.png" alt="Settings" width="420"><br>
+      <strong>Настройки</strong><br>
+      <sub>Layout, dispatcher, шрифты, Advanced Web Speech</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/Local_ASR_window.jpg" alt="Модуль Local ASR" width="420"><br>
+      <img src="./Images/kagevi_localASR_1.png" alt="Модуль Local ASR" width="420"><br>
       <strong>Local ASR</strong><br>
       <sub>Офлайн Parakeet / ONNX (CPU или CUDA)</sub>
     </td>
     <td align="center">
-      <img src="./Images/TTS_window.jpg" alt="Модуль TTS" width="420"><br>
+      <img src="./Images/kagevi_tts_1.png" alt="Модуль TTS" width="420"><br>
       <strong>TTS</strong><br>
-      <sub>Озвучка субтитров и Twitch chat TTS</sub>
+      <sub>Озвучка субтитров и playback</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/UI_Theme_window.jpg" alt="Вкладка UI Theme" width="420"><br>
+      <img src="./Images/kagevi_UI_theme.png" alt="Вкладка UI Theme" width="420"><br>
       <strong>Тема UI</strong><br>
       <sub>Тёмная/светлая тема и accent palette</sub>
     </td>
     <td align="center">
-      <img src="./Images/Settings_window.jpg" alt="Вкладка Settings" width="420"><br>
-      <strong>Настройки</strong><br>
-      <sub>Язык UI, layout и импорт SST config</sub>
+      <img src="./Images/kagevi_compact_UI.png" alt="Компактный layout" width="420"><br>
+      <strong>Компактный layout</strong><br>
+      <sub>Узкое окно под второй монитор</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_tts_twitch.png" alt="Twitch TTS" width="420"><br>
+      <strong>Twitch TTS</strong><br>
+      <sub>Chat TTS до пяти каналов</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR setup" width="420"><br>
+      <strong>Local ASR setup</strong><br>
+      <sub>Компоненты ORT / CUDA и модели Parakeet</sub>
     </td>
   </tr>
 </table>
 
-Остальные экраны (Word Replace, Tools & Data, Help, компоненты Local ASR): [Wiki](./docs/WIKI.ru.md).
+Остальные экраны (Word Replace, Tools & Data, More/Help, Local ASR test bench): [Wiki](./docs/WIKI.ru.md).
 
 ## Системные требования
 
@@ -131,12 +145,12 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 
 ## Быстрый старт
 
-1. Установите из `VoiceSub_0.6.0_x64-setup.exe` (или последней сборки в папке релиза).
-2. Запустите **VoiceSub.exe** — dashboard откроется на `http://127.0.0.1:8765/`.
+1. Установите из `Kagevi Subtitles_0.6.1_x64-setup.exe` (или последней сборки в папке релиза).
+2. Запустите **Kagevi Subtitles.exe** — dashboard откроется на `http://127.0.0.1:8765/`.
 3. В OBS добавьте **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. При необходимости настройте перевод и стиль субтитров, нажмите **Start**.
 5. Выберите распознавание:
-   - **Web Speech** — держите окно browser worker открытым и видимым (разрешение микрофона выдаётся там).
+   - **Web Speech** — не сворачивайте окно Chrome worker (можно перекрывать другими окнами; разрешение микрофона выдаётся там).
    - **Local ASR** — **Модули → Local ASR**, завершите setup до `ready`, выберите Local ASR на Эфире, затем Start.
 
 Пошаговый гайд: [Wiki (RU)](./docs/WIKI.ru.md) · [Wiki (EN)](./docs/WIKI.en.md)
@@ -165,13 +179,11 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 | `logs/` | `core.log`, `runtime-events.log`, `session-latest.jsonl` |
 | `bin/fonts/` | Шрифты субтитров |
 
-SST `config.json` можно импортировать при первом запуске или из настроек. Legacy `local` / experimental → `browser_google`; `local_parakeet` сохраняется. Подробности: [Архитектура §7](./docs/TECHNICAL_ARCHITECTURE.md).
-
 ## Troubleshooting
 
 | Симптом | Что проверить |
 | --- | --- |
-| Нет субтитров | Нажат **Start**; открыт worker (Web Speech) **или** Local ASR ready + выбран mic |
+| Нет субтитров | Нажат **Start**; Chrome worker не свёрнут (Web Speech) **или** Local ASR ready + выбран mic |
 | Есть исходник, нет перевода | Перевод включён; активна хотя бы одна линия; credentials провайдера |
 | Пустой OBS | Browser Source на `/overlay`; видимость во вкладке «Субтитры»; после обновления — reload source |
 | Текст не исчезает после TTL / Stop | Обновите сборку; перезагрузите Browser Source |
@@ -204,11 +216,11 @@ npm run test:frontend
 | Слой | Технологии |
 | --- | --- |
 | Core | Rust workspace (`crates/voicesub-*`) + Axum HTTP/WS |
-| Shell | Tauri 2 → `VoiceSub.exe` (NSIS) |
+| Shell | Tauri 2 → `Kagevi Subtitles.exe` (NSIS) |
 | Dashboard | Svelte 5 + Vite → `bin/dashboard/` |
 | Worker | Svelte 5 → `bin/worker/` |
 | Overlay | Vanilla HTML/JS → `bin/overlay/` |
-| TTS | Svelte + Rust service + embedded Python sidecar |
+| TTS | Svelte + Rust service + встроенный runtime `google_tts_fetch.exe` |
 | Local ASR | Svelte + `voicesub-asr-local` + ONNX Runtime (lazy download) |
 
 Node.js — **только на этапе сборки**, не в установщике.
@@ -232,7 +244,7 @@ Tauri `beforeBuildCommand`: `npm run build`. В bundle: `bin/dashboard`, `overla
 
 `src-tauri/` — тонкая IPC-оболочка, без domain logic.
 
-Источник версии: `voicesub-types::PROJECT_VERSION` = **`0.6.0`**.
+Источник версии: `voicesub-types::PROJECT_VERSION` в `crates/voicesub-types/src/version.rs` — bump только там, затем `npm run version:sync` (также из `npm run build`).
 
 Полный справочник: [Technical Architecture](./docs/TECHNICAL_ARCHITECTURE.md).
 
@@ -241,3 +253,5 @@ Tauri `beforeBuildCommand`: `npm run build`. В bundle: `bin/dashboard`, `overla
 ## License
 
 [MIT](./LICENSE) © 2026 Kiriuru
+
+Сторонние модели и рантаймы (NVIDIA Parakeet — **CC-BY-4.0**, ONNX Runtime, Silero VAD, Sonic/libsonic и др.) остаются под своими лицензиями — см. [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

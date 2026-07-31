@@ -18,6 +18,7 @@ fn sample_payload() -> SubtitlePayloadEvent {
             visible: true,
             success: true,
             error: None,
+            is_live_draft: false,
         },
         SubtitleLineItem {
             kind: "translation".into(),
@@ -31,6 +32,7 @@ fn sample_payload() -> SubtitlePayloadEvent {
             visible: true,
             success: true,
             error: None,
+            is_live_draft: false,
         },
         SubtitleLineItem {
             kind: "translation".into(),
@@ -44,6 +46,7 @@ fn sample_payload() -> SubtitlePayloadEvent {
             visible: true,
             success: true,
             error: None,
+            is_live_draft: false,
         },
     ];
     SubtitlePayloadEvent {

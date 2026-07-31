@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    voicesub_app_lib::run();
+    kagevi_subtitles_lib::run();
 }

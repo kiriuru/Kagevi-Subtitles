@@ -49,6 +49,7 @@ impl TranslationProvider for FakeProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
+        supports_live_partial: true,
         }
     }
 
@@ -88,6 +89,7 @@ impl TranslationProvider for FlakyProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
+        supports_live_partial: true,
         }
     }
 
@@ -117,6 +119,7 @@ impl TranslationProvider for UnreliableProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
+        supports_live_partial: true,
         }
     }
 
@@ -150,6 +153,7 @@ fn stub_line(target_lang: &str) -> PreparedLine {
         provider_group: "stable".into(),
         experimental: false,
         local_provider: false,
+        supports_live_partial: true,
         label: target_lang.to_ascii_uppercase(),
     }
 }
@@ -311,6 +315,7 @@ async fn translate_target_cache_key_includes_provider_name() {
         provider_group: "stable".into(),
         experimental: false,
         local_provider: false,
+        supports_live_partial: true,
         label: "FR".into(),
     };
     let openai_line = PreparedLine {
@@ -466,6 +471,7 @@ async fn apply_live_settings_propagates_cache_toggle() {
         provider_group: "stable".into(),
         experimental: false,
         local_provider: false,
+        supports_live_partial: true,
         label: "FR".into(),
     };
     let (item, _) = engine
@@ -517,6 +523,7 @@ async fn first_apply_live_settings_preserves_persisted_cache() {
         provider_group: "stable".into(),
         experimental: false,
         local_provider: false,
+        supports_live_partial: true,
         label: "FR".into(),
     };
     let (item, _) = engine
@@ -562,6 +569,7 @@ async fn translate_with_retry_retries_on_retryable_failure_and_then_succeeds() {
         provider_group: "stable".into(),
         experimental: false,
         local_provider: false,
+        supports_live_partial: true,
         label: "FR".into(),
     };
 
@@ -602,6 +610,7 @@ async fn translate_with_retry_does_not_retry_non_retryable_failure() {
         provider_group: "stable".into(),
         experimental: false,
         local_provider: false,
+        supports_live_partial: true,
         label: "FR".into(),
     };
 

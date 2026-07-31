@@ -1,4 +1,4 @@
-/** VoiceSub-only locale overrides merged after SST locale exports. */
+/** Kagevi Subtitles-only locale overrides merged after SST locale exports. */
 
 import { localAsrLocaleSupplement } from "./local-asr-locale-supplement.mjs";
 
@@ -207,11 +207,25 @@ export const voicesubNewKeysEn = {
   "local_asr.realtime.save": "Save realtime settings",
   "local_asr.vad.title": "Voice activity (VAD)",
   "local_asr.vad.enabled": "VAD enabled",
+  "local_asr.vad.backend": "VAD backend",
+  "local_asr.vad.backend.webrtc": "WebRTC (built-in)",
+  "local_asr.vad.backend.silero": "Silero (optional ONNX)",
+  "local_asr.vad.backend.help":
+    "Silero is better in noisy rooms; download ~2 MB once. Falls back to WebRTC if the model is missing.",
+  "local_asr.vad.silero_threshold": "Silero speech threshold",
+  "local_asr.vad.silero.installed": "Silero VAD model is installed.",
+  "local_asr.vad.silero.missing": "Silero VAD model is not downloaded yet.",
+  "local_asr.vad.silero.download": "Download Silero VAD",
+  "local_asr.vad.silero.delete": "Remove Silero VAD",
   "local_asr.vad.speech_threshold": "Speech RMS threshold",
   "local_asr.vad.min_speech_ms": "Min speech (ms)",
   "local_asr.vad.min_silence_ms": "Min silence (ms)",
   "local_asr.vad.silence_hold_ms": "Silence hold (ms)",
   "local_asr.vad.speech_pad_ms": "Speech pad (ms)",
+  "local_asr.vad.text_hold_enabled": "Text-aware silence hold",
+  "local_asr.vad.text_hold_extra_ms": "Extra silence when incomplete (ms)",
+  "local_asr.vad.text_hold.help":
+    "If the latest partial looks unfinished (e.g. ends with “and”, “и”, or a Japanese particle), wait longer before finalizing.",
   "local_asr.vad.max_segment_ms": "Max segment (ms)",
   "local_asr.vad.vad_mode": "WebRTC VAD mode",
   "local_asr.vad.vad_mode.quality": "Quality (0)",
@@ -235,7 +249,7 @@ export const voicesubNewKeysEn = {
   "local_asr.recognition.hallucination_cooldown_ms": "Hallucination cooldown (ms)",
   "local_asr.inference.loading": "Loading model into memory…",
   "local_asr.error.network":
-    "Could not reach VoiceSub runtime. Check that the app is running and reload this window.",
+    "Could not reach Kagevi Subtitles runtime. Check that the app is running and reload this window.",
   "local_asr.alert.error_title": "Error",
   "local_asr.alert.warn_title": "Warning",
   "local_asr.alert.info_title": "Notice",
@@ -281,6 +295,10 @@ export const voicesubNewKeysEn = {
   "translation.latest.show": "Show translated results",
   "translation.latest.hidden":
     "Translated results are hidden. Turn the toggle on to monitor live output.",
+  "translation.live_partial.enable":
+    "Realtime translation (classic MT only)",
+  "translation.live_partial.hint":
+    "Sends throttled ASR partials to classic MT providers so translations appear while you speak. LLM lines still wait for the final. Uses more API quota; off by default.",
   "worker.advanced.title": "Advanced",
   "settings.fonts.eyebrow": "Resources",
   "settings.fonts.title": "Font catalog",
@@ -365,7 +383,7 @@ export const voicesubNewKeysEn = {
     "Competitive HUD: Exo 2 / Oswald white with a thin cyan outline — sharp, no heavy neon bloom.",
   "style.preset.desc.dual_caption_modern":
     "Calm dual-language plate: warm gold source + soft sky translation on a shared dark bar for bilingual streams.",
-  "updates.banner.message": "VoiceSub {latest} is available — you are on {current}.",
+  "updates.banner.message": "Kagevi Subtitles {latest} is available — you are on {current}.",
   "updates.banner.close": "Close",
   "updates.banner.download": "Download",
   "translation.target_lang.ar": "Arabic",
@@ -428,7 +446,7 @@ export const voicesubNewKeysEn = {
   "nav.subtitles.desc.style": "Fonts, colors, and subtitle style presets",
   "nav.modules": "Modules",
   "nav.modules.title": "Optional modules",
-  "nav.modules.hint": "Sidecar windows that extend VoiceSub beyond live subtitles.",
+  "nav.modules.hint": "Sidecar windows that extend Kagevi Subtitles beyond live subtitles.",
   "nav.more": "More",
   "nav.back": "Back",
   "nav.rail.label": "Main navigation",
@@ -468,15 +486,24 @@ export const voicesubNewKeysEn = {
     "Project: {project} · System: {system} · Fallback: {fallback} · Total: {total}",
   "style.ui_theme.font": "UI font",
   "style.ui_theme.font.default": "Default",
-  "credits.open": "About VoiceSub",
-  "credits.title": "About VoiceSub",
+  "credits.open": "About Kagevi Subtitles",
+  "credits.title": "About Kagevi Subtitles",
   "credits.author.heading": "Author",
   "credits.author.name": "Kiriuru",
   "credits.author.role": "Creator & maintainer",
-  "credits.author.note": "Built VoiceSub as a local-first subtitle tool for streamers.",
+  "credits.author.note": "Built Kagevi Subtitles as a local-first subtitle tool for streamers.",
   "credits.product.heading": "Product",
   "credits.product.tagline": "Live translated subtitles for streamers.",
   "credits.product.stack": "Stack: Rust · Tauri · Svelte · OBS overlay.",
+  "credits.product.license": "Application license: MIT © 2026 Kiriuru.",
+  "credits.third_party.heading": "Third-party",
+  "credits.third_party.summary":
+    "Optional Local ASR downloads and some runtimes keep their own licenses.",
+  "credits.third_party.parakeet":
+    "NVIDIA Parakeet ASR models (NeMo / Suno.ai) — CC-BY-4.0, via ONNX exports.",
+  "credits.third_party.runtimes":
+    "Also: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0), and others.",
+  "credits.support": "Support",
   "credits.github": "Open GitHub",
 };
 
@@ -486,14 +513,21 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "Нажмите Старт. После смены языка Web Speech используйте Стоп/Старт.",
     "overview.recognition.mode.label": "Движок распознавания",
-    "document.title.dashboard": "VoiceSub",
-    "header.title": "VoiceSub",
-    "updates.banner.message": "Доступна VoiceSub {latest} — у вас {current}.",
+    "overview.recognition.hint.browser_google.warning":
+      "Держите окно worker видимым во время распознавания. Свёрнутые или полностью скрытые окна браузер троттлит — Web Speech может зависнуть или потерять звук. Browser Speech открывает `/google-asr` в Google Chrome с изолированным профилем. Сохраните настройки и заново откройте worker, если меняли параметры распознавания.",
+    "overview.recognition.hint.local_parakeet.summary": "Заметки Local ASR",
+    "overview.recognition.hint.local_parakeet.info":
+      "Использует модель Parakeet ONNX из модуля Local ASR. Execution provider и микрофон настраиваются в окне модуля.",
+    "overview.recognition.local_not_ready":
+      "Сначала завершите настройку модуля Local ASR на вкладке «Модули», затем выбирайте офлайн-распознавание.",
+    "document.title.dashboard": "Kagevi Subtitles",
+    "header.title": "Kagevi Subtitles",
+    "updates.banner.message": "Доступна Kagevi Subtitles {latest} — у вас {current}.",
     "updates.banner.close": "Закрыть",
     "updates.banner.download": "Скачать",
     "save.status.saved": "Настройки сохранены.",
     "obs.overlay.instructions":
-      "Добавьте этот URL как OBS Browser Source. Обновите URL при смене bind-адреса VoiceSub.",
+      "Добавьте этот URL как OBS Browser Source. Обновите URL при смене bind-адреса Kagevi Subtitles.",
     "subtitles.display_order": "Порядок строк субтитров",
     "settings.fonts.eyebrow": "Ресурсы",
     "settings.fonts.title": "Каталог шрифтов",
@@ -511,7 +545,7 @@ const voicesubExtrasLocalized = {
     "translation.dispatcher.queue_max_size": "Максимум задач в очереди",
     "translation.dispatcher.max_concurrent_jobs": "Максимум параллельных задач",
     "translation.dispatcher.note":
-      "Увеличьте таймаут для медленных провайдеров. Для LM Studio / Ollama VoiceSub сам даёт не меньше 120 с (JIT-загрузка модели). Больше параллелизма — больше расход API.",
+      "Увеличьте таймаут для медленных провайдеров. Для LM Studio / Ollama Kagevi Subtitles сам даёт не меньше 120 с (JIT-загрузка модели). Больше параллелизма — больше расход API.",
     "translation.provider_limits.eyebrow": "Лимиты провайдеров",
     "translation.provider_limits.title": "Лимиты диспетчера по провайдерам",
     "translation.provider_limits.max_concurrent_targets": "Макс. параллельных целей",
@@ -562,6 +596,10 @@ const voicesubExtrasLocalized = {
     "translation.latest.show": "Показывать переведённый результат",
     "translation.latest.hidden":
       "Блок скрыт. Включите переключатель, чтобы видеть live-вывод перевода.",
+    "translation.live_partial.enable":
+      "realtime-перевод (только классический MT)",
+    "translation.live_partial.hint":
+      "Отправляет throttled ASR-partials классическим MT-провайдерам, чтобы перевод появлялся во время речи. LLM-линии по-прежнему ждут final. Расходует больше квоты API; по умолчанию выкл.",
     "tools.tts.eyebrow": "Озвучивание",
     "tools.tts.title": "Модуль TTS",
     "tools.tts.description":
@@ -764,11 +802,25 @@ const voicesubExtrasLocalized = {
     "local_asr.realtime.save": "Сохранить realtime",
     "local_asr.vad.title": "Детектор речи (VAD)",
     "local_asr.vad.enabled": "VAD включён",
+    "local_asr.vad.backend": "Движок VAD",
+    "local_asr.vad.backend.webrtc": "WebRTC (встроенный)",
+    "local_asr.vad.backend.silero": "Silero (опциональный ONNX)",
+    "local_asr.vad.backend.help":
+      "Silero лучше в шуме; разовая загрузка ~2 МБ. Если модели нет — откат на WebRTC.",
+    "local_asr.vad.silero_threshold": "Порог Silero",
+    "local_asr.vad.silero.installed": "Модель Silero VAD установлена.",
+    "local_asr.vad.silero.missing": "Модель Silero VAD ещё не скачана.",
+    "local_asr.vad.silero.download": "Скачать Silero VAD",
+    "local_asr.vad.silero.delete": "Удалить Silero VAD",
     "local_asr.vad.speech_threshold": "Порог RMS речи",
     "local_asr.vad.min_speech_ms": "Мин. речь (мс)",
     "local_asr.vad.min_silence_ms": "Мин. тишина (мс)",
     "local_asr.vad.silence_hold_ms": "Удержание тишины (мс)",
     "local_asr.vad.speech_pad_ms": "Отступ речи (мс)",
+    "local_asr.vad.text_hold_enabled": "Учёт незавершённой фразы",
+    "local_asr.vad.text_hold_extra_ms": "Доп. тишина при незавершённой (мс)",
+    "local_asr.vad.text_hold.help":
+      "Если последний partial выглядит незаконченным (например, заканчивается на «и», «and» или японскую частицу), ждать дольше перед финалом.",
     "local_asr.vad.max_segment_ms": "Макс. сегмент (мс)",
     "local_asr.vad.vad_mode": "Режим WebRTC VAD",
     "local_asr.vad.vad_mode.quality": "Качество (0)",
@@ -791,7 +843,7 @@ const voicesubExtrasLocalized = {
     "local_asr.recognition.hallucination_min_chars": "Мин. символов в тишине",
     "local_asr.recognition.hallucination_cooldown_ms": "Cooldown галлюцинаций (мс)",
     "local_asr.error.network":
-      "Не удалось связаться с runtime VoiceSub. Проверьте, что приложение запущено, и перезагрузите окно.",
+      "Не удалось связаться с runtime Kagevi Subtitles. Проверьте, что приложение запущено, и перезагрузите окно.",
     "local_asr.alert.error_title": "Ошибка",
     "local_asr.alert.warn_title": "Предупреждение",
     "local_asr.alert.info_title": "Уведомление",
@@ -895,7 +947,7 @@ const voicesubExtrasLocalized = {
     "nav.subtitles.desc.style": "Шрифты, цвета и пресеты стиля субтитров",
     "nav.modules": "Модули",
     "nav.modules.title": "Дополнительные модули",
-    "nav.modules.hint": "Отдельные окна, расширяющие VoiceSub помимо live-субтитров.",
+    "nav.modules.hint": "Отдельные окна, расширяющие Kagevi Subtitles помимо live-субтитров.",
     "nav.more": "Ещё",
     "nav.back": "Назад",
     "nav.rail.label": "Основная навигация",
@@ -976,16 +1028,25 @@ const voicesubExtrasLocalized = {
       "Проект: {project} · Система: {system} · Запасные: {fallback} · Всего: {total}",
     "style.ui_theme.font": "Шрифт UI",
     "style.ui_theme.font.default": "По умолчанию",
-    "credits.open": "О VoiceSub",
-    "credits.title": "О VoiceSub",
+    "credits.open": "О Kagevi Subtitles",
+    "credits.title": "О Kagevi Subtitles",
     "credits.author.heading": "Автор",
     "credits.author.name": "Kiriuru",
     "credits.author.role": "Автор и мейнтейнер",
     "credits.author.note":
-      "VoiceSub создан как локальный инструмент субтитров для стримеров.",
+      "Kagevi Subtitles создан как локальный инструмент субтитров для стримеров.",
     "credits.product.heading": "Программа",
     "credits.product.tagline": "Живые переведённые субтитры для стримеров.",
     "credits.product.stack": "Стек: Rust · Tauri · Svelte · OBS overlay.",
+    "credits.product.license": "Лицензия приложения: MIT © 2026 Kiriuru.",
+    "credits.third_party.heading": "Сторонние компоненты",
+    "credits.third_party.summary":
+      "Опциональные загрузки Local ASR и часть рантаймов — под своими лицензиями.",
+    "credits.third_party.parakeet":
+      "Модели NVIDIA Parakeet ASR (NeMo / Suno.ai) — CC-BY-4.0, через ONNX-экспорты.",
+    "credits.third_party.runtimes":
+      "Также: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0) и др.",
+    "credits.support": "Поддержать",
     "credits.github": "Открыть GitHub",
   },
   ja: {
@@ -993,14 +1054,25 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "開始を押します。Web Speech の認識言語を変更した後は停止してから再開してください。",
     "overview.recognition.mode.label": "認識エンジン",
-    "document.title.dashboard": "VoiceSub",
-    "header.title": "VoiceSub",
-    "updates.banner.message": "VoiceSub {latest} が利用可能です（現在 {current}）。",
+    "overview.recognition.hint.browser_google.warning":
+      "認識中はワーカーウィンドウを表示したままにしてください。最小化や完全な非表示はブラウザにスロットルされ、Web Speech が停止したり音声が落ちたりします。Browser Speech は隔離プロファイルの Google Chrome で `/google-asr` を開きます。認識設定を変えたら保存し、ワーカーを開き直してください。",
+    "overview.recognition.hint.local_parakeet.summary": "Local ASR の注意",
+    "overview.recognition.hint.local_parakeet.info":
+      "Local ASR モジュールの Parakeet ONNX モデルを使います。実行プロバイダーとマイクはモジュールウィンドウで設定します。",
+    "overview.recognition.local_not_ready":
+      "オフライン認識を選ぶ前に、モジュールタブで Local ASR のセットアップを完了してください。",
+    "browser_asr.error.audio_capture_retry":
+      "Web Speech の audio-capture エラー: マイクストリームが失われました — マイクを再取得して認識を再試行します。",
+    "log.desktop.launcher_active":
+      "[desktop] desktop launcher 有効 | startup={startup} | remote_role={remoteRole}",
+    "document.title.dashboard": "Kagevi Subtitles",
+    "header.title": "Kagevi Subtitles",
+    "updates.banner.message": "Kagevi Subtitles {latest} が利用可能です（現在 {current}）。",
     "updates.banner.close": "閉じる",
     "updates.banner.download": "ダウンロード",
     "save.status.saved": "設定を保存しました。",
     "obs.overlay.instructions":
-      "この URL を OBS Browser Source として追加してください。VoiceSub の bind アドレスが変わったら URL を更新してください。",
+      "この URL を OBS Browser Source として追加してください。Kagevi Subtitles の bind アドレスが変わったら URL を更新してください。",
     "subtitles.display_order": "字幕行の表示順",
     "settings.fonts.eyebrow": "リソース",
     "settings.fonts.title": "フォントカタログ",
@@ -1066,6 +1138,10 @@ const voicesubExtrasLocalized = {
     "translation.latest.show": "翻訳結果を表示",
     "translation.latest.hidden":
       "翻訳結果は非表示です。ライブ出力を監視するにはトグルをオンにしてください。",
+    "translation.live_partial.enable":
+      "リアルタイム翻訳（クラシック MT のみ）",
+    "translation.live_partial.hint":
+      "スロットルされた ASR partial をクラシック MT に送り、発話中に翻訳を表示します。LLM 行は従来どおり final を待ちます。API クォータを多く使います。既定はオフです。",
     "worker.force_finalization_timeout_ms": "強制 final 前のアイドルタイムアウト (ms)",
     "worker.force_finalization_timeout_ms.note":
       "partial 更新がない状態でどれだけ待ってから、現在のライブテキストを final セグメントとして送るか。",
@@ -1262,7 +1338,7 @@ const voicesubExtrasLocalized = {
     "nav.subtitles.desc.style": "フォント、色、字幕スタイルプリセット",
     "nav.modules": "モジュール",
     "nav.modules.title": "オプションモジュール",
-    "nav.modules.hint": "ライブ字幕を超えて VoiceSub を拡張するサイドカーウィンドウ。",
+    "nav.modules.hint": "ライブ字幕を超えて Kagevi Subtitles を拡張するサイドカーウィンドウ。",
     "nav.more": "その他",
     "nav.back": "戻る",
     "nav.rail.label": "メインナビゲーション",
@@ -1302,59 +1378,68 @@ const voicesubExtrasLocalized = {
     "style.preset.editing_custom": "カスタムプリセット「{name}」を編集しています。",
     "style.preset.editing_builtin": "組み込みプリセット「{name}」を編集しています。",
     "style.preset.desc.clean_default":
-      "Broadcast baseline: Inter + Noto Sans, crisp white, light outline and soft shadow — OBS-safe transparent plate.",
+      "配信の基本スタイル: Inter + Noto Sans、白い文字、細い縁取りと柔らかい影 — OBS 向けの透明プレート。",
     "style.preset.desc.streamer_bold":
-      "Gaming HUD: Oswald cyan with a restrained magenta halo; Montserrat covers Cyrillic without losing the neon punch.",
+      "ゲーム HUD: Oswald のシアンに控えめなマゼンタのハロー。キリルは Montserrat でネオン感を保ちます。",
     "style.preset.desc.dual_tone":
-      "Slot-colored captions: Lato/Noto body with high-contrast fills per language so source and translations separate at a glance.",
+      "スロット色分け: Lato/Noto 本体と高コントラストの塗り分けで原文と翻訳が一目で区別できます。",
     "style.preset.desc.compact_overlay":
-      "YouTube-style caption bar: Noto/Source Sans on a dense near-opaque plate — small footprint, maximum legibility.",
+      "YouTube 風のキャプションバー: Noto/Source Sans をほぼ不透明なプレートに — 省スペースで読みやすく。",
     "style.preset.desc.soft_shadow":
-      "Airy Comfortaa with a wide diffused shadow and no outline — soft presence that still reads on busy gameplay.",
+      "軽やかな Comfortaa と広い拡散影、縁取りなし — 忙しいゲーム画面でも存在感を保てます。",
     "style.preset.desc.anime_stream":
-      "Mochiy Pop One for Latin/Japanese + Comfortaa Bold for Cyrillic — classic anime fansub caption: white fill, crisp violet outline, soft dark drop shadow.",
+      "ラテン/日本語は Mochiy Pop One、キリルは Comfortaa Bold — クラシックなアニメ字幕: 白塗り、紫の縁取り、柔らかい影。",
     "style.preset.desc.accessibility_high_contrast":
-      "WCAG AAA solid caption box: pure white Montserrat Bold on fully opaque black — the only solid ink plate in the set.",
+      "WCAG AAA のソリッド枠: 真っ黒背景に純白の Montserrat Bold — セット唯一の完全不透明インクプレート。",
     "style.preset.desc.dark_cinema":
-      "Letterboxed cinema look: Playfair ivory on a warm sepia plate; translation slot slightly smaller for hierarchy.",
+      "レターボックス風シネマ: 暖かいセピア板に Playfair のアイボリー。翻訳枠は階層のためやや小さめ。",
     "style.preset.desc.meeting_soft":
-      "Warm parchment paper: Merriweather / Noto dark ink on a translucent cream plate — soft editorial podcast look, not a dark box.",
+      "暖かい羊皮紙: Merriweather / Noto の濃いインクを半透明クリーム板に — 暗い箱ではなく編集風ポッドキャスト調。",
     "style.preset.desc.retro_terminal":
-      "Amber phosphor CRT: VT323 for Latin terminal texture, IBM Plex Serif for Cyrillic — dense near-black plate, restrained glow.",
+      "アンバー CRT: ラテンは VT323、キリルは IBM Plex Serif — 濃いほぼ黒の板と控えめなグロー。",
     "style.preset.desc.fallout_pipboy":
-      "Pip-Boy phosphor green: Share Tech Mono for CRT Latin, Ubuntu Mono + IBM Plex Mono for Cyrillic — deep CRT plate, controlled bloom.",
+      "Pip-Boy グリーン: CRT ラテンは Share Tech Mono、キリルは Ubuntu Mono + IBM Plex Mono — 深い板と制御されたブルーム。",
     "style.preset.desc.comic_burst":
-      "Comic SFX energy: Bangers yellow with a chunky black outline; Comic Relief Bold covers Cyrillic.",
+      "コミック SFX: Bangers の黄色と太い黒縁。キリルは Comic Relief Bold。",
     "style.preset.desc.cyberpunk_neon":
-      "Sci-fi HUD: Orbitron magenta with a cyan halo on a deep navy plate; Exo 2 covers Cyrillic geometry.",
+      "SF HUD: 濃紺板に Orbitron マゼンタとシアンのハロー。キリルの幾何学は Exo 2。",
     "style.preset.desc.noir_typewriter":
-      "1940s dossier captions: Special Elite for Latin typewriter texture, IBM Plex Mono for Cyrillic — warm ivory on deep ink, wide tracking, soft fade-in.",
+      "1940 年代の書類風: ラテンは Special Elite、キリルは IBM Plex Mono — 濃いインクに象牙色、広いトラッキング。",
     "style.preset.desc.vlog_pastel":
-      "Lifestyle pill: Poppins on a warm pastel plate with stronger contrast for bright vlog footage.",
+      "ライフスタイル風ピル: 暖かいパステル板の Poppins。明るい映像でもコントラストを確保。",
     "style.preset.desc.glass_frost":
-      "Frosted ice glass: pale translucent ice plate (~44% opacity) with airy Raleway — dark ice-ink text floats on milky glass, not a blue box.",
+      "霜ガラス: 薄い半透明の氷板（不透明度約 44%）と軽やかな Raleway — 青い箱ではなく乳白色ガラス上の濃いインク。",
     "style.preset.desc.twitch_lower_third":
-      "Streamer lower-third chrome: condensed Oswald / Exo on saturated Twitch purple (#9146FF), left-aligned with magenta edge glow.",
+      "配信ロワーサード: 濃い Twitch パープル (#9146FF) に凝縮 Oswald / Exo、左寄せとマゼンタの縁光。",
     "style.preset.desc.warm_amber":
-      "Night-stream warmth: Open Sans/Noto cream fill with a soft brown shadow — cozy Just Chatting energy.",
+      "夜配信の暖かさ: Open Sans/Noto のクリーム塗りと柔らかい茶影 — くつろいだ Just Chatting 感。",
     "style.preset.desc.esports_hud":
-      "Competitive HUD: Exo 2 / Oswald white with a thin cyan outline — sharp, no heavy neon bloom.",
+      "競技 HUD: Exo 2 / Oswald の白に細いシアン縁取り — シャープで重いネオンなし。",
     "style.preset.desc.dual_caption_modern":
-      "Calm dual-language plate: warm gold source + soft sky translation on a shared dark bar for bilingual streams.",
+      "落ち着いた二言語バー: 暖かいゴールドの原文とソフトなスカイの翻訳を共有の暗い帯に。",
     "settings.fonts.summary":
       "プロジェクト: {project} · システム: {system} · フォールバック: {fallback} · 合計: {total}",
     "style.ui_theme.font": "UIフォント",
     "style.ui_theme.font.default": "デフォルト",
-    "credits.open": "VoiceSub について",
-    "credits.title": "VoiceSub について",
+    "credits.open": "Kagevi Subtitles について",
+    "credits.title": "Kagevi Subtitles について",
     "credits.author.heading": "作者",
     "credits.author.name": "Kiriuru",
     "credits.author.role": "作者 / メンテナー",
     "credits.author.note":
-      "ストリーマー向けのローカル字幕ツールとして VoiceSub を開発。",
+      "ストリーマー向けのローカル字幕ツールとして Kagevi Subtitles を開発。",
     "credits.product.heading": "製品",
     "credits.product.tagline": "配信者向けリアルタイム翻訳字幕。",
     "credits.product.stack": "構成: Rust · Tauri · Svelte · OBS overlay。",
+    "credits.product.license": "アプリライセンス: MIT © 2026 Kiriuru。",
+    "credits.third_party.heading": "サードパーティ",
+    "credits.third_party.summary":
+      "Local ASR の任意ダウンロードと一部ランタイムは独自ライセンスです。",
+    "credits.third_party.parakeet":
+      "NVIDIA Parakeet ASR（NeMo / Suno.ai）— CC-BY-4.0（ONNX エクスポート経由）。",
+    "credits.third_party.runtimes":
+      "ほか: ONNX Runtime（MIT）、Silero VAD（MIT）、Sonic/libsonic（Apache-2.0）など。",
+    "credits.support": "支援する",
     "credits.github": "GitHub を開く",
   },
   ko: {
@@ -1362,14 +1447,25 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "시작을 누르세요. Web Speech 인식 언어를 변경한 뒤에는 중지 후 다시 시작하세요.",
     "overview.recognition.mode.label": "인식 엔진",
-    "document.title.dashboard": "VoiceSub",
-    "header.title": "VoiceSub",
-    "updates.banner.message": "VoiceSub {latest}을(를) 사용할 수 있습니다(현재 {current}).",
+    "overview.recognition.hint.browser_google.warning":
+      "인식 중에는 워커 창을 화면에 보이게 두세요. 최소화하거나 완전히 숨기면 브라우저가 스로틀해 Web Speech가 멈추거나 오디오가 끊길 수 있습니다. Browser Speech는 격리 프로필의 Google Chrome에서 `/google-asr`를 엽니다. 인식 옵션을 바꿨다면 저장한 뒤 워커를 다시 여세요.",
+    "overview.recognition.hint.local_parakeet.summary": "Local ASR 참고",
+    "overview.recognition.hint.local_parakeet.info":
+      "Local ASR 모듈의 Parakeet ONNX 모델을 사용합니다. 실행 프로바이더와 마이크는 모듈 창에서 설정합니다.",
+    "overview.recognition.local_not_ready":
+      "오프라인 인식을 선택하기 전에 모듈 탭에서 Local ASR 설정을 완료하세요.",
+    "browser_asr.error.audio_capture_retry":
+      "Web Speech audio-capture 오류: 마이크 스트림이 끊겼습니다 — 마이크를 다시 잡고 인식을 재시도합니다.",
+    "log.desktop.launcher_active":
+      "[desktop] desktop launcher 활성 | startup={startup} | remote_role={remoteRole}",
+    "document.title.dashboard": "Kagevi Subtitles",
+    "header.title": "Kagevi Subtitles",
+    "updates.banner.message": "Kagevi Subtitles {latest}을(를) 사용할 수 있습니다(현재 {current}).",
     "updates.banner.close": "닫기",
     "updates.banner.download": "다운로드",
     "save.status.saved": "설정을 저장했습니다.",
     "obs.overlay.instructions":
-      "이 URL을 OBS Browser Source로 추가하세요. VoiceSub bind 주소가 바뀌면 URL을 업데이트하세요.",
+      "이 URL을 OBS Browser Source로 추가하세요. Kagevi Subtitles bind 주소가 바뀌면 URL을 업데이트하세요.",
     "subtitles.display_order": "자막 줄 표시 순서",
     "settings.fonts.eyebrow": "리소스",
     "settings.fonts.title": "글꼴 카탈로그",
@@ -1435,6 +1531,10 @@ const voicesubExtrasLocalized = {
     "translation.latest.show": "번역 결과 표시",
     "translation.latest.hidden":
       "번역 결과가 숨겨져 있습니다. 라이브 출력을 보려면 토글을 켜세요.",
+    "translation.live_partial.enable":
+      "실시간 번역 (클래식 MT만)",
+    "translation.live_partial.hint":
+      "스로틀된 ASR partial을 클래식 MT로 보내 말하는 동안 번역이 보이게 합니다. LLM 라인은 계속 final을 기다립니다. API 할당량을 더 쓰며 기본값은 꺼짐입니다.",
     "worker.force_finalization_timeout_ms": "강제 final 전 유휴 타임아웃 (ms)",
     "worker.force_finalization_timeout_ms.note":
       "partial 업데이트 없이 얼마나 기다린 뒤 현재 라이브 텍스트를 final 세그먼트로 보낼지.",
@@ -1631,7 +1731,7 @@ const voicesubExtrasLocalized = {
     "nav.subtitles.desc.style": "글꼴, 색상, 자막 스타일 프리셋",
     "nav.modules": "모듈",
     "nav.modules.title": "선택 모듈",
-    "nav.modules.hint": "라이브 자막을 넘어 VoiceSub를 확장하는 별도 창입니다.",
+    "nav.modules.hint": "라이브 자막을 넘어 Kagevi Subtitles를 확장하는 별도 창입니다.",
     "nav.more": "더보기",
     "nav.back": "뒤로",
     "nav.rail.label": "메인 탐색",
@@ -1670,59 +1770,68 @@ const voicesubExtrasLocalized = {
     "style.preset.custom_description": "사용자가 만든 로컬 자막 스타일.",
     "style.preset.editing_builtin": "내장 프리셋 \"{name}\" 편집 중.",
     "style.preset.desc.clean_default":
-      "Broadcast baseline: Inter + Noto Sans, crisp white, light outline and soft shadow — OBS-safe transparent plate.",
+      "방송 기본 스타일: Inter + Noto Sans, 또렷한 흰색, 얇은 외곽선과 부드러운 그림자 — OBS용 투명 플레이트.",
     "style.preset.desc.streamer_bold":
-      "Gaming HUD: Oswald cyan with a restrained magenta halo; Montserrat covers Cyrillic without losing the neon punch.",
+      "게임 HUD: Oswald 시안에 절제된 마젠타 후광. 키릴은 Montserrat로 네온감을 유지합니다.",
     "style.preset.desc.dual_tone":
-      "Slot-colored captions: Lato/Noto body with high-contrast fills per language so source and translations separate at a glance.",
+      "슬롯 색 구분: Lato/Noto 본문과 고대비 채우기로 원문과 번역이 한눈에 구분됩니다.",
     "style.preset.desc.compact_overlay":
-      "YouTube-style caption bar: Noto/Source Sans on a dense near-opaque plate — small footprint, maximum legibility.",
+      "YouTube 스타일 캡션 바: Noto/Source Sans를 거의 불투명한 플레이트에 — 작지만 가독성 최대.",
     "style.preset.desc.soft_shadow":
-      "Airy Comfortaa with a wide diffused shadow and no outline — soft presence that still reads on busy gameplay.",
+      "가벼운 Comfortaa와 넓은 확산 그림자, 외곽선 없음 — 바쁜 게임 화면에서도 읽힙니다.",
     "style.preset.desc.anime_stream":
-      "Mochiy Pop One for Latin/Japanese + Comfortaa Bold for Cyrillic — classic anime fansub caption: white fill, crisp violet outline, soft dark drop shadow.",
+      "라틴/일본어는 Mochiy Pop One, 키릴은 Comfortaa Bold — 클래식 애니 자막: 흰 채움, 선명한 보라 외곽선, 부드러운 그림자.",
     "style.preset.desc.accessibility_high_contrast":
-      "WCAG AAA solid caption box: pure white Montserrat Bold on fully opaque black — the only solid ink plate in the set.",
+      "WCAG AAA 솔리드 박스: 완전 불투명 검정 위 순백 Montserrat Bold — 세트의 유일한 솔리드 잉크 플레이트.",
     "style.preset.desc.dark_cinema":
-      "Letterboxed cinema look: Playfair ivory on a warm sepia plate; translation slot slightly smaller for hierarchy.",
+      "레터박스 시네마: 따뜻한 세피아 판에 Playfair 아이보리. 번역 칸은 위계를 위해 조금 더 작음.",
     "style.preset.desc.meeting_soft":
-      "Warm parchment paper: Merriweather / Noto dark ink on a translucent cream plate — soft editorial podcast look, not a dark box.",
+      "따뜻한 양피지: Merriweather / Noto 짙은 잉크를 반투명 크림 판에 — 어두운 상자가 아닌 편집 팟캐스트 느낌.",
     "style.preset.desc.retro_terminal":
-      "Amber phosphor CRT: VT323 for Latin terminal texture, IBM Plex Serif for Cyrillic — dense near-black plate, restrained glow.",
+      "호박색 CRT: 라틴은 VT323, 키릴은 IBM Plex Serif — 짙은 거의 검정 판과 절제된 글로우.",
     "style.preset.desc.fallout_pipboy":
-      "Pip-Boy phosphor green: Share Tech Mono for CRT Latin, Ubuntu Mono + IBM Plex Mono for Cyrillic — deep CRT plate, controlled bloom.",
+      "Pip-Boy 녹색: CRT 라틴은 Share Tech Mono, 키릴은 Ubuntu Mono + IBM Plex Mono — 깊은 판과 제어된 블룸.",
     "style.preset.desc.comic_burst":
-      "Comic SFX energy: Bangers yellow with a chunky black outline; Comic Relief Bold covers Cyrillic.",
+      "코믹 SFX: Bangers 노랑과 두꺼운 검정 외곽선. 키릴은 Comic Relief Bold.",
     "style.preset.desc.cyberpunk_neon":
-      "Sci-fi HUD: Orbitron magenta with a cyan halo on a deep navy plate; Exo 2 covers Cyrillic geometry.",
+      "SF HUD: 짙은 네이비 판에 Orbitron 마젠타와 시안 후광. 키릴 기하학은 Exo 2.",
     "style.preset.desc.noir_typewriter":
-      "1940s dossier captions: Special Elite for Latin typewriter texture, IBM Plex Mono for Cyrillic — warm ivory on deep ink, wide tracking, soft fade-in.",
+      "1940년대 서류 자막: 라틴은 Special Elite, 키릴은 IBM Plex Mono — 짙은 잉크 위 따뜻한 아이보리, 넓은 트래킹.",
     "style.preset.desc.vlog_pastel":
-      "Lifestyle pill: Poppins on a warm pastel plate with stronger contrast for bright vlog footage.",
+      "라이프스타일 필: 따뜻한 파스텔 판의 Poppins. 밝은 브이로그에도 대비를 강화.",
     "style.preset.desc.glass_frost":
-      "Frosted ice glass: pale translucent ice plate (~44% opacity) with airy Raleway — dark ice-ink text floats on milky glass, not a blue box.",
+      "서리 유리: 옅은 반투명 얼음 판(~44% 불투명)과 가벼운 Raleway — 파란 상자가 아닌 우유빛 유리 위 짙은 잉크.",
     "style.preset.desc.twitch_lower_third":
-      "Streamer lower-third chrome: condensed Oswald / Exo on saturated Twitch purple (#9146FF), left-aligned with magenta edge glow.",
+      "스트리머 로어 서드: 진한 Twitch 퍼플(#9146FF)에 압축 Oswald / Exo, 왼쪽 정렬과 마젠타 가장자리 글로우.",
     "style.preset.desc.warm_amber":
-      "Night-stream warmth: Open Sans/Noto cream fill with a soft brown shadow — cozy Just Chatting energy.",
+      "밤 방송의 따뜻함: Open Sans/Noto 크림 채움과 부드러운 갈색 그림자 — 아늑한 Just Chatting 분위기.",
     "style.preset.desc.esports_hud":
-      "Competitive HUD: Exo 2 / Oswald white with a thin cyan outline — sharp, no heavy neon bloom.",
+      "경쟁 HUD: Exo 2 / Oswald 흰색에 얇은 시안 외곽선 — 날카롭고 무거운 네온 없음.",
     "style.preset.desc.dual_caption_modern":
-      "Calm dual-language plate: warm gold source + soft sky translation on a shared dark bar for bilingual streams.",
+      "차분한 이중 언어 바: 따뜻한 골드 원문과 소프트 스카이 번역을 공유 어두운 띠에.",
     "settings.fonts.summary":
       "프로젝트: {project} · 시스템: {system} · 대체: {fallback} · 전체: {total}",
     "style.ui_theme.font": "UI 글꼴",
     "style.ui_theme.font.default": "기본값",
-    "credits.open": "VoiceSub 정보",
-    "credits.title": "VoiceSub 정보",
+    "credits.open": "Kagevi Subtitles 정보",
+    "credits.title": "Kagevi Subtitles 정보",
     "credits.author.heading": "제작자",
     "credits.author.name": "Kiriuru",
     "credits.author.role": "제작자 및 유지보수",
     "credits.author.note":
-      "스트리머를 위한 로컬 자막 도구로 VoiceSub를 만들었습니다.",
+      "스트리머를 위한 로컬 자막 도구로 Kagevi Subtitles를 만들었습니다.",
     "credits.product.heading": "제품",
     "credits.product.tagline": "스트리머를 위한 실시간 번역 자막.",
     "credits.product.stack": "스택: Rust · Tauri · Svelte · OBS overlay.",
+    "credits.product.license": "앱 라이선스: MIT © 2026 Kiriuru.",
+    "credits.third_party.heading": "서드파티",
+    "credits.third_party.summary":
+      "선택적 Local ASR 다운로드와 일부 런타임은 자체 라이선스를 따릅니다.",
+    "credits.third_party.parakeet":
+      "NVIDIA Parakeet ASR(NeMo / Suno.ai) — CC-BY-4.0(ONNX 내보내기 경유).",
+    "credits.third_party.runtimes":
+      "또한: ONNX Runtime(MIT), Silero VAD(MIT), Sonic/libsonic(Apache-2.0) 등.",
+    "credits.support": "후원하기",
     "credits.github": "GitHub 열기",
   },
   zh: {
@@ -1730,14 +1839,25 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "按开始。更改 Web Speech 识别语言后请停止再启动。",
     "overview.recognition.mode.label": "识别引擎",
-    "document.title.dashboard": "VoiceSub",
-    "header.title": "VoiceSub",
-    "updates.banner.message": "VoiceSub {latest} 已可用（当前 {current}）。",
+    "overview.recognition.hint.browser_google.warning":
+      "识别时请保持 worker 窗口可见。最小化或完全隐藏会被浏览器节流，Web Speech 可能卡住或丢音频。Browser Speech 会在带独立配置的 Google Chrome 中打开 `/google-asr`。若更改了识别选项，请保存设置并重新打开 worker。",
+    "overview.recognition.hint.local_parakeet.summary": "Local ASR 说明",
+    "overview.recognition.hint.local_parakeet.info":
+      "使用 Local ASR 模块中的 Parakeet ONNX 模型。执行提供程序与麦克风在模块窗口中配置。",
+    "overview.recognition.local_not_ready":
+      "请先在「模块」页完成 Local ASR 设置，再选择离线识别。",
+    "browser_asr.error.audio_capture_retry":
+      "Web Speech audio-capture 错误：麦克风流丢失 — 正在重新获取麦克风并重试识别。",
+    "log.desktop.launcher_active":
+      "[desktop] desktop launcher 已激活 | startup={startup} | remote_role={remoteRole}",
+    "document.title.dashboard": "Kagevi Subtitles",
+    "header.title": "Kagevi Subtitles",
+    "updates.banner.message": "Kagevi Subtitles {latest} 已可用（当前 {current}）。",
     "updates.banner.close": "关闭",
     "updates.banner.download": "下载",
     "save.status.saved": "设置已保存。",
     "obs.overlay.instructions":
-      "将此 URL 添加为 OBS Browser Source。VoiceSub bind 地址变更时请更新 URL。",
+      "将此 URL 添加为 OBS Browser Source。Kagevi Subtitles bind 地址变更时请更新 URL。",
     "subtitles.display_order": "字幕行显示顺序",
     "settings.fonts.eyebrow": "资源",
     "settings.fonts.title": "字体目录",
@@ -1801,6 +1921,10 @@ const voicesubExtrasLocalized = {
     "worker.advanced.title": "高级",
     "translation.latest.show": "显示翻译结果",
     "translation.latest.hidden": "翻译结果已隐藏。打开开关以查看实时输出。",
+    "translation.live_partial.enable":
+      "实时翻译（仅经典 MT）",
+    "translation.live_partial.hint":
+      "将节流后的 ASR partial 发给经典 MT，以便说话时显示翻译。LLM 线路仍等待 final。会消耗更多 API 配额；默认关闭。",
     "worker.force_finalization_timeout_ms": "强制 final 前的空闲超时 (ms)",
     "worker.force_finalization_timeout_ms.note":
       "在没有 partial 更新的情况下，等待多久后将当前 live 文本作为 final 段发送。",
@@ -1995,7 +2119,7 @@ const voicesubExtrasLocalized = {
     "nav.subtitles.desc.style": "字体、颜色与字幕样式预设",
     "nav.modules": "模块",
     "nav.modules.title": "可选模块",
-    "nav.modules.hint": "扩展 VoiceSub 的独立侧载窗口（超出实时字幕）。",
+    "nav.modules.hint": "扩展 Kagevi Subtitles 的独立侧载窗口（超出实时字幕）。",
     "nav.more": "更多",
     "nav.back": "返回",
     "nav.rail.label": "主导航",
@@ -2033,58 +2157,66 @@ const voicesubExtrasLocalized = {
     "nav.obs.section.status": "连接状态",
     "style.preset.custom_description": "用户创建的本地字幕样式。",
     "style.preset.desc.clean_default":
-      "Broadcast baseline: Inter + Noto Sans, crisp white, light outline and soft shadow — OBS-safe transparent plate.",
+      "直播基础样式：Inter + Noto Sans，清晰白字、轻描边与柔和阴影 — 适合 OBS 的透明底板。",
     "style.preset.desc.streamer_bold":
-      "Gaming HUD: Oswald cyan with a restrained magenta halo; Montserrat covers Cyrillic without losing the neon punch.",
+      "游戏 HUD：Oswald 青色配克制品红光晕；西里尔文由 Montserrat 承接，不失霓虹感。",
     "style.preset.desc.dual_tone":
-      "Slot-colored captions: Lato/Noto body with high-contrast fills per language so source and translations separate at a glance.",
+      "按槽位着色：Lato/Noto 正文与高对比填充，原文与译文一眼可分。",
     "style.preset.desc.compact_overlay":
-      "YouTube-style caption bar: Noto/Source Sans on a dense near-opaque plate — small footprint, maximum legibility.",
+      "YouTube 风字幕条：Noto/Source Sans 铺在近乎不透明底板上 — 占地小、可读性强。",
     "style.preset.desc.soft_shadow":
-      "Airy Comfortaa with a wide diffused shadow and no outline — soft presence that still reads on busy gameplay.",
+      "轻盈 Comfortaa，宽扩散阴影、无描边 — 在忙碌游戏画面上仍清晰。",
     "style.preset.desc.anime_stream":
-      "Mochiy Pop One for Latin/Japanese + Comfortaa Bold for Cyrillic — classic anime fansub caption: white fill, crisp violet outline, soft dark drop shadow.",
+      "拉丁/日文用 Mochiy Pop One，西里尔用 Comfortaa Bold — 经典动漫字幕：白底、锐利紫描边、柔和暗影。",
     "style.preset.desc.accessibility_high_contrast":
-      "WCAG AAA solid caption box: pure white Montserrat Bold on fully opaque black — the only solid ink plate in the set.",
+      "WCAG AAA 实心底：纯黑上纯白 Montserrat Bold — 套件中唯一完全不透明墨底板。",
     "style.preset.desc.dark_cinema":
-      "Letterboxed cinema look: Playfair ivory on a warm sepia plate; translation slot slightly smaller for hierarchy.",
+      "宽银幕电影感：暖色 sepia 底上 Playfair 象牙色；译文略小以形成层次。",
     "style.preset.desc.meeting_soft":
-      "Warm parchment paper: Merriweather / Noto dark ink on a translucent cream plate — soft editorial podcast look, not a dark box.",
+      "暖色羊皮纸：Merriweather / Noto 深墨落在半透明奶油底上 — 编辑风播客感，而非深色方框。",
     "style.preset.desc.retro_terminal":
-      "Amber phosphor CRT: VT323 for Latin terminal texture, IBM Plex Serif for Cyrillic — dense near-black plate, restrained glow.",
+      "琥珀 CRT：拉丁用 VT323，西里尔用 IBM Plex Serif — 近黑底板与克制光晕。",
     "style.preset.desc.fallout_pipboy":
-      "Pip-Boy phosphor green: Share Tech Mono for CRT Latin, Ubuntu Mono + IBM Plex Mono for Cyrillic — deep CRT plate, controlled bloom.",
+      "Pip-Boy 磷光绿：CRT 拉丁用 Share Tech Mono，西里尔用 Ubuntu Mono + IBM Plex Mono — 深色底板与受控 bloom。",
     "style.preset.desc.comic_burst":
-      "Comic SFX energy: Bangers yellow with a chunky black outline; Comic Relief Bold covers Cyrillic.",
+      "漫画音效：Bangers 黄字配粗黑描边；西里尔用 Comic Relief Bold。",
     "style.preset.desc.cyberpunk_neon":
-      "Sci-fi HUD: Orbitron magenta with a cyan halo on a deep navy plate; Exo 2 covers Cyrillic geometry.",
+      "科幻 HUD：深蓝底上 Orbitron 品红与青色光晕；西里尔几何用 Exo 2。",
     "style.preset.desc.noir_typewriter":
-      "1940s dossier captions: Special Elite for Latin typewriter texture, IBM Plex Mono for Cyrillic — warm ivory on deep ink, wide tracking, soft fade-in.",
+      "1940 年代卷宗字幕：拉丁用 Special Elite，西里尔用 IBM Plex Mono — 深墨上暖象牙色、宽字距。",
     "style.preset.desc.vlog_pastel":
-      "Lifestyle pill: Poppins on a warm pastel plate with stronger contrast for bright vlog footage.",
+      "生活方式胶囊：暖色粉彩底上的 Poppins，为明亮 vlog 加强对比。",
     "style.preset.desc.glass_frost":
-      "Frosted ice glass: pale translucent ice plate (~44% opacity) with airy Raleway — dark ice-ink text floats on milky glass, not a blue box.",
+      "磨砂冰玻璃：淡半透明冰板（约 44% 不透明）配轻盈 Raleway — 深色墨字浮在乳白玻璃上，而非蓝框。",
     "style.preset.desc.twitch_lower_third":
-      "Streamer lower-third chrome: condensed Oswald / Exo on saturated Twitch purple (#9146FF), left-aligned with magenta edge glow.",
+      "主播下三分栏：饱和 Twitch 紫（#9146FF）上压缩 Oswald / Exo，左对齐与品红边缘光。",
     "style.preset.desc.warm_amber":
-      "Night-stream warmth: Open Sans/Noto cream fill with a soft brown shadow — cozy Just Chatting energy.",
+      "夜间直播暖意：Open Sans/Noto 奶油填充与柔和棕影 — 舒适 Just Chatting 氛围。",
     "style.preset.desc.esports_hud":
-      "Competitive HUD: Exo 2 / Oswald white with a thin cyan outline — sharp, no heavy neon bloom.",
+      "电竞 HUD：Exo 2 / Oswald 白字配细青描边 — 锐利、无厚重霓虹。",
     "style.preset.desc.dual_caption_modern":
-      "Calm dual-language plate: warm gold source + soft sky translation on a shared dark bar for bilingual streams.",
+      "平静双语条：暖金原文 + 柔和天蓝译文，共用一条深色底带。",
     "settings.fonts.summary":
       "项目: {project} · 系统: {system} · 回退: {fallback} · 总计: {total}",
     "style.ui_theme.font": "界面字体",
     "style.ui_theme.font.default": "默认",
-    "credits.open": "关于 VoiceSub",
-    "credits.title": "关于 VoiceSub",
+    "credits.open": "关于 Kagevi Subtitles",
+    "credits.title": "关于 Kagevi Subtitles",
     "credits.author.heading": "作者",
     "credits.author.name": "Kiriuru",
     "credits.author.role": "作者与维护者",
-    "credits.author.note": "VoiceSub 是为主播打造的本地字幕工具。",
+    "credits.author.note": "Kagevi Subtitles 是为主播打造的本地字幕工具。",
     "credits.product.heading": "产品",
     "credits.product.tagline": "面向主播的实时翻译字幕。",
     "credits.product.stack": "技术栈：Rust · Tauri · Svelte · OBS overlay。",
+    "credits.product.license": "应用许可：MIT © 2026 Kiriuru。",
+    "credits.third_party.heading": "第三方",
+    "credits.third_party.summary": "可选的 Local ASR 下载与部分运行时保留各自许可。",
+    "credits.third_party.parakeet":
+      "NVIDIA Parakeet ASR（NeMo / Suno.ai）— CC-BY-4.0（经 ONNX 导出）。",
+    "credits.third_party.runtimes":
+      "另有：ONNX Runtime（MIT）、Silero VAD（MIT）、Sonic/libsonic（Apache-2.0）等。",
+    "credits.support": "支持开发",
     "credits.github": "打开 GitHub",
   },
 };

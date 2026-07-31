@@ -15,6 +15,7 @@ export type SubtitleStyleRenderer = {
       transient?: boolean;
     }>;
   }>;
+  textAlignToJustify?: (textAlign: string) => string;
   classifyPartialTransition: (
     currentText: string,
     previousText: string,

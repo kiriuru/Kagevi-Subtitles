@@ -52,7 +52,7 @@
   } from "./lib/asr-mode";
   import type { ConfigPayload, LocaleCode, TabId, VersionInfo } from "./lib/types";
 
-  const UPDATE_BANNER_DISMISS_KEY = "voicesub:update-banner-dismissed";
+  const UPDATE_BANNER_DISMISS_KEY = "kagevi-subtitles:update-banner-dismissed";
 
   let snapshot = get(appStore);
   const unsubscribe = appStore.subscribe((value) => {
@@ -128,7 +128,7 @@
     }
 
     const compact = config.ui?.layout === "compact";
-    document.body.classList.toggle("voicesub-layout-compact", compact);
+    document.body.classList.toggle("kagevi-subtitles-layout-compact", compact);
     const layoutKey: "compact" | "standard" = compact ? "compact" : "standard";
     if (options?.forceWindowLayout || lastAppliedWindowLayout !== layoutKey) {
       lastAppliedWindowLayout = layoutKey;
@@ -600,7 +600,7 @@
     socketUnlisten?.();
     eventsSocket = null;
     unsubscribe();
-    document.body.classList.remove("voicesub-layout-compact", "compact-nav-expanded");
+    document.body.classList.remove("kagevi-subtitles-layout-compact", "compact-nav-expanded");
   });
 </script>
 

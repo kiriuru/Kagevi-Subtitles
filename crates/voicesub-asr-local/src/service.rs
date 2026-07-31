@@ -232,12 +232,16 @@ impl LocalAsrModuleService {
     }
 
     pub fn delete_deps(&self, kind: DepDownloadKind) -> Result<LocalAsrModuleStatus, DepError> {
-        self.inference.unload();
+        if !matches!(kind, DepDownloadKind::SileroVad) {
+            self.inference.unload();
+        }
         delete_dependency(self.store.module_dir(), kind)?;
         self.transfer.clear();
-        let mut config = self.load_config().unwrap_or_default();
-        clear_setup(&mut config);
-        let _ = self.store.save(&config);
+        if !matches!(kind, DepDownloadKind::SileroVad) {
+            let mut config = self.load_config().unwrap_or_default();
+            clear_setup(&mut config);
+            let _ = self.store.save(&config);
+        }
         self.invalidate_status_cache();
         Ok(self.refresh_status())
     }
@@ -431,8 +435,12 @@ impl LocalAsrModuleService {
         let config = self.load_config().map_err(|err| {
             RuntimeSessionError::Precondition(format!("failed to load module config: {err}"))
         })?;
-        self.runtime_session
-            .start(Arc::clone(&self.inference), config, on_emit)
+        self.runtime_session.start(
+            Arc::clone(&self.inference),
+            config,
+            self.store.module_dir().to_path_buf(),
+            on_emit,
+        )
     }
 
     pub fn stop_runtime_capture(&self) -> Result<(), RuntimeSessionError> {
@@ -481,6 +489,7 @@ impl LocalAsrModuleService {
         self.test_bench.start(
             Arc::clone(&self.inference),
             config,
+            self.store.module_dir().to_path_buf(),
             duration_ms,
             provider,
             device_id,

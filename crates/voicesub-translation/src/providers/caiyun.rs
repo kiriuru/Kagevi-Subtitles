@@ -29,6 +29,7 @@ impl TranslationProvider for CaiyunTranslatorProvider {
             group: "china",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

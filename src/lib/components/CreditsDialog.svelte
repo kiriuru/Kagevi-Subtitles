@@ -3,11 +3,19 @@
   import { locale, t } from "../i18n";
   import { openExternalUrl } from "../api";
   import X from "lucide-svelte/icons/x";
+  import { PROJECT_VERSION } from "../project-version";
+  import {
+    PRODUCT_NAME,
+    GITHUB_URL as GITHUB_PRODUCT_URL,
+    DONATE_URL as DONATE_PRODUCT_URL,
+  } from "../brand";
+  import appIcon from "../../assets/app-icon.png";
 
   export let open = false;
-  export let version = "0.6.0";
+  export let version = PROJECT_VERSION;
 
-  const GITHUB_URL = "https://github.com/kiriuru/VoiceSub";
+  const GITHUB_URL = GITHUB_PRODUCT_URL;
+  const DONATE_URL = DONATE_PRODUCT_URL;
 
   let dialogEl: HTMLDialogElement | null = null;
 
@@ -38,6 +46,14 @@
     }
   }
 
+  async function openDonate() {
+    try {
+      await openExternalUrl(DONATE_URL);
+    } catch {
+      // ignore
+    }
+  }
+
   onDestroy(() => {
     dialogEl?.close();
   });
@@ -54,7 +70,17 @@
 >
   <div class="credits-dialog__panel">
     <header class="credits-dialog__header">
-      <h2 id="credits-dialog-title">{tr("credits.title")}</h2>
+      <div class="credits-dialog__heading">
+        <img
+          class="credits-dialog__icon"
+          src={appIcon}
+          alt=""
+          width="40"
+          height="40"
+          decoding="async"
+        />
+        <h2 id="credits-dialog-title">{tr("credits.title")}</h2>
+      </div>
       <button type="button" class="top-app-bar__icon-btn" aria-label={tr("common.close")} on:click={close}>
         <X size={20} strokeWidth={1.75} />
       </button>
@@ -71,14 +97,25 @@
       <section class="credits-dialog__block">
         <h3>{tr("credits.product.heading")}</h3>
         <p class="credits-dialog__name">
-          VoiceSub <span class="credits-dialog__version">v{version}</span>
+          {PRODUCT_NAME} <span class="credits-dialog__version">v{version}</span>
         </p>
         <p class="credits-dialog__text">{tr("credits.product.tagline")}</p>
         <p class="credits-dialog__text">{tr("credits.product.stack")}</p>
+        <p class="credits-dialog__text">{tr("credits.product.license")}</p>
+      </section>
+
+      <section class="credits-dialog__block">
+        <h3>{tr("credits.third_party.heading")}</h3>
+        <p class="credits-dialog__text">{tr("credits.third_party.summary")}</p>
+        <p class="credits-dialog__text">{tr("credits.third_party.parakeet")}</p>
+        <p class="credits-dialog__text">{tr("credits.third_party.runtimes")}</p>
       </section>
 
       <div class="credits-dialog__actions">
-        <button type="button" class="btn btn-primary" on:click={() => void openGithub()}>
+        <button type="button" class="btn btn-primary" on:click={() => void openDonate()}>
+          {tr("credits.support")}
+        </button>
+        <button type="button" class="btn" on:click={() => void openGithub()}>
           {tr("credits.github")}
         </button>
         <button type="button" class="btn btn-ghost" on:click={close}>
@@ -125,11 +162,27 @@
     margin-bottom: var(--space-4);
   }
 
+  .credits-dialog__heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .credits-dialog__icon {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md, 10px);
+    object-fit: cover;
+  }
+
   .credits-dialog__header h2 {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 650;
     color: var(--text-primary);
+    line-height: 1.25;
   }
 
   .credits-dialog__body {

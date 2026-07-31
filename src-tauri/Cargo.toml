@@ -1,17 +1,17 @@
 [package]
-name = "voicesub-app"
+name = "kagevi-subtitles"
 version.workspace = true
 edition.workspace = true
-description = "VoiceSub desktop shell (Tauri)"
+description = "Kagevi Subtitles desktop shell (Tauri)"
 
 [lib]
-name = "voicesub_app_lib"
+name = "kagevi_subtitles_lib"
 # staticlib only needed for iOS/Android; omit on Windows desktop to avoid a third
 # full compile + incremental cache per edit (major target/ bloat).
 crate-type = ["lib", "cdylib"]
 
 [[bin]]
-name = "voicesub-app"
+name = "kagevi-subtitles"
 path = "src/main.rs"
 
 [build-dependencies]

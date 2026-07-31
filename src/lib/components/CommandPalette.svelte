@@ -107,8 +107,8 @@
       open = true;
       queueMicrotask(() => inputEl?.focus());
     };
-    window.addEventListener("voicesub:open-command-palette", onOpen);
-    return () => window.removeEventListener("voicesub:open-command-palette", onOpen);
+    window.addEventListener("kagevi-subtitles:open-command-palette", onOpen);
+    return () => window.removeEventListener("kagevi-subtitles:open-command-palette", onOpen);
   });
 
   $: if (open) {

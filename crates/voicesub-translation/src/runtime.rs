@@ -104,6 +104,21 @@ impl TranslationRuntimeController {
         }
     }
 
+    pub async fn submit_partial(
+        &mut self,
+        sequence: u64,
+        source_text: &str,
+        source_lang: &str,
+        preview_lineage_key: Option<&str>,
+    ) {
+        self.ensure_started(DispatcherCallbacks::default()).await;
+        if let Some(dispatcher) = &self.dispatcher {
+            dispatcher
+                .submit_partial(sequence, source_text, source_lang, preview_lineage_key)
+                .await;
+        }
+    }
+
     pub async fn submit_final(
         &mut self,
         sequence: u64,

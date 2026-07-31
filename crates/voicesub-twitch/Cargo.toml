@@ -2,7 +2,7 @@
 name = "voicesub-twitch"
 version.workspace = true
 edition.workspace = true
-description = "Twitch IRC chat client for VoiceSub TTS module"
+description = "Twitch IRC chat client for Kagevi Subtitles TTS module"
 
 [dependencies]
 serde = { workspace = true }

@@ -18,7 +18,7 @@ pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 17] = [
     "openrouter",
     "lm_studio",
     "ollama",
-    "public_libretranslate_mirror",
+    "microsoft_edge",
     "free_web_translate",
     "baidu_translate",
     "youdao_translate",
@@ -26,12 +26,40 @@ pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 17] = [
     "caiyun_translator",
 ];
 
-const CANONICAL_SLOT_IDS: [&str; 5] = [
+/// Providers dropped from the product, each with an optional replacement. Entries without
+/// a replacement fall back to the caller's default provider.
+///
+/// `public_libretranslate_mirror` was dropped because every keyless public LibreTranslate
+/// instance went offline or began refusing API traffic; `microsoft_edge` keeps those configs
+/// on a provider that still needs no API key.
+const REMOVED_TRANSLATION_PROVIDERS: [(&str, Option<&str>); 2] =
+    [("mymemory", None), ("public_libretranslate_mirror", Some("microsoft_edge"))];
+
+/// Resolves a stored provider name against the supported set, mapping removed providers to
+/// their replacement and anything else unrecognized to `fallback`.
+pub fn resolve_translation_provider(raw: &str, fallback: &str) -> String {
+    let provider = raw.trim();
+    if provider.is_empty() {
+        return fallback.to_string();
+    }
+    if let Some((_, replacement)) = REMOVED_TRANSLATION_PROVIDERS
+        .iter()
+        .find(|(name, _)| *name == provider)
+    {
+        return replacement.unwrap_or(fallback).to_string();
+    }
+    if SUPPORTED_TRANSLATION_PROVIDERS.contains(&provider) {
+        provider.to_string()
+    } else {
+        fallback.to_string()
+    }
+}
+
+const CANONICAL_SLOT_IDS: [&str; 4] = [
     "translation_1",
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
 ];
 
 fn str_value(value: Option<&Value>) -> String {
@@ -94,9 +122,7 @@ pub fn default_translation_provider_settings() -> Value {
             "custom_prompt": "",
             "override_prompt": "false"
         },
-        "public_libretranslate_mirror": {
-            "api_url": "https://translate.fedilab.app/translate"
-        },
+        "microsoft_edge": {},
         "free_web_translate": {},
         "baidu_translate": {
             "app_id": "",
@@ -181,7 +207,7 @@ fn normalize_provider_block(
             )
         }),
         "google_cloud_translation_v3" => normalize_google_v3(current, defaults),
-        "google_web" | "free_web_translate" => json!({}),
+        "google_web" | "free_web_translate" | "microsoft_edge" => json!({}),
         "azure_translator" => {
             let endpoint = str_value(normalized.get("endpoint"));
             let endpoint = if endpoint.is_empty() {
@@ -273,17 +299,6 @@ fn normalize_provider_block(
                 "override_prompt": override_prompt,
             })
         }
-        "public_libretranslate_mirror" => {
-            let api_url = str_value(normalized.get("api_url"));
-            let api_url = if api_url.is_empty() {
-                "https://translate.fedilab.app/translate".to_string()
-            } else {
-                normalize_provider_text_value(&api_url)
-            };
-            json!({
-                "api_url": api_url,
-            })
-        }
         "google_gas_url" => json!({
             "gas_url": normalize_provider_text_value(
                 normalized.get("gas_url").and_then(|v| v.as_str()).unwrap_or(""),
@@ -371,17 +386,7 @@ pub fn normalize_translation_provider_settings(payload: &Value) -> Value {
 }
 
 fn normalize_provider(raw_provider: Option<&Value>, fallback: &str) -> String {
-    let provider = str_value(raw_provider);
-    let provider = if provider.is_empty() {
-        fallback.to_string()
-    } else {
-        provider
-    };
-    if SUPPORTED_TRANSLATION_PROVIDERS.contains(&provider.as_str()) {
-        provider
-    } else {
-        fallback.to_string()
-    }
+    resolve_translation_provider(&str_value(raw_provider), fallback)
 }
 
 fn normalize_target_languages(
@@ -520,6 +525,45 @@ fn normalize_translation_cache(payload: &Value, defaults: &Value) -> Value {
     })
 }
 
+fn normalize_live_partial(payload: &Value, defaults: &Value) -> Value {
+    let current = payload.as_object().cloned().unwrap_or_default();
+    let default_obj = defaults
+        .get("live_partial")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+    let enabled = current
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .or_else(|| default_obj.get("enabled").and_then(|v| v.as_bool()))
+        .unwrap_or(false);
+    let min_interval_ms = int_or(
+        current
+            .get("min_interval_ms")
+            .or_else(|| default_obj.get("min_interval_ms")),
+        400,
+    )
+    .clamp(0, 5_000);
+    let min_delta_chars = int_or(
+        current
+            .get("min_delta_chars")
+            .or_else(|| default_obj.get("min_delta_chars")),
+        6,
+    )
+    .clamp(0, 64);
+    let word_growth = current
+        .get("word_growth")
+        .and_then(|v| v.as_bool())
+        .or_else(|| default_obj.get("word_growth").and_then(|v| v.as_bool()))
+        .unwrap_or(false);
+    json!({
+        "enabled": enabled,
+        "min_interval_ms": min_interval_ms,
+        "min_delta_chars": min_delta_chars,
+        "word_growth": word_growth,
+    })
+}
+
 fn normalize_provider_limits(payload: &Value) -> Value {
     let Some(current) = payload.as_object() else {
         return json!({});
@@ -623,6 +667,10 @@ pub fn normalize_translation_config(
         "provider_limits": normalize_provider_limits(
             translation.get("provider_limits").unwrap_or(&json!({})),
         ),
+        "live_partial": normalize_live_partial(
+            translation.get("live_partial").unwrap_or(&Value::Null),
+            defaults,
+        ),
     })
 }
 
@@ -673,6 +721,94 @@ mod tests {
         assert_eq!(out["google_cloud_translation_v3"]["project_id"], "proj-1");
         assert_eq!(out["google_cloud_translation_v3"]["location"], "eu");
         assert!(out["google_cloud_translation_v3"].get("api_key").is_none());
+    }
+
+    #[test]
+    fn normalize_translation_config_defaults_live_partial_off() {
+        let defaults = json!({
+            "provider": "google_translate_v2",
+            "timeout_ms": 10000,
+            "queue_max_size": 8,
+            "max_concurrent_jobs": 2,
+            "provider_settings": default_translation_provider_settings(),
+            "cache": { "enabled": true, "persist": true, "max_entries": 5000 },
+            "live_partial": {
+                "enabled": false,
+                "min_interval_ms": 400,
+                "min_delta_chars": 6,
+                "word_growth": false
+            }
+        });
+        let out = normalize_translation_config(&json!({ "enabled": true }), &defaults, &json!(["en"]));
+        assert_eq!(out["live_partial"]["enabled"], false);
+        assert_eq!(out["live_partial"]["min_interval_ms"], 400);
+        assert_eq!(out["live_partial"]["min_delta_chars"], 6);
+    }
+
+    #[test]
+    fn removed_public_mirror_migrates_to_keyless_microsoft_edge() {
+        assert_eq!(
+            resolve_translation_provider("public_libretranslate_mirror", "google_translate_v2"),
+            "microsoft_edge"
+        );
+    }
+
+    #[test]
+    fn removed_provider_without_replacement_uses_caller_fallback() {
+        assert_eq!(
+            resolve_translation_provider("mymemory", "google_translate_v2"),
+            "google_translate_v2"
+        );
+    }
+
+    #[test]
+    fn resolve_translation_provider_clamps_unknown_and_empty() {
+        assert_eq!(
+            resolve_translation_provider("not_a_provider", "google_translate_v2"),
+            "google_translate_v2"
+        );
+        assert_eq!(
+            resolve_translation_provider("   ", "google_translate_v2"),
+            "google_translate_v2"
+        );
+        assert_eq!(
+            resolve_translation_provider("microsoft_edge", "google_translate_v2"),
+            "microsoft_edge"
+        );
+    }
+
+    #[test]
+    fn keyless_providers_normalize_to_empty_settings_blocks() {
+        let out = normalize_translation_provider_settings(&json!({
+            "microsoft_edge": { "api_url": "https://example.invalid" }
+        }));
+        assert_eq!(out["microsoft_edge"], json!({}));
+        assert_eq!(out["free_web_translate"], json!({}));
+        assert!(out.get("public_libretranslate_mirror").is_none());
+    }
+
+    #[test]
+    fn translation_lines_migrate_removed_mirror_provider() {
+        let defaults = json!({
+            "provider": "google_translate_v2",
+            "provider_settings": default_translation_provider_settings(),
+        });
+        let out = normalize_translation_config(
+            &json!({
+                "enabled": true,
+                "provider": "public_libretranslate_mirror",
+                "lines": [{
+                    "slot_id": "translation_1",
+                    "enabled": true,
+                    "target_lang": "ru",
+                    "provider": "public_libretranslate_mirror"
+                }]
+            }),
+            &defaults,
+            &json!(["en"]),
+        );
+        assert_eq!(out["provider"], "microsoft_edge");
+        assert_eq!(out["lines"][0]["provider"], "microsoft_edge");
     }
 
     #[test]

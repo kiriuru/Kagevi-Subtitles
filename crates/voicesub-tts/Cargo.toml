@@ -2,7 +2,7 @@
 name = "voicesub-tts"
 version.workspace = true
 edition.workspace = true
-description = "VoiceSub TTS module — config, speech queue, audio routing integration"
+description = "Kagevi Subtitles TTS module — config, speech queue, audio routing integration"
 
 [dependencies]
 voicesub-audio = { workspace = true }

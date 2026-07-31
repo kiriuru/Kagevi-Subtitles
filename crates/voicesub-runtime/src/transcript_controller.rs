@@ -1,13 +1,19 @@
 //! Port of SST `TranscriptController` — unified transcript → subtitle → OBS → translation path.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex, RwLock};
 use std::time::{Duration, Instant};
 
 use serde_json::Value;
 use tokio::sync::Mutex;
+use tokio::task::AbortHandle;
 use voicesub_obs::ObsCaptionService;
 use voicesub_subtitle::{SubtitleRouter, TranscriptEvent, TranscriptKind, TranscriptSegment};
-use voicesub_translation::{TranslationPreviewLineage, TranslationRuntimeController};
+use voicesub_translation::{
+    LivePartialDecideInput, LivePartialGate, LivePartialGateReason, LivePartialSettings,
+    TranslationPreviewLineage,
+    TranslationRuntimeController,
+};
 use voicesub_twitch::{
     SourceTextReplacementSettings, apply_source_text_replacement, settings_from_section_value,
 };
@@ -81,6 +87,10 @@ pub struct TranscriptController {
     pipeline_log: RuntimePipelineLog,
     metrics: Arc<RuntimeMetricsCollector>,
     partial_throttle: StdMutex<PartialTranscriptThrottle>,
+    live_partial_gate: Arc<StdMutex<LivePartialGate>>,
+    /// Bumped to invalidate a timer that already woke while it is being aborted.
+    live_partial_flush_generation: Arc<AtomicU64>,
+    live_partial_flush_task: StdMutex<Option<AbortHandle>>,
 }
 
 impl TranscriptController {
@@ -104,6 +114,9 @@ impl TranscriptController {
             partial_throttle: StdMutex::new(PartialTranscriptThrottle::new(
                 partial_transcript_min_interval(),
             )),
+            live_partial_gate: Arc::new(StdMutex::new(LivePartialGate::default())),
+            live_partial_flush_generation: Arc::new(AtomicU64::new(0)),
+            live_partial_flush_task: StdMutex::new(None),
         }
     }
 
@@ -173,8 +186,21 @@ impl TranscriptController {
         self.publish_source_event(&event);
 
         if event.event == TranscriptKind::Final {
+            {
+                self.cancel_live_partial_trailing_flush();
+                let mut gate = self
+                    .live_partial_gate
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
+                gate.note_final();
+            }
             let source_lang = self.event_source_lang(&event);
             let preview_lineage_key = preview_lineage_key_from_segment(event.segment.as_ref());
+            self.pipeline_log.live_partial_final_submit(
+                event.sequence,
+                event.text.chars().count(),
+                preview_lineage_key.as_deref(),
+            );
             // Start under the controller mutex, then drop it before submit_final's
             // relevance/await loops so status/settings are not blocked.
             let dispatcher = {
@@ -202,6 +228,7 @@ impl TranscriptController {
             );
             self.metrics.record_final_published(ingest_latency_ms);
         } else {
+            self.maybe_submit_live_partial(&event).await;
             self.pipeline_log.asr_ingest_published(
                 false,
                 event.sequence,
@@ -209,6 +236,230 @@ impl TranscriptController {
                 ingest_latency_ms,
             );
             self.metrics.record_partial_published(ingest_latency_ms);
+        }
+    }
+
+    async fn maybe_submit_live_partial(&self, event: &TranscriptEvent) {
+        let translation_cfg = self
+            .config_snapshot
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .get("translation")
+            .cloned()
+            .unwrap_or(Value::Null);
+        if !translation_cfg
+            .get("enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
+            return;
+        }
+        let settings = LivePartialSettings::from_translation_config(&translation_cfg);
+        if !settings.enabled {
+            return;
+        }
+        let Some(segment) = event.segment.as_ref() else {
+            return;
+        };
+        let segment_id = segment.segment_id.as_str();
+        if segment_id.is_empty() {
+            return;
+        }
+        let text_len = event.text.chars().count();
+        let source_lang = self.event_source_lang(event);
+        self.pipeline_log.live_partial_seen(
+            event.sequence,
+            segment_id,
+            Some(segment.revision),
+            text_len,
+        );
+        let decision = {
+            let mut gate = self
+                .live_partial_gate
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            gate.decide(LivePartialDecideInput {
+                segment_id,
+                text: &event.text,
+                sequence: event.sequence,
+                revision: segment.revision,
+                source_lang: &source_lang,
+                settings: &settings,
+                now: Instant::now(),
+            })
+        };
+        self.pipeline_log.live_partial_gate(
+            event.sequence,
+            segment_id,
+            decision.as_str(),
+            text_len,
+            decision.should_submit(),
+        );
+        if matches!(
+            decision.reason,
+            LivePartialGateReason::Coalesced | LivePartialGateReason::BelowDelta
+        ) {
+            let now = Instant::now();
+            let delay_ms = {
+                let gate = self
+                    .live_partial_gate
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
+                gate.pending_flush_delay_ms(&settings, now)
+                    .unwrap_or(settings.min_interval_ms)
+            };
+            self.schedule_live_partial_trailing_flush(delay_ms);
+        } else if !decision.should_submit() {
+            self.cancel_live_partial_trailing_flush();
+        }
+        let Some(submit_text) = decision.text_to_submit.clone() else {
+            return;
+        };
+        self.cancel_live_partial_trailing_flush();
+        let preview_lineage_key = preview_lineage_key_from_segment(event.segment.as_ref());
+        self.pipeline_log.live_partial_enqueued(
+            event.sequence,
+            segment_id,
+            Some(segment.revision),
+            submit_text.chars().count(),
+            preview_lineage_key.as_deref(),
+        );
+        self.enqueue_live_partial_job(
+            event.sequence,
+            &submit_text,
+            &source_lang,
+            preview_lineage_key.as_deref(),
+        )
+        .await;
+    }
+
+    fn schedule_live_partial_trailing_flush(&self, delay_ms: u64) {
+        let mut task_slot = self
+            .live_partial_flush_task
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if let Some(previous) = task_slot.take() {
+            previous.abort();
+        }
+        let generation = self
+            .live_partial_flush_generation
+            .fetch_add(1, Ordering::AcqRel)
+            + 1;
+        let gate = Arc::clone(&self.live_partial_gate);
+        let flush_gen = Arc::clone(&self.live_partial_flush_generation);
+        let translation = Arc::clone(&self.translation);
+        let config_snapshot = Arc::clone(&self.config_snapshot);
+        let pipeline_log = self.pipeline_log.clone();
+        let task = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(delay_ms.max(1))).await;
+            if flush_gen.load(Ordering::Acquire) != generation {
+                return;
+            }
+            let translation_cfg = config_snapshot
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .get("translation")
+                .cloned()
+                .unwrap_or(Value::Null);
+            if !translation_cfg
+                .get("enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
+                return;
+            }
+            let live_settings = LivePartialSettings::from_translation_config(&translation_cfg);
+            if !live_settings.enabled {
+                return;
+            }
+            let (decision, segment_id, sequence, revision, source_lang) = {
+                let mut g = gate.lock().unwrap_or_else(|e| e.into_inner());
+                let segment_id = g.pending_segment_id().map(str::to_string);
+                let sequence = g.pending_sequence();
+                let revision = g.pending_revision();
+                let source_lang = g.pending_source_lang().map(str::to_string);
+                let decision = g.flush_pending_due(&live_settings, Instant::now());
+                (decision, segment_id, sequence, revision, source_lang)
+            };
+            if flush_gen.load(Ordering::Acquire) != generation {
+                return;
+            }
+            let Some(submit_text) = decision.text_to_submit.clone() else {
+                return;
+            };
+            let Some(segment_id) = segment_id else {
+                return;
+            };
+            let sequence = sequence.unwrap_or(0);
+            let revision = revision.unwrap_or(0);
+            let source_lang = source_lang.unwrap_or_else(|| "auto".to_string());
+            let preview_lineage_key = segment_id.clone();
+            pipeline_log.live_partial_gate(
+                sequence,
+                &segment_id,
+                decision.as_str(),
+                submit_text.chars().count(),
+                true,
+            );
+            pipeline_log.live_partial_enqueued(
+                sequence,
+                &segment_id,
+                Some(revision),
+                submit_text.chars().count(),
+                Some(preview_lineage_key.as_str()),
+            );
+            let dispatcher = {
+                let mut controller = translation.lock().await;
+                controller
+                    .ensure_started(voicesub_translation::DispatcherCallbacks::default())
+                    .await;
+                controller.dispatcher_handle()
+            };
+            if let Some(dispatcher) = dispatcher {
+                dispatcher
+                    .submit_partial(
+                        sequence,
+                        &submit_text,
+                        &source_lang,
+                        Some(preview_lineage_key.as_str()),
+                    )
+                    .await;
+            }
+        });
+        *task_slot = Some(task.abort_handle());
+    }
+
+    fn cancel_live_partial_trailing_flush(&self) {
+        self.live_partial_flush_generation
+            .fetch_add(1, Ordering::AcqRel);
+        if let Some(task) = self
+            .live_partial_flush_task
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take()
+        {
+            task.abort();
+        }
+    }
+
+    async fn enqueue_live_partial_job(
+        &self,
+        sequence: u64,
+        submit_text: &str,
+        source_lang: &str,
+        preview_lineage_key: Option<&str>,
+    ) {
+        let dispatcher = {
+            let mut controller = self.translation.lock().await;
+            controller
+                .ensure_started(voicesub_translation::DispatcherCallbacks::default())
+                .await;
+            controller.dispatcher_handle()
+        };
+        if let Some(dispatcher) = dispatcher {
+            dispatcher
+                .submit_partial(sequence, submit_text, source_lang, preview_lineage_key)
+                .await;
         }
     }
 
@@ -269,7 +520,7 @@ mod tests {
         };
         assert_eq!(
             preview_lineage_key_from_segment(Some(&segment)),
-            Some("worker-g0-s1:3".into())
+            Some("worker-g0-s1".into())
         );
     }
 

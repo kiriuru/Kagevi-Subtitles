@@ -8,7 +8,6 @@ const OUTPUT_MODES: &[&str] = &[
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
     "first_visible_line",
 ];
 
@@ -19,7 +18,6 @@ pub const CONNECTABLE_OUTPUT_MODES: &[&str] = &[
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
     "first_visible_line",
 ];
 

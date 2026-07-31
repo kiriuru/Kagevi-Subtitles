@@ -178,7 +178,7 @@
 
 
 
-  :global(body.voicesub-layout-compact) .translation-results-heading {
+  :global(body.kagevi-subtitles-layout-compact) .translation-results-heading {
 
     flex-wrap: wrap;
 
@@ -186,7 +186,7 @@
 
 
 
-  :global(body.voicesub-layout-compact) .translation-results-toggle {
+  :global(body.kagevi-subtitles-layout-compact) .translation-results-toggle {
 
     margin-left: 0;
 

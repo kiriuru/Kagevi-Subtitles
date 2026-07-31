@@ -8,7 +8,6 @@ pub const OBS_CC_OUTPUT_MODES: &[&str] = &[
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
     "first_visible_line",
 ];
 
@@ -70,6 +69,11 @@ pub fn normalize_obs_closed_captions(root: &mut Map<String, Value>) {
         .unwrap_or("disabled")
         .trim()
         .to_ascii_lowercase();
+    let raw_mode = if raw_mode == "translation_5" {
+        "translation_4".to_string()
+    } else {
+        raw_mode
+    };
     let output_mode = if OBS_CC_OUTPUT_MODES.contains(&raw_mode.as_str()) {
         raw_mode
     } else {

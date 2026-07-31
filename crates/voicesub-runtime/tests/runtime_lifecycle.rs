@@ -145,7 +145,7 @@ async fn trusted_dashboard_html_injects_loopback_token() {
     assert!(response.status().is_success());
     let html = response.text().await.expect("html body");
     assert!(
-        html.contains("__VOICESUB_API_TOKEN__"),
+        html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
         "dashboard HTML must inject loopback API token"
     );
 
@@ -169,7 +169,7 @@ async fn trusted_worker_html_injects_loopback_token() {
     assert!(response.status().is_success());
     let html = response.text().await.expect("html body");
     assert!(
-        html.contains("__VOICESUB_API_TOKEN__"),
+        html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
         "worker HTML must inject loopback API token"
     );
 
@@ -193,7 +193,7 @@ async fn trusted_tts_html_injects_loopback_token() {
     assert!(response.status().is_success());
     let html = response.text().await.expect("html body");
     assert!(
-        html.contains("__VOICESUB_API_TOKEN__"),
+        html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
         "tts HTML must inject loopback API token"
     );
 
@@ -201,7 +201,7 @@ async fn trusted_tts_html_injects_loopback_token() {
 }
 
 fn loopback_token_from_trusted_html(html: &str) -> Option<String> {
-    let needle = "window.__VOICESUB_API_TOKEN__=";
+    let needle = "window.__KAGEVI_SUBTITLES_API_TOKEN__=";
     let start = html.find(needle)? + needle.len();
     let rest = html[start..].trim_start();
     let end = rest.find(';')?;

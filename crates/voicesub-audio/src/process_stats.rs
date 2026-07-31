@@ -33,7 +33,16 @@ impl Default for ResourceTelemetry {
     }
 }
 
-const WATCHED_EXECUTABLES: &[&str] = &["voicesub-app.exe", "obs64.exe"];
+/// Release NSIS uses `productName` → `Kagevi Subtitles.exe`; cargo/dev → `kagevi-subtitles.exe`.
+/// Keep legacy names so TTS telemetry still finds the shell during upgrades.
+const WATCHED_EXECUTABLES: &[&str] = &[
+    "Kagevi Subtitles.exe",
+    "kagevi-subtitles.exe",
+    "Kagevi Voice.exe",
+    "kagevi-voice.exe",
+    "voicesub-app.exe",
+    "obs64.exe",
+];
 
 #[cfg(windows)]
 pub fn collect_resource_telemetry() -> ResourceTelemetry {

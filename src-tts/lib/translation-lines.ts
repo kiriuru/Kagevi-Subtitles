@@ -18,7 +18,6 @@ const CANONICAL_SLOTS = [
   "translation_2",
   "translation_3",
   "translation_4",
-  "translation_5",
 ] as const;
 
 function slotNumber(slotId: string): number {

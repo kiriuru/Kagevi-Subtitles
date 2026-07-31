@@ -29,6 +29,7 @@ impl TranslationProvider for GoogleGasUrlProvider {
             group: "experimental",
             experimental: true,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

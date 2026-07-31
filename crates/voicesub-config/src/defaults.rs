@@ -118,12 +118,18 @@ pub fn default_config_payload() -> Value {
                 "max_entries": 5000
             },
             "provider_limits": {},
+            "live_partial": {
+                "enabled": false,
+                "min_interval_ms": 400,
+                "min_delta_chars": 6,
+                "word_growth": false
+            },
             "provider_settings": default_translation_provider_settings()
         },
         "subtitle_output": {
             "show_source": true,
             "show_translations": true,
-            "max_translation_languages": 2,
+            "max_translation_languages": 1,
             "display_order": ["source", "translation_1"]
         },
         "subtitle_lifecycle": {

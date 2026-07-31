@@ -1084,12 +1084,12 @@ mod tests {
             "12:30 meeting"
         );
         assert_eq!(
-            strip_leading_speaker_label("https://github.com/kiriuru/VoiceSub"),
-            "https://github.com/kiriuru/VoiceSub"
+            strip_leading_speaker_label("https://github.com/kiriuru/Kagevi-Subtitles"),
+            "https://github.com/kiriuru/Kagevi-Subtitles"
         );
         assert_eq!(
-            strip_leading_speaker_label("github.com/kiriuru/VoiceSub"),
-            "github.com/kiriuru/VoiceSub"
+            strip_leading_speaker_label("github.com/kiriuru/Kagevi-Subtitles"),
+            "github.com/kiriuru/Kagevi-Subtitles"
         );
     }
 
@@ -1145,11 +1145,11 @@ mod tests {
     #[test]
     fn link_only_url_is_meaningful_when_strip_links_disabled() {
         assert!(has_meaningful_linguistic_content(
-            "github.com/kiriuru/VoiceSub",
+            "github.com/kiriuru/Kagevi-Subtitles",
             false,
         ));
         assert!(has_meaningful_linguistic_content(
-            "https://github.com/kiriuru/VoiceSub",
+            "https://github.com/kiriuru/Kagevi-Subtitles",
             false,
         ));
         assert!(!has_meaningful_linguistic_content(

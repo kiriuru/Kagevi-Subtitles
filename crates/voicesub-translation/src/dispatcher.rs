@@ -38,6 +38,12 @@ pub struct DispatcherCallbacks {
     pub structured_log: Option<StructuredLogFn>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum JobKind {
+    Final,
+    Partial,
+}
+
 #[derive(Clone)]
 struct QueuedJob {
     job_id: u64,
@@ -47,6 +53,7 @@ struct QueuedJob {
     preview_lineage_key: Option<String>,
     preview_generation: u64,
     submitted_at: Instant,
+    kind: JobKind,
 }
 
 struct ActiveTask {
@@ -54,6 +61,8 @@ struct ActiveTask {
     sequence: u64,
     source_lang: String,
     source_text_len: usize,
+    kind: JobKind,
+    preview_lineage_key: Option<String>,
     cancel: Arc<AtomicBool>,
     cancel_notify: Arc<Notify>,
     handle: Mutex<Option<JoinHandle<()>>>,
@@ -108,6 +117,8 @@ pub struct TranslationDispatcher {
     jobs_started: AtomicU64,
     stale_dropped: AtomicU64,
     provider_skipped: AtomicU64,
+    live_partial_submitted: AtomicU64,
+    live_partial_superseded: AtomicU64,
 }
 
 impl TranslationDispatcher {
@@ -164,6 +175,8 @@ impl TranslationDispatcher {
             jobs_started: AtomicU64::new(0),
             stale_dropped: AtomicU64::new(0),
             provider_skipped: AtomicU64::new(0),
+            live_partial_submitted: AtomicU64::new(0),
+            live_partial_superseded: AtomicU64::new(0),
         })
     }
 
@@ -197,18 +210,21 @@ impl TranslationDispatcher {
     }
 
     pub async fn cancel_older_than(self: &Arc<Self>, sequence: u64) {
+        // Live partials are managed by segment lineage / trailing debounce. Cancelling
+        // them here on every final killed the newest in-flight drafts right as ASR
+        // finalized, so the overlay kept a stale mid-phrase translation until final MT.
         let (queued_jobs, active_tasks) = {
             let inner = self.inner.lock().await;
             let queued_jobs = inner
                 .queue
                 .iter()
-                .filter(|job| job.sequence < sequence)
+                .filter(|job| job.kind == JobKind::Final && job.sequence < sequence)
                 .cloned()
                 .collect::<Vec<_>>();
             let active_tasks = inner
                 .active_tasks
                 .iter()
-                .filter(|task| task.sequence < sequence)
+                .filter(|task| task.kind == JobKind::Final && task.sequence < sequence)
                 .map(|task| {
                     (
                         task.job_id,
@@ -317,6 +333,9 @@ impl TranslationDispatcher {
         preview_lineage_key: Option<&str>,
     ) {
         self.cancel_older_than(sequence).await;
+        // Drop only *queued* previews — let an in-flight same-segment draft finish so
+        // the carried overlay text can catch up before final MT returns.
+        self.drop_queued_partials("final_submitted").await;
 
         let translation = self.translation_config();
         let mut inner = self.inner.lock().await;
@@ -338,6 +357,7 @@ impl TranslationDispatcher {
             preview_lineage_key: preview_lineage_key.map(str::to_string),
             preview_generation,
             submitted_at: Instant::now(),
+            kind: JobKind::Final,
         };
         drop(inner);
         self.enqueue_job(job, &translation).await;
@@ -346,13 +366,151 @@ impl TranslationDispatcher {
         self.notify.notify_one();
     }
 
+    async fn drop_queued_partials(self: &Arc<Self>, reason: &str) {
+        let dropped = {
+            let mut inner = self.inner.lock().await;
+            let before = inner.queue.len();
+            inner.queue.retain(|job| job.kind != JobKind::Partial);
+            let removed = before.saturating_sub(inner.queue.len());
+            if removed > 0 {
+                inner.jobs_cancelled += removed as u64;
+                inner.last_runtime_reason = Some(format!("cancelled:{reason}"));
+                self.live_partial_superseded
+                    .fetch_add(removed as u64, Ordering::Relaxed);
+                self.emit_metrics_locked(&mut inner);
+            }
+            removed
+        };
+        if dropped > 0 {
+            self.log_event(
+                "translation_job_cancelled",
+                json!({
+                    "reason": reason,
+                    "dropped_partials": dropped,
+                }),
+            )
+            .await;
+        }
+    }
+
+    pub async fn submit_partial(
+        self: &Arc<Self>,
+        sequence: u64,
+        source_text: &str,
+        source_lang: &str,
+        preview_lineage_key: Option<&str>,
+    ) {
+        let translation = self.translation_config();
+        if !translation
+            .get("enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
+            return;
+        }
+        let live = translation.get("live_partial").unwrap_or(&Value::Null);
+        if !live
+            .get("enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
+            return;
+        }
+        if source_text.trim().is_empty() {
+            return;
+        }
+
+        let mut inner = self.inner.lock().await;
+        if inner.stopped {
+            return;
+        }
+        inner.next_job_id += 1;
+        let job_id = inner.next_job_id;
+        let preview_generation = if let Some(key) = preview_lineage_key.filter(|k| !k.is_empty()) {
+            inner.preview_lineage.supersede(Some(key))
+        } else {
+            0
+        };
+        let job = QueuedJob {
+            job_id,
+            sequence,
+            source_text: source_text.to_string(),
+            source_lang: source_lang.to_string(),
+            preview_lineage_key: preview_lineage_key.map(str::to_string),
+            preview_generation,
+            submitted_at: Instant::now(),
+            kind: JobKind::Partial,
+        };
+        drop(inner);
+        if let Some(key) = job.preview_lineage_key.as_deref() {
+            self.cancel_superseded_partials(key, job.preview_generation)
+                .await;
+        }
+        self.live_partial_submitted
+            .fetch_add(1, Ordering::Relaxed);
+        self.enqueue_job(job, &translation).await;
+        let mut inner = self.inner.lock().await;
+        self.ensure_worker_locked(&mut inner);
+        self.notify.notify_one();
+    }
+
+    async fn cancel_superseded_partials(
+        self: &Arc<Self>,
+        lineage_key: &str,
+        current_generation: u64,
+    ) {
+        let mut inner = self.inner.lock().await;
+        let queued_before = inner.queue.len();
+        inner.queue.retain(|job| {
+            !(job.kind == JobKind::Partial
+                && (job.preview_lineage_key.as_deref() != Some(lineage_key)
+                    || job.preview_generation != current_generation))
+        });
+        let queued_removed = queued_before.saturating_sub(inner.queue.len());
+
+        // Abort in-flight drafts from a *different* phrase immediately. Same-segment
+        // stays single-flight (let current HTTP finish) so provider RTT > debounce
+        // cannot starve the overlay forever; the queue holds only the newest revision.
+        let (keep, obsolete): (Vec<_>, Vec<_>) = inner.active_tasks.drain(..).partition(|task| {
+            task.kind != JobKind::Partial
+                || task.preview_lineage_key.as_deref() == Some(lineage_key)
+                || task.preview_lineage_key.is_none()
+        });
+        inner.active_tasks = keep;
+        let mut aborted = 0usize;
+        for task in obsolete {
+            task.cancel.store(true, Ordering::Release);
+            task.cancel_notify.notify_waiters();
+            if let Some(handle) = task.handle.lock().await.take() {
+                handle.abort();
+            }
+            aborted += 1;
+        }
+        inner.active_jobs = inner.active_jobs.saturating_sub(aborted);
+        inner.jobs_cancelled += (queued_removed + aborted) as u64;
+        if queued_removed + aborted > 0 {
+            inner.last_runtime_reason = Some("cancelled:live_partial_superseded".into());
+            self.live_partial_superseded
+                .fetch_add((queued_removed + aborted) as u64, Ordering::Relaxed);
+        }
+        self.emit_metrics_locked(&mut inner);
+        drop(inner);
+        if aborted > 0 {
+            self.notify.notify_waiters();
+        }
+    }
+
     async fn enqueue_job(self: &Arc<Self>, job: QueuedJob, translation: &Value) {
         let queue_max = Self::queue_max(translation);
         loop {
             {
                 let mut inner = self.inner.lock().await;
                 if inner.queue.len() < queue_max {
-                    inner.queue.push_back(job);
+                    if job.kind == JobKind::Final {
+                        inner.queue.push_front(job);
+                    } else {
+                        inner.queue.push_back(job);
+                    }
                     self.emit_metrics_locked(&mut inner);
                     return;
                 }
@@ -372,6 +530,7 @@ impl TranslationDispatcher {
                 }
             }
 
+            let mut dropped_incoming = false;
             let dropped_job = {
                 let mut inner = self.inner.lock().await;
                 if inner.queue.len() < queue_max {
@@ -381,16 +540,54 @@ impl TranslationDispatcher {
                         .queue
                         .iter()
                         .position(|queued| irrelevant.contains(&queued.sequence))
-                        .unwrap_or(0);
-                    let dropped_job = inner
-                        .queue
-                        .remove(index)
-                        .expect("queue overflow drop requires a queued job");
-                    inner.jobs_cancelled += 1;
-                    inner.last_runtime_reason = Some("cancelled:queue_overflow".into());
-                    Some(dropped_job)
+                        .or_else(|| {
+                            inner
+                                .queue
+                                .iter()
+                                .position(|queued| queued.kind == JobKind::Partial)
+                        });
+                    if let Some(index) = index {
+                        let dropped_job = inner
+                            .queue
+                            .remove(index)
+                            .expect("queue overflow drop requires a queued job");
+                        inner.jobs_cancelled += 1;
+                        inner.last_runtime_reason = Some("cancelled:queue_overflow".into());
+                        Some(dropped_job)
+                    } else if job.kind == JobKind::Partial {
+                        inner.jobs_cancelled += 1;
+                        inner.last_runtime_reason =
+                            Some("cancelled:partial_queue_overflow".into());
+                        self.emit_metrics_locked(&mut inner);
+                        dropped_incoming = true;
+                        None
+                    } else {
+                        let dropped_job = inner
+                            .queue
+                            .pop_back()
+                            .expect("queue overflow drop requires a queued job");
+                        inner.jobs_cancelled += 1;
+                        inner.last_runtime_reason = Some("cancelled:queue_overflow".into());
+                        Some(dropped_job)
+                    }
                 }
             };
+            if dropped_incoming {
+                self.log_event(
+                    "translation_job_cancelled",
+                    json!({
+                        "job_id": job.job_id,
+                        "sequence": job.sequence,
+                        "source_lang": job.source_lang,
+                        "source_text_len": job.source_text.len(),
+                        "relevant": (self.is_relevant)(job.sequence).await,
+                        "fresh": false,
+                        "reason": "partial_queue_overflow",
+                    }),
+                )
+                .await;
+                return;
+            }
             let Some(dropped_job) = dropped_job else {
                 continue;
             };
@@ -437,13 +634,25 @@ impl TranslationDispatcher {
                 if inner.stopped {
                     return;
                 }
-                if inner.active_jobs >= Self::max_concurrent_jobs(&self.config_getter)
-                    || inner.queue.is_empty()
-                {
+                if inner.active_jobs >= Self::max_concurrent_jobs(&self.config_getter) {
                     None
                 } else {
-                    inner.active_jobs += 1;
-                    inner.queue.pop_front()
+                    let runnable = inner.queue.iter().position(|job| {
+                        if job.kind == JobKind::Final {
+                            return true;
+                        }
+                        let Some(lineage) = job.preview_lineage_key.as_deref() else {
+                            return true;
+                        };
+                        !inner.active_tasks.iter().any(|task| {
+                            task.kind == JobKind::Partial
+                                && task.preview_lineage_key.as_deref() == Some(lineage)
+                        })
+                    });
+                    runnable.and_then(|index| {
+                        inner.active_jobs += 1;
+                        inner.queue.remove(index)
+                    })
                 }
             };
 
@@ -469,6 +678,8 @@ impl TranslationDispatcher {
                     sequence: job.sequence,
                     source_lang: job.source_lang.clone(),
                     source_text_len: job.source_text.len(),
+                    kind: job.kind,
+                    preview_lineage_key: job.preview_lineage_key.clone(),
                     cancel: job_cancelled.clone(),
                     cancel_notify: job_cancel_notify.clone(),
                     handle: Mutex::new(None),
@@ -588,7 +799,7 @@ impl TranslationDispatcher {
             return;
         }
 
-        if !(self.is_relevant)(job.sequence).await {
+        if matches!(job.kind, JobKind::Final) && !(self.is_relevant)(job.sequence).await {
             self.stale_dropped.fetch_add(1, Ordering::Relaxed);
             let mut inner = self.inner.lock().await;
             inner.last_runtime_reason = Some("stale:job_not_relevant".into());
@@ -613,6 +824,10 @@ impl TranslationDispatcher {
 
         if self.is_preview_superseded(job).await {
             self.stale_dropped.fetch_add(1, Ordering::Relaxed);
+            if matches!(job.kind, JobKind::Partial) {
+                self.live_partial_superseded
+                    .fetch_add(1, Ordering::Relaxed);
+            }
             let current_generation = {
                 let inner = self.inner.lock().await;
                 job.preview_lineage_key
@@ -631,6 +846,10 @@ impl TranslationDispatcher {
                     "preview_lineage_key": job.preview_lineage_key,
                     "job_generation": job.preview_generation,
                     "current_generation": current_generation,
+                    "job_kind": match job.kind {
+                        JobKind::Final => "final",
+                        JobKind::Partial => "partial",
+                    },
                 }),
             )
             .await;
@@ -644,7 +863,32 @@ impl TranslationDispatcher {
             engine.apply_live_settings(&translation);
             engine.prepare_request(&translation)
         };
-        if prepared.lines.is_empty() {
+        let lines: Vec<_> = if matches!(job.kind, JobKind::Partial) {
+            prepared
+                .lines
+                .iter()
+                .filter(|line| line.supports_live_partial)
+                .cloned()
+                .collect()
+        } else {
+            prepared.lines.clone()
+        };
+        if matches!(job.kind, JobKind::Partial) {
+            self.log_event(
+                "live_partial_job_started",
+                json!({
+                    "job_id": job.job_id,
+                    "sequence": job.sequence,
+                    "source_lang": job.source_lang,
+                    "source_text_len": job.source_text.len(),
+                    "eligible_lines": lines.len(),
+                    "preview_lineage_key": job.preview_lineage_key,
+                    "job_generation": job.preview_generation,
+                }),
+            )
+            .await;
+        }
+        if lines.is_empty() {
             self.log_event(
                 "translation_publish_skipped",
                 json!({
@@ -656,14 +900,18 @@ impl TranslationDispatcher {
                     "target_languages": prepared.target_languages,
                     "relevant": true,
                     "fresh": true,
-                    "reason": "no_translation_lines",
+                    "reason": if matches!(job.kind, JobKind::Partial) {
+                        "no_live_partial_eligible_lines"
+                    } else {
+                        "no_translation_lines"
+                    },
                 }),
             )
             .await;
             return;
         }
 
-        for line in &prepared.lines {
+        for line in &lines {
             let timeout_ms = Self::line_timeout_ms(&translation, line.local_provider);
             self.log_event(
                 "translation_line_started",
@@ -679,6 +927,10 @@ impl TranslationDispatcher {
                     "provider": line.provider_name,
                     "timeout_ms": timeout_ms,
                     "local_provider": line.local_provider,
+                    "job_kind": match job.kind {
+                        JobKind::Final => "final",
+                        JobKind::Partial => "partial",
+                    },
                     "relevant": true,
                     "fresh": true,
                 }),
@@ -687,7 +939,7 @@ impl TranslationDispatcher {
         }
 
         let mut join_set = JoinSet::new();
-        for line in prepared.lines.clone() {
+        for line in lines {
             let this = Arc::clone(self);
             let job = job.clone();
             let timeout_ms = Self::line_timeout_ms(&translation, line.local_provider);
@@ -792,8 +1044,19 @@ impl TranslationDispatcher {
             if self.is_stopped().await {
                 return;
             }
+            if job_cancelled.load(Ordering::Acquire) {
+                self.stale_dropped.fetch_add(1, Ordering::Relaxed);
+                if matches!(job.kind, JobKind::Partial) {
+                    self.live_partial_superseded
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+                let mut inner = self.inner.lock().await;
+                inner.last_runtime_reason = Some("cancelled:job_cancelled".into());
+                self.emit_metrics_locked(&mut inner);
+                return;
+            }
 
-            if !(self.is_relevant)(job.sequence).await {
+            if matches!(job.kind, JobKind::Final) && !(self.is_relevant)(job.sequence).await {
                 self.stale_dropped.fetch_add(1, Ordering::Relaxed);
                 let mut inner = self.inner.lock().await;
                 inner.last_runtime_reason = Some("stale:target_result_arrived_late".into());
@@ -815,8 +1078,12 @@ impl TranslationDispatcher {
                 continue;
             }
 
-            if self.is_preview_superseded(job).await {
+            if matches!(job.kind, JobKind::Final) && self.is_preview_superseded(job).await {
                 self.stale_dropped.fetch_add(1, Ordering::Relaxed);
+                if matches!(job.kind, JobKind::Partial) {
+                    self.live_partial_superseded
+                        .fetch_add(1, Ordering::Relaxed);
+                }
                 let mut inner = self.inner.lock().await;
                 inner.last_runtime_reason = Some("stale:preview_superseded".into());
                 drop(inner);
@@ -827,6 +1094,10 @@ impl TranslationDispatcher {
                         "sequence": job.sequence,
                         "slot_id": result.item.slot_id,
                         "stage": "after_translate",
+                        "job_kind": match job.kind {
+                            JobKind::Final => "final",
+                            JobKind::Partial => "partial",
+                        },
                     }),
                 )
                 .await;
@@ -836,6 +1107,38 @@ impl TranslationDispatcher {
             }
 
             used_default_prompt |= result.used_default_prompt;
+            let is_live_partial = matches!(job.kind, JobKind::Partial);
+            if matches!(job.kind, JobKind::Final) && result.item.cached {
+                self.log_event(
+                    "translation_final_cache_hit",
+                    json!({
+                        "job_id": job.job_id,
+                        "sequence": job.sequence,
+                        "slot_id": result.item.slot_id,
+                        "provider": result.item.provider,
+                        "source_text_len": job.source_text.len(),
+                        "reason": "reuse_live_or_disk_cache",
+                    }),
+                )
+                .await;
+            }
+            if is_live_partial {
+                self.log_event(
+                    "live_partial_line_published",
+                    json!({
+                        "job_id": job.job_id,
+                        "sequence": job.sequence,
+                        "slot_id": result.item.slot_id,
+                        "provider": result.item.provider,
+                        "source_text_len": job.source_text.len(),
+                        "translated_text_len": result.item.text.chars().count(),
+                        "success": result.item.success,
+                        "latency_ms": result.provider_latency_ms,
+                        "preview_lineage_key": job.preview_lineage_key,
+                    }),
+                )
+                .await;
+            }
             let event = TranslationEvent {
                 sequence: job.sequence,
                 source_text: job.source_text.clone(),
@@ -848,6 +1151,8 @@ impl TranslationDispatcher {
                 used_default_prompt: result.used_default_prompt,
                 status_message: result.status_message.clone(),
                 is_complete: false,
+                is_live_partial,
+                preview_lineage_key: job.preview_lineage_key.clone(),
             };
             (self.publish)(event).await;
             published.push(result.item);
@@ -869,13 +1174,25 @@ impl TranslationDispatcher {
             .await;
         }
 
+        if matches!(job.kind, JobKind::Partial) {
+            return;
+        }
+
         if self.is_preview_superseded(job).await {
+            if matches!(job.kind, JobKind::Partial) {
+                self.live_partial_superseded
+                    .fetch_add(1, Ordering::Relaxed);
+            }
             self.log_event(
                 "translation_preview_superseded",
                 json!({
                     "job_id": job.job_id,
                     "sequence": job.sequence,
                     "stage": "completion",
+                    "job_kind": match job.kind {
+                        JobKind::Final => "final",
+                        JobKind::Partial => "partial",
+                    },
                 }),
             )
             .await;
@@ -919,6 +1236,8 @@ impl TranslationDispatcher {
             used_default_prompt,
             status_message: final_status_message.clone(),
             is_complete: true,
+            is_live_partial: false,
+            preview_lineage_key: job.preview_lineage_key.clone(),
         };
         (self.publish)(completion).await;
         self.log_event(
@@ -942,7 +1261,7 @@ impl TranslationDispatcher {
         timeout_secs: f64,
         timeout_ms: u64,
     ) -> LineResult {
-        if !(self.is_relevant)(job.sequence).await {
+        if matches!(job.kind, JobKind::Final) && !(self.is_relevant)(job.sequence).await {
             return LineResult {
                 item: line_item_from_prepared(line, None),
                 outcome: LineOutcome::ProviderSkipped,
@@ -1003,7 +1322,15 @@ impl TranslationDispatcher {
                     slot_id: Some(line_for_task.slot_id.clone()),
                     label: Some(line_for_task.label.clone()),
                     budget_seconds: Some(timeout_secs),
-                    retries: DEFAULT_TRANSLATION_RETRIES,
+                    // A superseded preview has no value; only authoritative finals retry.
+                    retries: if matches!(job.kind, JobKind::Partial) {
+                        0
+                    } else {
+                        DEFAULT_TRANSLATION_RETRIES
+                    },
+                    write_cache: true,
+                    // Live drafts stay in memory so finals can cache-hit without disk pollution.
+                    persist_cache_write: !matches!(job.kind, JobKind::Partial),
                 },
             )
             .await
@@ -1189,6 +1516,10 @@ impl TranslationDispatcher {
         json!({
             "translation_jobs_started": self.jobs_started.load(Ordering::Relaxed),
             "translation_stale_results_dropped": self.stale_dropped.load(Ordering::Relaxed),
+            "translation_live_partial_submitted": self.live_partial_submitted.load(Ordering::Relaxed),
+            "translation_live_partial_superseded": self
+                .live_partial_superseded
+                .load(Ordering::Relaxed),
             "translation_jobs_cancelled": inner.jobs_cancelled,
             "translation_provider_skipped_before_call": self.provider_skipped.load(Ordering::Relaxed),
             "translation_queue_depth": inner.queue.len() + inner.active_jobs,

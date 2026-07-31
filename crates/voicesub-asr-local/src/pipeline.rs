@@ -1,6 +1,7 @@
 //! `stream-sub-translator` `local_asr_pipeline.py` parity — WebRTC VAD segments → ASR queue → decode worker.
 
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
@@ -22,7 +23,7 @@ use crate::recognition_processing::RecognitionProcessor;
 use crate::segment_enqueue::{clear_segment_audio_enqueue_state, slice_segment_audio_delta};
 use crate::segment_state::SegmentStateController;
 use crate::vad_engine::{VadEngine, VadSegmentKind, f32_to_pcm_bytes};
-use crate::vad_tuning::vad_engine_from_config;
+use crate::vad_tuning::vad_engine_from_config_with_module_dir;
 
 pub const SAMPLE_RATE: u32 = crate::capture::PARAKEET_SAMPLE_RATE;
 
@@ -52,16 +53,18 @@ pub struct RealtimePipeline {
 }
 
 impl RealtimePipeline {
-    pub fn new(
+    pub fn new_with_module_dir(
         config: &LocalAsrConfig,
         segment_queue: Arc<AsrSegmentQueue>,
         runtime_generation: Arc<RuntimeGeneration>,
+        module_dir: Option<&Path>,
     ) -> Self {
         Self::new_with_decode_feedback(
             config,
             segment_queue,
             runtime_generation,
             LastDecodeMs::new(),
+            module_dir,
         )
     }
 
@@ -70,13 +73,14 @@ impl RealtimePipeline {
         segment_queue: Arc<AsrSegmentQueue>,
         runtime_generation: Arc<RuntimeGeneration>,
         last_decode_ms: Arc<LastDecodeMs>,
+        module_dir: Option<&Path>,
     ) -> Self {
         let settings = ResolvedRealtimeSettings::from_config(config);
         Self {
             recognition: RecognitionProcessor::from(&config.recognition),
             hallucination: HallucinationFilter::new((&config.recognition).into()),
             segment_state: SegmentStateController::default(),
-            vad: vad_engine_from_config(config, &settings),
+            vad: vad_engine_from_config_with_module_dir(config, &settings, module_dir),
             vad_enabled: config.vad.enabled,
             segment_queue,
             runtime_generation,
@@ -150,9 +154,11 @@ impl RealtimePipeline {
 
         if is_final {
             self.clear_partial_tracking(&item.segment_id);
+            self.vad.clear_draft_text();
         } else {
             self.segment_state
                 .mark_partial_emitted(&item.segment_id, &text);
+            self.vad.set_draft_text(&text);
         }
 
         vec![self.build_emit(
@@ -503,7 +509,8 @@ mod tests {
         let generation = Arc::new(RuntimeGeneration::new(1));
         let mut config = LocalAsrConfig::default();
         config.realtime.streaming_decode = false;
-        let mut pipeline = RealtimePipeline::new(&config, Arc::clone(&queue), generation);
+        let mut pipeline =
+            RealtimePipeline::new_with_module_dir(&config, Arc::clone(&queue), generation, None);
         pipeline.enqueue_vad_segment_for_test(crate::vad_engine::VadSegment {
             kind: VadSegmentKind::Partial,
             audio: vec![0.1; 3_200],
@@ -524,7 +531,8 @@ mod tests {
         let generation = Arc::new(RuntimeGeneration::new(1));
         let mut config = LocalAsrConfig::default();
         config.realtime.streaming_decode = true;
-        let mut pipeline = RealtimePipeline::new(&config, Arc::clone(&queue), generation);
+        let mut pipeline =
+            RealtimePipeline::new_with_module_dir(&config, Arc::clone(&queue), generation, None);
         let audio_a = vec![0.1; 1_600];
         let mut audio_b = audio_a.clone();
         audio_b.extend(std::iter::repeat_n(0.2, 1_600));
@@ -560,7 +568,8 @@ mod tests {
         let mut config = LocalAsrConfig::default();
         config.realtime.streaming_decode = true;
         config.realtime.decode_interval_ms = Some(500);
-        let mut pipeline = RealtimePipeline::new(&config, Arc::clone(&queue), generation);
+        let mut pipeline =
+            RealtimePipeline::new_with_module_dir(&config, Arc::clone(&queue), generation, None);
 
         let audio_a = vec![0.1; 1_600];
         let mut audio_b = audio_a.clone();
@@ -637,7 +646,7 @@ mod tests {
         let generation = Arc::new(RuntimeGeneration::new(1));
         let mut config = LocalAsrConfig::default();
         config.vad.enabled = false;
-        let mut pipeline = RealtimePipeline::new(&config, queue, generation);
+        let mut pipeline = RealtimePipeline::new_with_module_dir(&config, queue, generation, None);
         assert!(pipeline.push_samples(&[]).is_ok());
     }
 
@@ -654,7 +663,7 @@ mod tests {
         let queue = AsrSegmentQueue::new(64);
         let generation = Arc::new(RuntimeGeneration::new(1));
         let config = LocalAsrConfig::default();
-        let mut pipeline = RealtimePipeline::new(&config, queue, generation);
+        let mut pipeline = RealtimePipeline::new_with_module_dir(&config, queue, generation, None);
         pipeline.prime_active_segment("segment-1");
         let partial_item = AsrWorkItem::new(
             AsrWorkKind::Partial,
@@ -702,7 +711,7 @@ mod tests {
         let queue = AsrSegmentQueue::new(64);
         let generation = Arc::new(RuntimeGeneration::new(1));
         let config = LocalAsrConfig::default();
-        let mut pipeline = RealtimePipeline::new(&config, queue, generation);
+        let mut pipeline = RealtimePipeline::new_with_module_dir(&config, queue, generation, None);
         let final_item = AsrWorkItem::new(
             AsrWorkKind::Final,
             vec![0.1; 100],
@@ -736,7 +745,7 @@ mod tests {
         let queue = AsrSegmentQueue::new(64);
         let generation = Arc::new(RuntimeGeneration::new(1));
         let config = LocalAsrConfig::default();
-        let mut pipeline = RealtimePipeline::new(&config, queue, generation);
+        let mut pipeline = RealtimePipeline::new_with_module_dir(&config, queue, generation, None);
         pipeline.prime_active_segment("seg-grow");
         let first = pipeline.process_decode_result(
             AsrWorkItem::new(
@@ -786,7 +795,7 @@ mod tests {
         let queue = AsrSegmentQueue::new(64);
         let generation = Arc::new(RuntimeGeneration::new(1));
         let config = LocalAsrConfig::default();
-        let mut pipeline = RealtimePipeline::new(&config, queue, generation);
+        let mut pipeline = RealtimePipeline::new_with_module_dir(&config, queue, generation, None);
         pipeline.invalidate_runtime_generation();
         let item = AsrWorkItem::new(
             AsrWorkKind::Partial,

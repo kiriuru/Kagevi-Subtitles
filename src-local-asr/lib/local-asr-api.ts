@@ -1,6 +1,6 @@
 import { apiFetch } from "./loopback-api-client";
 
-export type DepDownloadKind = "ort_cpu" | "ort_gpu" | "cuda_redist";
+export type DepDownloadKind = "ort_cpu" | "ort_gpu" | "cuda_redist" | "silero_vad";
 export type ModelFamily = "parakeet_tdt";
 export type ModelVariant = string;
 export type TransferPhase = "idle" | "downloading" | "extracting" | "finalizing";
@@ -164,6 +164,7 @@ export interface LocalAsrModuleStatus {
   activeModelVariant: ModelVariant;
   models: ModelCatalogEntry[];
   setup: LocalAsrSetupChecklist;
+  sileroVadInstalled: boolean;
 }
 
 export type TestBenchPhase = "idle" | "listening" | "done" | "error";
@@ -202,8 +203,12 @@ export interface LocalAsrRealtimeConfig {
   firstPartialMinSpeechMs?: number | null;
 }
 
+export type LocalAsrVadBackend = "webrtc" | "silero";
+
 export interface LocalAsrVadConfig {
   enabled: boolean;
+  backend: LocalAsrVadBackend;
+  sileroThreshold: number;
   vadMode: number;
   energyGateEnabled: boolean;
   minRmsForRecognition: number;
@@ -216,11 +221,15 @@ export interface LocalAsrVadConfig {
   minSilenceMs: number;
   silenceHoldMs: number;
   speechPadMs: number;
+  textHoldEnabled: boolean;
+  textHoldExtraMs: number;
   maxSegmentMs: number;
 }
 
 const VS_VAD_DEFAULTS: LocalAsrVadConfig = {
   enabled: true,
+  backend: "webrtc",
+  sileroThreshold: 0.5,
   vadMode: 2,
   energyGateEnabled: false,
   minRmsForRecognition: 0.0018,
@@ -233,6 +242,8 @@ const VS_VAD_DEFAULTS: LocalAsrVadConfig = {
   minSilenceMs: 400,
   silenceHoldMs: 180,
   speechPadMs: 0,
+  textHoldEnabled: true,
+  textHoldExtraMs: 350,
   maxSegmentMs: 5500,
 };
 
@@ -287,6 +298,12 @@ export function applyLatencyPreset(config: LocalAsrConfig, preset: string): Loca
     vad: {
       ...config.vad,
       ...LATENCY_PRESET_VAD[key],
+      // Keep advanced backend / text-hold choices across latency presets.
+      backend: config.vad.backend,
+      sileroThreshold: config.vad.sileroThreshold,
+      speechPadMs: config.vad.speechPadMs,
+      textHoldEnabled: config.vad.textHoldEnabled,
+      textHoldExtraMs: config.vad.textHoldExtraMs,
     },
   };
 }
@@ -495,8 +512,14 @@ function readVad(raw: Record<string, unknown> | undefined): LocalAsrVadConfig {
   const minRms = Number(
     vad.minRmsForRecognition ?? vad.min_rms_for_recognition ?? VS_VAD_DEFAULTS.minRmsForRecognition,
   );
+  const backendRaw = String(vad.backend ?? VS_VAD_DEFAULTS.backend).toLowerCase();
+  const backend: LocalAsrVadBackend = backendRaw === "silero" ? "silero" : "webrtc";
   return {
     enabled: Boolean(vad.enabled ?? true),
+    backend,
+    sileroThreshold: Number(
+      vad.sileroThreshold ?? vad.silero_threshold ?? VS_VAD_DEFAULTS.sileroThreshold,
+    ),
     vadMode: Number(vad.vadMode ?? vad.vad_mode ?? VS_VAD_DEFAULTS.vadMode),
     energyGateEnabled: Boolean(
       vad.energyGateEnabled ?? vad.energy_gate_enabled ?? VS_VAD_DEFAULTS.energyGateEnabled,
@@ -518,6 +541,12 @@ function readVad(raw: Record<string, unknown> | undefined): LocalAsrVadConfig {
     minSilenceMs: Number(vad.minSilenceMs ?? vad.min_silence_ms ?? VS_VAD_DEFAULTS.minSilenceMs),
     silenceHoldMs: Number(vad.silenceHoldMs ?? vad.silence_hold_ms ?? VS_VAD_DEFAULTS.silenceHoldMs),
     speechPadMs: Number(vad.speechPadMs ?? vad.speech_pad_ms ?? VS_VAD_DEFAULTS.speechPadMs),
+    textHoldEnabled: Boolean(
+      vad.textHoldEnabled ?? vad.text_hold_enabled ?? VS_VAD_DEFAULTS.textHoldEnabled,
+    ),
+    textHoldExtraMs: Number(
+      vad.textHoldExtraMs ?? vad.text_hold_extra_ms ?? VS_VAD_DEFAULTS.textHoldExtraMs,
+    ),
     maxSegmentMs: Number(vad.maxSegmentMs ?? vad.max_segment_ms ?? VS_VAD_DEFAULTS.maxSegmentMs),
   };
 }
@@ -633,6 +662,8 @@ function serializeConfig(config: LocalAsrConfig): Record<string, unknown> {
     },
     vad: {
       enabled: config.vad.enabled,
+      backend: config.vad.backend,
+      sileroThreshold: config.vad.sileroThreshold,
       vadMode: config.vad.vadMode,
       energyGateEnabled: config.vad.energyGateEnabled,
       minRmsForRecognition: config.vad.minRmsForRecognition,
@@ -645,6 +676,8 @@ function serializeConfig(config: LocalAsrConfig): Record<string, unknown> {
       minSilenceMs: config.vad.minSilenceMs,
       silenceHoldMs: config.vad.silenceHoldMs,
       speechPadMs: config.vad.speechPadMs,
+      textHoldEnabled: config.vad.textHoldEnabled,
+      textHoldExtraMs: config.vad.textHoldExtraMs,
       maxSegmentMs: config.vad.maxSegmentMs,
     },
     recognition: {
@@ -814,6 +847,7 @@ function normalizeStatus(raw: Record<string, unknown>): LocalAsrModuleStatus {
     activeModelVariant: activeRaw,
     models: models.length > 0 ? models : defaultModelCatalog(activeFamily),
     setup: readSetupChecklist((raw.setup ?? {}) as Record<string, unknown>),
+    sileroVadInstalled: Boolean(raw.sileroVadInstalled ?? raw.silero_vad_installed),
   };
 }
 

@@ -2,7 +2,7 @@
 name = "voicesub-audio"
 version.workspace = true
 edition.workspace = true
-description = "Windows Core Audio device enumeration and per-process routing for VoiceSub modules"
+description = "Windows Core Audio device enumeration and per-process routing for Kagevi Subtitles modules"
 
 [dependencies]
 cpal = "0.15"

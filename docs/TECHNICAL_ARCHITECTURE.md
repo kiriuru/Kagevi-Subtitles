@@ -1,8 +1,8 @@
-# VoiceSub 0.6.0 — Технический документ
+# Kagevi Subtitles 0.6.1 — Технический документ
 
-Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.0"`.
+Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.1"`.
 
-Этот документ описывает layout проекта VoiceSub, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
+Этот документ описывает layout проекта Kagevi Subtitles, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
 
 **Правило сопровождения:** любое изменение контрактов API/WS/IPC, схемы config, lifecycle субтитров/перевода, renderer overlay, browser worker или NSIS installer bundle **обновляет соответствующие разделы в той же задаче**. Устаревшие формулировки удаляют или переписывают, а не оставляют «для истории».
 
@@ -114,7 +114,7 @@ Tauri dev: встроенный HTTP на `http://127.0.0.1:8765`; главны�
 
 ## 1. Назначение и границы системы
 
-**VoiceSub** — локальное Windows-first desktop-приложение для субтитров в реальном времени:
+**Kagevi Subtitles** — локальное Windows-first desktop-приложение для субтитров в реальном времени:
 
 - захват речи через **Browser Speech worker** (отдельное окно Chrome с видимой адресной строкой, Web Speech API) **или** опциональный **Local ASR** (Parakeet ONNX, in-process mic);
 - опциональный перевод на 0..5 целевых языков с независимым выбором провайдера на слот;
@@ -123,7 +123,7 @@ Tauri dev: встроенный HTTP на `http://127.0.0.1:8765`; главны�
 - опциональный **модуль Local ASR** (`/local-asr`, режим `local_parakeet` при `local_module.ready`);
 - экспорт diagnostics ZIP и client-side trace logs.
 
-**Режимы ASR:** `browser_google` (default Web Speech на `/google-asr`) и опциональный `local_parakeet` (модуль Local ASR, gate `asr.local_module.ready`). Legacy SST `local` и experimental worker routes в core нет.
+**Режимы ASR:** `browser_google` (default Web Speech на `/google-asr`) и опциональный `local_parakeet` (модуль Local ASR, gate `asr.local_module.ready`).
 
 Жёсткие границы:
 
@@ -131,7 +131,7 @@ Tauri dev: встроенный HTTP на `http://127.0.0.1:8765`; главны�
 - без cloud backend, accounts, hosted database;
 - **Node.js запрещён в shipped runtime**; Vite/Node — только на машине разработчика/сборки;
 - dashboard и worker — Svelte (compile-time bundle); overlay — **vanilla HTML/JS** (без Svelte);
-- **WebView2 Runtime** — обязателен для Tauri shell (`VoiceSub.exe`, dashboard, `/tts`, `/local-asr`); NSIS installer может поставить bootstrapper.
+- **WebView2 Runtime** — обязателен для Tauri shell (`Kagevi Subtitles.exe`, dashboard, `/tts`, `/local-asr`); NSIS installer может поставить bootstrapper.
 - Chrome — отдельная system dependency для Web Speech worker; core installer не тянет Python/torch/Node. Deps ONNX/CUDA и веса модели Local ASR — **lazy-download** в `user-data/modules/local-asr/` (не в core installer).
 
 ## 2. Технологический стек
@@ -139,7 +139,7 @@ Tauri dev: встроенный HTTP на `http://127.0.0.1:8765`; главны�
 | Слой | Технологии |
 | --- | --- |
 | Core runtime | Rust 1.85+ (edition 2024), Tokio, Axum 0.8 |
-| Desktop shell | Tauri 2 → `VoiceSub.exe` (NSIS `setup.exe`) |
+| Desktop shell | Tauri 2 → `Kagevi Subtitles.exe` (NSIS `setup.exe`) |
 | Dashboard UI | Svelte 5 + Vite → `bin/dashboard/` |
 | Browser worker | Svelte 5 + Vite → `bin/worker/` |
 | TTS UI | Svelte 5 + Vite → `bin/tts/` |
@@ -271,7 +271,7 @@ src-tauri (Layer 4: IPC, window, bundle only)
 | Crate | Назначение |
 | --- | --- |
 | `voicesub-types` | `PROJECT_VERSION`, WS envelope types, ASR event DTO |
-| `voicesub-config` | TOML store, defaults, legacy JSON import, paths, bind policy |
+| `voicesub-config` | TOML store, defaults, normalize/migrate, paths, bind policy |
 | `voicesub-subtitle` | `SubtitleLifecycleCore`, `SubtitleRouter`, presentation, overlay contract |
 | `voicesub-translation` | `TranslationDispatcher`, `TranslationEngine`, 17 providers |
 | `voicesub-browser` | Chrome supervisor, worker launch flags, operational FSM |
@@ -335,35 +335,33 @@ src-tauri (Layer 4: IPC, window, bundle only)
 | `profile` | Имя активного профиля |
 | `ui` | `language`, `layout`, `theme`, `palette`, `show_translation_results` |
 | `source_lang` | Язык источника ASR (`auto` по умолчанию) |
-| `targets` | Legacy-список целей (совместимость импорта) |
+| `targets` | Deprecated; при load нормализуется в `translation.lines` |
 | `asr` | `mode` + настройки `browser` |
 | `overlay` | `preset`, `compact` |
 | `obs_closed_captions` | Настройки OBS WebSocket CC |
-| `translation` | Провайдер, линии (до 5), cache, limits, `provider_settings` |
+| `translation` | Провайдер, линии (до 4), cache, limits, `provider_settings` |
 | `subtitle_output` | Порядок отображения source/translation |
 | `subtitle_lifecycle` | TTL, sync-флаги; deprecated timing-ключи только normalize |
 | `source_text_replacement` | Find/replace для ASR текста (кастомные пары + builtin-корни/нормализация обходов; в `TranscriptController` до subtitle/translation) |
 | `logging` | `full_enabled` — главный переключатель deep diagnostics |
 
-### Режим ASR (VoiceSub 0.6.0)
+### Режим ASR (Kagevi Subtitles 0.6.0)
 
 | `asr.mode` | Статус |
 | --- | --- |
 | `browser_google` | **Активный default** — Chrome Web Speech worker |
 | `local_parakeet` | Опциональный Local ASR; селектор на Эфире только при `asr.local_module.ready` |
-| `local`, `browser_google_edge`, `browser_google_experimental*` (import) | Мапятся → `browser_google` + `import_hint` |
 
-SST JSON import **сохраняет** `local_parakeet` (не мапит на `browser_google`). Ready — runtime gate, не remap при импорте.
+Ready для `local_parakeet` — runtime gate (`asr.local_module.ready`), не перепись конфига.
 
-### Legacy JSON import (SST Desktop `config.json`)
+**Удалённые providers.** `resolve_translation_provider` в `translation_normalize.rs` мапит имена, которые больше не поставляются, на пути save (зеркально в `src/lib/config-normalize.ts`):
 
-`ConfigStore::import_sst_json_file` / load с `config_version < 8`:
+| Удалён | Мапится в | Причина |
+| --- | --- | --- |
+| `mymemory` | `google_translate_v2` (fallback вызывающего) | Анонимная квота 5 000 символов/день непригодна для live-субтитров |
+| `public_libretranslate_mirror` | `microsoft_edge` | Все публичные инстансы LibreTranslate без ключа офлайн или отклоняют API-трафик; замена тоже без ключа, поэтому API key внезапно не требуется |
 
-1. `migrate_sst_payload` — шаги версий, сборка `translation.lines` из старых `targets`
-2. `apply_voicesub_import_rules` — удаление снятых legacy ASR-ключей (пути моделей, GPU/VAD tuning, …)
-3. `repair_legacy_keep_completed_false` + `normalize_config_payload`
-
-Удалённые providers (например `mymemory`) → fallback `google_translate_v2`.
+Любое другое нераспознанное имя провайдера падает в fallback вызывающего.
 
 ### Профили
 
@@ -375,7 +373,7 @@ SST JSON import **сохраняет** `local_parakeet` (не мапит на `b
 **Bind по умолчанию:** `127.0.0.1:8765` (`voicesub-config::paths`)  
 **LAN:** `VOICESUB_ALLOW_LAN=1` → bind `0.0.0.0`
 
-**Безопасность LAN (OWASP ASVS V7):** при `VOICESUB_ALLOW_LAN=1` HTTP API `/api/*` по-прежнему требует per-session `x-voicesub-token`, но **WebSocket endpoints остаются без аутентификации** — любой хост в той же сети может подключиться к `/ws/events` (чтение субтитров/runtime) и `/ws/asr_worker` (отправка ASR/control). Используйте LAN bind только в доверенной сети; для production stream setup предпочтителен default `127.0.0.1` + OBS Browser Source на localhost.
+**Безопасность LAN (OWASP ASVS V7):** при `VOICESUB_ALLOW_LAN=1` HTTP API `/api/*` по-прежнему требует per-session `x-kagevi-subtitles-token` (legacy `x-voicesub-token` принимается), но **WebSocket endpoints остаются без аутентификации** — любой хост в той же сети может подключиться к `/ws/events` (чтение субтитров/runtime) и `/ws/asr_worker` (отправка ASR/control). Используйте LAN bind только в доверенной сети; для production stream setup предпочтителен default `127.0.0.1` + OBS Browser Source на localhost.
 
 Глобальный middleware: заголовок CSP, `Cache-Control: no-store`.
 
@@ -387,7 +385,7 @@ SST JSON import **сохраняет** `local_parakeet` (не мапит на `b
 | GET | `/api/health` | loopback token | Liveness + WS connections + worker connected |
 | GET | `/api/version` | loopback token | Product metadata + `sync` (updates config, `update_available`, `latest_known_version`) |
 
-**Loopback API auth:** trusted UI pages (dashboard, worker, TTS) получают per-session `x-voicesub-token` через HTML injection; Tauri IPC `get_loopback_api_token`. OBS overlay **не** вызывает protected `/api/*` (только `/live` + WebSocket).
+**Loopback API auth:** trusted UI pages (dashboard, worker, TTS) получают per-session token через HTML injection (`window.__KAGEVI_SUBTITLES_API_TOKEN__`, legacy `__VOICESUB_API_TOKEN__`); клиенты шлют `x-kagevi-subtitles-token` (legacy `x-voicesub-token` принимается). Tauri IPC `get_loopback_api_token`. OBS overlay **не** вызывает protected `/api/*` (только `/live` + WebSocket).
 
 ### Devices / OpenAI helpers
 
@@ -473,7 +471,7 @@ Protected like other `/api/*`. Полная таблица в [§18 Модуль
 
 ## 9. WebSocket-поверхность
 
-**Аутентификация:** WS endpoints **не** используют `x-voicesub-token` (by design — OBS overlay и browser worker). При bind по умолчанию `127.0.0.1` риск ограничен локальной машиной. При `VOICESUB_ALLOW_LAN=1` см. предупреждение в §8.
+**Аутентификация:** WS endpoints **не** используют loopback API tokens (by design — OBS overlay и browser worker). При bind по умолчанию `127.0.0.1` риск ограничен локальной машиной. При `VOICESUB_ALLOW_LAN=1` см. предупреждение в §8.
 
 ### `/ws/events` — OBS overlay (+ опциональные внешние клиенты)
 
@@ -549,7 +547,7 @@ Protected like other `/api/*`. Полная таблица в [§18 Модуль
 | `set_dashboard_layout` | Окно compact (390×844) vs standard (1280×900) |
 | `tts_open_window` | Открыть/сфокусировать webview `/tts` |
 | `local_asr_open_window` | Открыть/сфокусировать webview `/local-asr` |
-| `open_external_https_url` | Открыть allowlisted HTTPS URL в system browser (баннер обновлений, setup-ссылки провайдеров перевода) |
+| `open_external_https_url` | Открыть allowlisted HTTPS URL в system browser (баннер обновлений, setup-ссылки провайдеров перевода, донат в «О программе») |
 | `open_local_http_url` | Открыть validated loopback HTTP URL в system browser |
 
 ### Команды TTS (окно `tts` — `src-tauri/src/tts.rs`)
@@ -592,7 +590,7 @@ ACL webview: только `get_loopback_api_token` + `open_external_https_url`. 
 
 **События Tauri (shell-клиенты):** `runtime-event` (envelope в форме WS), `tts-speech-activity` / `playback-finished` — только **`emit_to(tts)`** (не global `emit`).
 
-**`runtime-event` routing (per window):** bus→IPC pump (`src-tauri/src/ipc_pump.rs`, фильтры в `event_routing.rs`) эмитит через `emit_to(label, …)`, не global `emit`. **Main** dashboard получает все envelope; **tts** window — только `twitch_chat_message`, `twitch_connection_update`, `runtime_update`, `runtime_status`, `ui_config_sync`; **local-asr** window — только `ui_config_sync` (живая тема/локаль/шрифт без Save). UI Local ASR и TTS **не** открывают `/ws/events` для UI sync (только BroadcastChannel + Tauri IPC) — иначе клиент всё равно получает overlay/runtime на полной частоте. `setLocale` идемпотентен, чтобы `sst:locale-changed` / BroadcastChannel не зацикливались. Высокочастотный `transcript_update` / `overlay_update` не флудит IPC модулей. Payload по ссылке (без deep-clone). **`overlay_update` IPC на main dashboard коалесится** (trailing-edge, default 90 ms, env `VOICESUB_OVERLAY_IPC_MIN_INTERVAL_MS`); OBS `/ws/events` получает каждый кадр. `runtime_update` / `translation_update` сбрасывают pending overlay немедленно. При `RecvError::Lagged` — метрики `event_bus_consumer_lagged_*`, pending snapshot resync (последний нужный sync не дропается; 200 ms coalesce между follow-up), затем `snapshot_to_envelopes` (overlay предпочтительнее raw subtitle).
+**`runtime-event` routing (per window):** bus→IPC pump (`src-tauri/src/ipc_pump.rs`, фильтры в `event_routing.rs`) эмитит через `emit_to(label, …)`, не global `emit`. **Main** dashboard получает все envelope; **tts** window — только `twitch_chat_message`, `twitch_connection_update`, `runtime_update`, `runtime_status`, `ui_config_sync`; **local-asr** window — только `ui_config_sync` (живая тема/локаль/шрифт без Save). UI Local ASR и TTS **не** открывают `/ws/events` для UI sync (только BroadcastChannel + Tauri IPC) — иначе клиент всё равно получает overlay/runtime на полной частоте. `setLocale` идемпотентен, чтобы обработчики locale-changed / BroadcastChannel не зацикливались. Высокочастотный `transcript_update` / `overlay_update` не флудит IPC модулей. Payload по ссылке (без deep-clone). **`overlay_update` IPC на main dashboard коалесится** (trailing-edge, default 90 ms, env `VOICESUB_OVERLAY_IPC_MIN_INTERVAL_MS`); OBS `/ws/events` получает каждый кадр. `runtime_update` / `translation_update` сбрасывают pending overlay немедленно. При `RecvError::Lagged` — метрики `event_bus_consumer_lagged_*`, pending snapshot resync (последний нужный sync не дропается; 200 ms coalesce между follow-up), затем `snapshot_to_envelopes` (overlay предпочтительнее raw subtitle).
 
 **Partial coalescing:** partial `transcript_update` — leading-edge throttle в `TranscriptController` (default 90 ms, env `VOICESUB_TRANSCRIPT_PARTIAL_MIN_INTERVAL_MS`; новая фраза/`sequence` и все final — без задержки). Subtitle lifecycle и WS `overlay_update` видят каждый partial; ingest сначала обновляет subtitle, затем async fanout transcript. Коалесится только избыточный transcript IPC/WS канал.
 
@@ -773,19 +771,54 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 | `caiyun_translator` | china (zh/en/ja) |
 | `google_gas_url` | experimental |
 | `google_web` | experimental |
-| `public_libretranslate_mirror` | experimental |
-| `free_web_translate` | experimental |
+| `microsoft_edge` | experimental (без ключа) |
+| `free_web_translate` | experimental (без ключа) |
 
 Заметки: DeepL мапит UI-коды (`en`/`zh-cn`/`pt`) в API targets и выбирает Free vs Pro URL по ключу (`:fx` → free), если не задан custom `api_url`. Google v3 short model id раскрываются в full resource names. Azure предпочитает `zh-Hans`/`zh-Hant`; LibreTranslate — `zh`/`zt`. Китайские провайдеры: Baidu / Youdao / Tencent — бесплатные месячные квоты после регистрации; Caiyun — только zh/en/ja.
 
-До **5 линий перевода** (`translation_1`…`translation_5`). Test stub `stub` — не в production registry.
+**Провайдеры без ключа.** Три провайдера не требуют API key и являются бесплатным путём для пользователей без аккаунтов. Они намеренно размещены на **независимых хостах**, чтобы throttle или блокировка одного не выводила из строя остальные:
+
+| ID | Endpoint | Заметки |
+| --- | --- | --- |
+| `google_web` | `translate.googleapis.com/translate_a/single?client=gtx` | Путь веб-виджета Google |
+| `free_web_translate` | `clients5.google.com/translate_a/t?client=dict-chrome-ex` | Путь словаря Chrome-расширения; отдельный throttle bucket от `google_web`. При `sl=auto` ответ `[[text, lang]]`, при явном `sl` — `[text]`; парсятся обе формы |
+| `microsoft_edge` | `edge.microsoft.com/translate/auth` → `api-edge.cognitive.microsofttranslator.com/translate` | Качество настоящего Azure Translator. `GET /translate/auth` возвращает короткоживущий анонимный JWT, кэшируется в процессе на 7 мин; `401`/`403` сбрасывает кэш и повторяет запрос один раз. Коды target берутся из `azure_lang` (`zh-Hans`/`zh-Hant`); `from` опускается для auto-detect |
+
+`public_libretranslate_mirror` **удалён**: все публичные инстансы LibreTranslate без ключа сейчас офлайн или отклоняют API-трафик (`translate.fedilab.app` отвечает `403 Request forbidden by administrative rules` на уровне edge). Существующие конфиги миграционно переводятся на `microsoft_edge` — см. *Удалённые providers* ниже.
+
+До **4 линий перевода** (`translation_1`…`translation_4`). Test stub `stub` — не в production registry.
+
+### Опциональный live-partial MT (opt-in)
+
+Конфиг `translation.live_partial` (по умолчанию **выкл**):
+
+| Key | Default | Роль |
+| --- | --- | --- |
+| `enabled` | `false` | Переводить throttled ASR partials, не только finals |
+| `min_interval_ms` | `400` | Окно coalesce между live jobs |
+| `min_delta_chars` | `6` | Для режима `word_growth = false` (default) |
+| `word_growth` | `false` | Если true — только новые слова (пропускает mid-word рост ASR) |
+
+Семантика: инкрементальный **full-text** HTTP `translate()` по растущему ASR-тексту (как набор на сайтах Google/DeepL), **не** LLM token stream.
+
+- Capability `ProviderInfo.supports_live_partial`: **true** для classic MT / china / experimental web; **false** для `llm` / `local_llm`. Mixed lines: только eligible слоты получают partial jobs; LLM ждут final.
+- Path: `TranscriptController` → `LivePartialGate` → `submit_partial` → `JobKind::Partial` → `TranslationEvent.is_live_partial = true`.
+- Gate: по умолчанию **char_delta** (`word_growth = false`), `min_interval_ms = 400`, строгий накопительный `min_delta_chars` (default 6) для **leading-edge** mid-speech submits и один заменяемый trailing timer. Исправления ASR (включая укорочение hypothesis) допускаются после coalesce. **Below-delta** рост тоже ставит trailing flush, чтобы паузы / медленный ASR не оставляли live draft застывшим до final.
+- При `translation.live_partial.enabled` presentation **игнорирует** `subtitle_lifecycle.keep_completed_translation_during_active_partial`: completed MT прошлой фразы не рисуется на новый active partial (до первого live draft — только source, затем только live drafts).
+- Dispatcher работает как segment-scoped **single-flight/latest-pending**: уже начатый HTTP-запрос завершается, чтобы непрерывная речь не оставляла экран без прогресса; queued revisions схлопываются до последней. Finals отменяют только старые **final** jobs (не in-flight live drafts), сбрасывают queued previews и имеют приоритет в очереди. Partial не retry.
+- Live drafts используют отдельный ограниченный **memory-only** LRU. Точное совпадение final-текста продвигается в persistent cache; ephemeral churn не вытесняет и не попадает в persistent entries.
+- Rendering: `composeRenderRows` использует source-only shortcut для `partial_only` **только** если в payload нет строки перевода; при live-partial рисуются source (transient) + drafts. `bin/overlay/overlay.js` держит строки `partial_only` в `livePartialItems` (отдельно от `completedItems`) и оставляет `completed_block_visible: false`.
+- Presentation: per-slot merge live draft / completed использует hysteresis по ASR revision, а не зависящий от языка размер target-текста. Завершившийся in-flight draft может отставать от текущего source revision, но per-slot source sequence не допускает регрессии, а segment lineage отсекает прошлую фразу. На ASR **final** drafts переносятся как явно non-final entries до authoritative final MT — без пустого gap и без ложного завершения final bookkeeping.
+- TTS / OBS CC — только **final** переводы; live draft только overlay/dashboard.
+- Метрики: `translation_live_partial_submitted`, `translation_live_partial_superseded`.
+- Полное логирование (`logging.full_enabled` / `VOICESUB_DEEP_DIAGNOSTICS`): pipeline-trace `live_partial_asr_seen` / `live_partial_gate` / `live_partial_enqueued` / `live_partial_final_submit`, dispatcher `live_partial_line_published` / `translation_final_cache_hit`, subtitle `live_partial_draft_applied`.
 
 ### Критический инвариант lifecycle (обязательный)
 
 - Completed-блок субтитров **остаётся на экране** до финализации **новой** фразы
 - Поздние переводы **разрешены** (не drop по wall-clock stale на browser path)
-- Preview supersession по `(segment_id, revision)`
-- Stale drop для устаревших **in-flight** jobs при новом segment/revision
+- Preview lineage по `segment_id`; queued revisions supersede по generation
+- Один in-flight partial на segment может завершиться; presentation принимает только монотонно более новые drafts активного segment
 - Persistent cache в `user-data/translation-cache/` переживает рестарт при неизменённых настройках (первый `apply_live_settings` не затирает диск)
 - Per-request HTTP timeouts уважают `timeout_ms` (потолок клиента 300s); локальные LLM (`lm_studio` / `ollama`) получают floor ≥120s, чтобы JIT-загрузка модели не обрывалась; лимиты concurrency провайдеров обновляются при live apply настроек
 
@@ -821,14 +854,23 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 
 ### Пресеты overlay
 
-`overlay.preset`: `single` | `dual-line` | `stacked` | `compact`  
+`overlay.preset`: `single` | `dual-line` | `stacked`  
+`overlay.compact`: `bool` — более плотные отступы / чуть меньший масштаб (независимо от пресета).
+
+| Пресет | Группировка рядов |
+| --- | --- |
+| `single` | Все видимые элементы в одном физическом ряду (слева направо по порядку отображения) |
+| `dual-line` | Первый видимый элемент в верхнем ряду; остальные делят второй ряд |
+| `stacked` | Каждый видимый элемент — отдельный ряд |
+
+Устаревший `preset=compact` (конфиг или `?preset=compact`) нормализуется в `preset=stacked` + `compact=true`.  
 Переопределение query-параметрами: `?preset=…&compact=1&profile=…&debug=…`
 
 ### Общий renderer
 
 `bin/overlay/shared/js/subtitle-style.js` — инварианты fast/slow path. Preview в dashboard использует ту же форму payload через WS (не обязательно тот же JS-файл).
 
-### URL OBS overlay (VoiceSub 0.5.0)
+### URL OBS overlay (Kagevi Subtitles 0.5.0)
 
 ```
 http://127.0.0.1:8765/overlay
@@ -955,7 +997,7 @@ Config: `user-data/modules/tts/config.toml` → секция `[twitch]`.
 
 ## 18. Модуль Local ASR
 
-Опциональный sidecar-модуль (паттерн TTS): офлайн **Parakeet TDT** через ONNX Runtime (`parakeet-rs`), без Python/NeMo/torch. Поставляется в VoiceSub **0.6.0**.
+Опциональный sidecar-модуль (паттерн TTS): офлайн **Parakeet TDT** через ONNX Runtime (`parakeet-rs`), без Python/NeMo/torch. Поставляется в Kagevi Subtitles **0.6.0**.
 
 ### Manifest
 
@@ -1007,7 +1049,7 @@ Lazy-download в `user-data/modules/local-asr/` (модели, ORT CPU/GPU DLL, 
 
 Stop останавливает local pipeline (или browser path, если активен тот режим).
 
-### HTTP API (`x-voicesub-token`)
+### HTTP API (`x-kagevi-subtitles-token` / legacy `x-voicesub-token`)
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -1015,7 +1057,7 @@ Stop останавливает local pipeline (или browser path, если а
 | GET | `/api/asr/local/config` | config модуля |
 | POST | `/api/asr/local/config/save` | сохранить config модуля |
 | POST | `/api/asr/local/deps/check` | повторный env check |
-| POST | `/api/asr/local/deps/download` | `{ kind: ort_cpu \| ort_gpu \| cuda_redist \| vcruntime }` |
+| POST | `/api/asr/local/deps/download` | `{ kind: ort_cpu \| ort_gpu \| cuda_redist \| silero_vad \| vcruntime }` |
 | POST | `/api/asr/local/deps/delete` | удалить скачанный kind |
 | POST | `/api/asr/local/deps/probe` | `{ provider: cpu \| cuda }` |
 | POST | `/api/asr/local/model/download` | `{ variant, family? }` |
@@ -1041,7 +1083,11 @@ Stop останавливает local pipeline (или browser path, если а
 
 - Пресеты latency: `low` / `balanced` / `quality`
 - Partial policy: `word_growth` через `voicesub-partial-emit`
-- VAD force-final потолок: `vad.max_segment_ms` по умолчанию **5500** (тишина — основной путь; потолок останавливает рост partial при «липком» speech)
+- VAD:
+  - По умолчанию **WebRTC**; опционально **Silero** ONNX (`vad.backend = silero`, lazy download `POST /api/asr/local/deps/download` `{ kind: "silero_vad" }` → `user-data/modules/local-asr/runtime/silero_vad_v6/silero_vad.onnx`). Нет модели → откат на WebRTC.
+  - `vad.speech_pad_ms` удлиняет finalize hold и оставляет trailing pad в сегменте
+  - `vad.text_hold_enabled` + `vad.text_hold_extra_ms`: если последний ASR draft выглядит незавершённым (эвристики EN/RU/JA), тишина до Final должна быть длиннее
+  - Force-final потолок: `vad.max_segment_ms` по умолчанию **5500** (тишина — основной путь; потолок останавливает рост partial при «липком» speech)
 - Фильтр галлюцинаций, telemetry emit, checklist setup (deps → model → mic test → final)
 - После смены realtime/VAD: нужен **Stop → Start** Live-сессии
 
@@ -1063,8 +1109,8 @@ Stop останавливает local pipeline (или browser path, если а
 
 `src-tauri/tauri.conf.json`:
 
-- `productName`: VoiceSub
-- `identifier`: `com.voicesub.app`
+- `productName`: Kagevi Subtitles
+- `identifier`: `com.kagevi.subtitles`
 - `frontendDist`: `../bin/dashboard`
 - `beforeBuildCommand`: `npm run build`
 - Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, языки en/ru/ja/ko/zh)
@@ -1084,14 +1130,14 @@ build-release-msi.bat          # точка входа для back-compat
     2. bin\modules\tts\build_runtime.bat (если нет google_tts_fetch.exe)
     3. node scripts/validate-nsis-i18n.mjs
     4. cargo tauri build (NSIS)
-    5. Copy VoiceSub_{version}_x64-setup.exe → release_root/v{version}/
+    5. Copy Kagevi Subtitles_{version}_x64-setup.exe → release_root/v{version}/
 ```
 
-`release_root` по умолчанию: `F:\AI\VoiceSub - release\v{version}\`
+`release_root` по умолчанию: `F:\AI\Kagevi Subtitles - release\v{version}\`
 
 ### Layout установки
 
-- Установка per-user (`currentUser`) — обычно `%LOCALAPPDATA%\Programs\VoiceSub\`
+- Установка per-user (`currentUser`) — обычно `%LOCALAPPDATA%\Programs\Kagevi Subtitles\`
 - `user-data/` и `logs/` — рядом с install dir / project root (`ProjectPaths`)
 
 ### Dev workflow
@@ -1173,7 +1219,7 @@ Standard layout использует те же destinations через `NavRail`
 
 **WS:** `ws(s)://{host}/ws/events` — **только `overlay_update`** (live кадры + replay при connect). OBS overlay не потребляет `transcript_update` (dashboard / внешние WS-клиенты могут). Payload нормализуется в `overlay.js` (`normalizeOverlayPayload`, allowlist lifecycle как в `src/lib/overlay-normalizer.ts`).  
 **Reconnect:** exponential backoff 1s → 10s max; последний кадр сохраняется при disconnect (OBS UX).  
-**Debug:** `?debug=1` включает буфер `writeDebug` + `console.debug`; `?debug-subtitles=1` — ring trace эффектов (`window.__sstOverlaySubtitleTrace`). В production hot path нет `console.log`.  
+**Debug:** `?debug=1` включает буфер `writeDebug` + `console.debug`; `?debug-subtitles=1` — ring trace эффектов. В production hot path нет `console.log`.  
 **Пустой payload:** `disposeRenderContainer(linesContainer)`, когда `render()` возвращает `empty: true` (TTL / Stop / idle). Idle TTL также требует `hasVisibleRenderedFrame()` — иначе очистка state без `render()` оставляет последний кадр в OBS. Pending RAF отменяется при явной очистке. Cache-bust: `overlay.html` → `overlay.js?v=20260621a`.
 
 ## 23. Frontend: browser worker (Svelte)
@@ -1202,12 +1248,12 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` → 
 
 ## 25. Версионирование и проверка обновлений
 
-- **Единый источник (промежуточно):** `voicesub-types::PROJECT_VERSION` = `"0.6.0"`
-- Workspace `Cargo.toml` `[workspace.package].version` = `0.6.0`
-- `package.json`, `tauri.conf.json` — выровнены на `0.6.0`
-- `GET /api/version`, `POST /api/updates/check` — опрос GitHub Releases (`voicesub-runtime/src/http/update_service.rs`, `voicesub-types::version`)
-- Config `updates.*` — defaults в `voicesub-config::defaults`; legacy config мержится через `normalize_updates_config`
-- Баннер dashboard: `UpdateBanner.svelte`; download → Tauri `open_external_https_url` (`src-tauri/src/shell.rs`)
+- **Единый источник правды:** `voicesub-types::PROJECT_VERSION` и `DEFAULT_GITHUB_REPO` (`kiriuru/Kagevi-Subtitles`) в `crates/voicesub-types/src/version.rs`
+- Bump / rename только там, затем `npm run version:sync` (также из `npm run build`) — обновляет workspace `Cargo.toml` `[workspace.package].version`, `package.json` / `package-lock.json`, `src-tauri/tauri.conf.json`, сгенерированный `src/lib/project-version.ts` и `src/lib/brand.ts` `GITHUB_REPO`
+- Контроль drift: `npm run version:check`; Rust-тест `project_version_matches_cargo_pkg` (`PROJECT_VERSION` == `CARGO_PKG_VERSION`)
+- `GET /api/version`, `POST /api/updates/check` — опрос GitHub Releases (`voicesub-runtime/src/http/update_service.rs`, `voicesub-types::version`); хелперы `github_repo_url` / `release_url_for`
+- Config `updates.github_repo` — default `DEFAULT_GITHUB_REPO`; `normalize_updates_config` мигрирует legacy `kiriuru/VoiceSub` и `kiriuru/stream_sub_translator`
+- Баннер dashboard / Credits: `GITHUB_URL` из `brand.ts`; download → Tauri `open_external_https_url` (`src-tauri/src/shell.rs`)
 
 ## 26. Тестирование
 
@@ -1247,7 +1293,6 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` → 
 4. **Перевод:** 17 провайдеров, полная семантика dispatcher (очередь, stale drop, supersession).
 5. **Отделение overlay:** vanilla HTML для OBS; не входит в Vite chunk dashboard.
 6. **Без Node в runtime:** только compile-time toolchain frontend.
-7. **Импорт config:** legacy SST `config.json` сохраняет намерение пользователя, кроме явно удалённых режимов.
 
 ## 28. Известные ограничения и технический долг
 
@@ -1259,7 +1304,7 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` → 
 
 ### 28.2 Технический долг
 
-- `PROJECT_VERSION` разбросан по Cargo/package/tauri — мигрировать к единственному источнику правды в crate
+- _(нет открытых пунктов)_
 
 ## 29. Модель безопасности и приватности
 
@@ -1303,4 +1348,4 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` → 
 | **Sidecar module** | Опциональная фича (TTS, Local ASR) в `bin/modules/` |
 | **Stale drop** | Отбрасывание in-flight перевода, вытесненного более новым сегментом |
 | **Local ASR** | Офлайн-модуль Parakeet (`/local-asr`, режим `local_parakeet`) |
-| **VoiceSub** | Имя продукта линии 0.6.x (базовый первый релиз: 0.5.0) |
+| **Kagevi Subtitles** | Имя продукта линии 0.6.x (базовый первый релиз: 0.5.0) |

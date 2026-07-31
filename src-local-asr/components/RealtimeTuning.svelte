@@ -4,11 +4,24 @@
   interface Props {
     config: LocalAsrConfig;
     busy: boolean;
+    transferBusy?: boolean;
+    sileroVadInstalled?: boolean;
     tr: (key: string, vars?: Record<string, string | number>) => string;
     onSave: () => void | Promise<void>;
+    onDownloadSilero?: () => void | Promise<void>;
+    onDeleteSilero?: () => void | Promise<void>;
   }
 
-  let { config, busy, tr, onSave }: Props = $props();
+  let {
+    config,
+    busy,
+    transferBusy = false,
+    sileroVadInstalled = false,
+    tr,
+    onSave,
+    onDownloadSilero,
+    onDeleteSilero,
+  }: Props = $props();
 
   let advancedOpen = $state(false);
 
@@ -166,8 +179,66 @@
 
       <div class="realtime-form__split">
         <label class="stack-field">
+          <span>{tr("local_asr.vad.backend")}</span>
+          <select class="control" bind:value={config.vad.backend} disabled={busy}>
+            <option value="webrtc">{tr("local_asr.vad.backend.webrtc")}</option>
+            <option value="silero">{tr("local_asr.vad.backend.silero")}</option>
+          </select>
+        </label>
+        <label class="stack-field">
+          <span>{tr("local_asr.vad.silero_threshold")}</span>
+          <input
+            class="control"
+            type="number"
+            min="0.05"
+            max="0.95"
+            step="0.05"
+            bind:value={config.vad.sileroThreshold}
+            disabled={busy || config.vad.backend !== "silero"}
+          />
+        </label>
+      </div>
+      <p class="section-note">{tr("local_asr.vad.backend.help")}</p>
+      {#if config.vad.backend === "silero"}
+        <div class="realtime-form__split">
+          <p class="section-note">
+            {sileroVadInstalled
+              ? tr("local_asr.vad.silero.installed")
+              : tr("local_asr.vad.silero.missing")}
+          </p>
+          <div class="realtime-form__actions">
+            {#if !sileroVadInstalled && onDownloadSilero}
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                disabled={busy || transferBusy}
+                onclick={() => void onDownloadSilero()}
+              >
+                {tr("local_asr.vad.silero.download")}
+              </button>
+            {/if}
+            {#if sileroVadInstalled && onDeleteSilero}
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                disabled={busy || transferBusy}
+                onclick={() => void onDeleteSilero()}
+              >
+                {tr("local_asr.vad.silero.delete")}
+              </button>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      <div class="realtime-form__split">
+        <label class="stack-field">
           <span>{tr("local_asr.vad.vad_mode")}</span>
-          <select class="control" bind:value={config.vad.vadMode} disabled={busy}>
+          <select
+            class="control"
+            bind:value={config.vad.vadMode}
+            disabled={busy || config.vad.backend !== "webrtc"}
+          >
             <option value={0}>{tr("local_asr.vad.vad_mode.quality")}</option>
             <option value={1}>{tr("local_asr.vad.vad_mode.low_bitrate")}</option>
             <option value={2}>{tr("local_asr.vad.vad_mode.aggressive")}</option>
@@ -261,10 +332,34 @@
           <input class="control" type="number" min="0" bind:value={config.vad.silenceHoldMs} disabled={busy} />
         </label>
         <label class="stack-field">
+          <span>{tr("local_asr.vad.speech_pad_ms")}</span>
+          <input class="control" type="number" min="0" bind:value={config.vad.speechPadMs} disabled={busy} />
+        </label>
+      </div>
+
+      <div class="realtime-form__split">
+        <label class="stack-field">
           <span>{tr("local_asr.vad.max_segment_ms")}</span>
           <input class="control" type="number" min="500" bind:value={config.vad.maxSegmentMs} disabled={busy} />
         </label>
+        <label class="stack-field">
+          <span>{tr("local_asr.vad.text_hold_extra_ms")}</span>
+          <input
+            class="control"
+            type="number"
+            min="0"
+            max="5000"
+            bind:value={config.vad.textHoldExtraMs}
+            disabled={busy || !config.vad.textHoldEnabled}
+          />
+        </label>
       </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" bind:checked={config.vad.textHoldEnabled} disabled={busy} />
+        <span>{tr("local_asr.vad.text_hold_enabled")}</span>
+      </label>
+      <p class="section-note">{tr("local_asr.vad.text_hold.help")}</p>
 
       <p class="realtime-form__group-title">{tr("local_asr.recognition.title")}</p>
 

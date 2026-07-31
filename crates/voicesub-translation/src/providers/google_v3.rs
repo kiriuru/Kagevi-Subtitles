@@ -39,6 +39,7 @@ impl TranslationProvider for GoogleCloudTranslationV3Provider {
             group: "stable",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

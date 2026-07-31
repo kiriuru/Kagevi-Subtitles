@@ -1,5 +1,6 @@
 //! Live runtime mic capture → `RealtimePipeline` (SST `local_asr_pipeline` ingest).
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
@@ -70,6 +71,7 @@ impl LocalAsrRuntimeSession {
         &self,
         inference: Arc<InferenceEngine>,
         config: LocalAsrConfig,
+        module_dir: PathBuf,
         on_emit: RuntimeEmitCallback,
     ) -> Result<(), RuntimeSessionError> {
         let mut guard = self.inner.lock();
@@ -96,6 +98,7 @@ impl LocalAsrRuntimeSession {
                 worker_state,
                 inference,
                 config,
+                module_dir,
                 rx,
                 stop_flag,
                 on_emit,
@@ -202,6 +205,7 @@ fn run_runtime_capture_loop(
     shared: Arc<Mutex<RuntimeSessionInner>>,
     inference: Arc<InferenceEngine>,
     config: LocalAsrConfig,
+    module_dir: PathBuf,
     rx: std::sync::mpsc::Receiver<Vec<f32>>,
     stop_flag: Arc<std::sync::atomic::AtomicBool>,
     on_emit: RuntimeEmitCallback,
@@ -209,7 +213,12 @@ fn run_runtime_capture_loop(
 ) {
     let queue = AsrSegmentQueue::new(64);
     let generation = Arc::new(RuntimeGeneration::new(1));
-    let mut pipeline = RealtimePipeline::new(&config, Arc::clone(&queue), Arc::clone(&generation));
+    let mut pipeline = RealtimePipeline::new_with_module_dir(
+        &config,
+        Arc::clone(&queue),
+        Arc::clone(&generation),
+        Some(module_dir.as_path()),
+    );
     let last_decode_ms = pipeline.last_decode_ms_handle();
     let mut emit_policy = RealtimeEmitPolicy::default();
     let decode_worker = AsyncDecodeWorker::spawn_with_feedback(

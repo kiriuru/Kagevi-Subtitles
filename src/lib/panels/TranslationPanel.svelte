@@ -193,6 +193,7 @@
         ...(draft.subtitle_output || {}),
         display_order: normalizeDisplayOrder([...(draft.subtitle_output?.display_order || []), slotId]),
       };
+      syncTranslationTargetLanguages(draft);
     });
     selectedSlot = slotId;
   }
@@ -207,6 +208,7 @@
       ...(draft.subtitle_output || {}),
       display_order: (draft.subtitle_output?.display_order || []).filter((item) => item !== slotId),
     };
+    syncTranslationTargetLanguages(draft);
     const remaining = getLineCards(draft);
     selectedSlot = remaining[0]?.slot_id || "translation_1";
     emit(draft);
@@ -339,6 +341,23 @@
         </label>
 
       </div>
+
+      <label class="checkbox-row">
+        <input
+          type="checkbox"
+          checked={translation.live_partial?.enabled === true}
+          on:change={(e) =>
+            patchTranslation({
+              live_partial: {
+                ...(translation.live_partial ?? {}),
+                enabled: (e.currentTarget as HTMLInputElement).checked,
+              },
+            })
+          }
+        />
+        <span>{tr("translation.live_partial.enable")}</span>
+      </label>
+      <p class="muted translation-lines-note">{tr("translation.live_partial.hint")}</p>
 
       <div class="translation-line-toolbar">
         <label class="stack-field grow">

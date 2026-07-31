@@ -32,7 +32,7 @@
         <!-- reinstall all files; rewrite all registry entries; reinstall all shortcuts -->
         <Property Id="REINSTALLMODE" Value="amus" />
 
-        <!-- Default install dir (per-user, no elevation). Runtime user-data/ is created by VoiceSub.exe. -->
+        <!-- Default install dir (per-user, no elevation). Runtime user-data/ is created by Kagevi Subtitles.exe. -->
         <SetProperty Id="INSTALLDIR" Value="[ProgramFilesFolder]{{product_name}}\\" After="AppSearch" Sequence="first">INSTALLDIR=""</SetProperty>
 
         <!-- Auto launch app after installation, useful for passive mode which usually used in updates -->
@@ -186,7 +186,7 @@
 						  Arguments="/x [ProductCode]" />
 
 				<!-- Do not RemoveFolder INSTALLDIR: user-data/ and logs/ live beside the app
-				     and must survive upgrades/reinstalls. Runtime dirs are created by VoiceSub.exe. -->
+				     and must survive upgrades/reinstalls. Runtime dirs are created by Kagevi Subtitles.exe. -->
 
 				<RegistryValue Root="HKCU"
 							   Key="Software\\{{manufacturer}}\\{{product_name}}"

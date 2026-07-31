@@ -105,6 +105,12 @@ export interface ConfigPayload {
       max_entries?: number;
     };
     provider_limits?: Record<string, Record<string, unknown>>;
+    live_partial?: {
+      enabled?: boolean;
+      min_interval_ms?: number;
+      min_delta_chars?: number;
+      word_growth?: boolean;
+    };
     provider_settings?: Record<string, Record<string, unknown>>;
   };
   subtitle_output?: {

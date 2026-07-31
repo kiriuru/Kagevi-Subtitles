@@ -226,6 +226,69 @@ fn golden_diagnostics_snapshot() {
 }
 
 #[test]
+fn golden_vad_tuning_speech_pad_delays_finalize() {
+    use std::f32::consts::PI;
+    use voicesub_asr_local::vad_engine::{
+        VadEngine, VadEngineConfig, VadSegmentKind, f32_to_pcm_bytes,
+    };
+
+    let fixture = load_fixture("vad_tuning_speech_pad.json");
+    let cfg = &fixture["config"];
+    // Contract from fixture: finalize_hold = min_silence_ms + speech_pad_ms.
+    let min_silence = cfg["min_silence_ms"].as_u64().unwrap() as u32;
+    let speech_pad = cfg["speech_pad_ms"].as_u64().unwrap() as u32;
+    assert_eq!(min_silence, 100);
+    assert_eq!(speech_pad, 200);
+    let mut vad = VadEngine::new(VadEngineConfig {
+        frame_duration_ms: 30,
+        speech_attack_frames: 1,
+        speech_preroll_frames: 0,
+        energy_gate_enabled: false,
+        text_hold_enabled: false,
+        min_speech_ms: 90,
+        silence_hold_ms: 60,
+        finalization_hold_ms: min_silence,
+        speech_pad_ms: speech_pad,
+        max_segment_ms: 30_000,
+        first_partial_min_speech_ms: 90,
+        partial_emit_interval_ms: 10_000,
+        ..VadEngineConfig::default()
+    });
+    // Louder than fixture speech_level so WebRTC reliably admits speech.
+    let speech = f32_to_pcm_bytes(
+        &(0..480)
+            .map(|idx| (2.0 * PI * 300.0 * idx as f32 / 16_000.0).sin() * 0.35)
+            .collect::<Vec<_>>(),
+    );
+    let silence = vec![0u8; 960];
+    for _ in 0..12 {
+        let _ = vad.process_chunk(&speech);
+    }
+    // 180 ms silence < 300 ms (100+200) → still open
+    let mut finalized_early = false;
+    for _ in 0..6 {
+        for segment in vad.process_chunk(&silence) {
+            if segment.kind == VadSegmentKind::Final {
+                finalized_early = true;
+            }
+        }
+    }
+    assert!(
+        !finalized_early,
+        "speech_pad fixture expects no finalize during pad window"
+    );
+    let mut finalized = false;
+    for _ in 0..16 {
+        for segment in vad.process_chunk(&silence) {
+            if segment.kind == VadSegmentKind::Final {
+                finalized = true;
+            }
+        }
+    }
+    assert!(finalized, "fixture expects finalize after pad + min silence");
+}
+
+#[test]
 fn golden_vad_engine_partial_final() {
     use std::f32::consts::PI;
     use voicesub_asr_local::vad_engine::{

@@ -59,6 +59,8 @@ pub struct LocalAsrModuleStatus {
     pub active_model_variant: String,
     pub models: Vec<crate::model_manager::ModelCatalogEntry>,
     pub setup: LocalAsrSetupChecklist,
+    /// Optional Silero VAD ONNX present under `runtime/silero_vad_v6/`.
+    pub silero_vad_installed: bool,
 }
 
 pub fn build_status(
@@ -162,6 +164,7 @@ pub fn build_status(
         active_model_variant: config.model.variant.clone(),
         models: build_all_model_catalogs(module_dir, &config.model.family, &config.model.variant),
         setup,
+        silero_vad_installed: crate::silero_vad::is_silero_vad_installed(module_dir),
     }
 }
 

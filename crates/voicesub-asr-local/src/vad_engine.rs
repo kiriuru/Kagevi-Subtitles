@@ -1,8 +1,11 @@
-//! SST `backend/core/vad.py` — WebRTC VAD + energy gate + adaptive ambient floor.
+//! SST `backend/core/vad.py` — WebRTC/Silero VAD + energy gate + adaptive ambient floor.
 
 use std::collections::VecDeque;
 
 use webrtc_vad::{SampleRate, Vad, VadMode};
+
+use crate::silero_vad::SileroVadEngine;
+use crate::utterance_complete::utterance_looks_incomplete;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VadSegmentKind {
@@ -26,6 +29,11 @@ pub struct VadEngineConfig {
     pub mode: u8,
     pub silence_hold_ms: u32,
     pub finalization_hold_ms: u32,
+    /// Trailing silence kept in the segment and added to finalize hold (SST speech_pad).
+    pub speech_pad_ms: u32,
+    /// When draft text looks incomplete, require this many extra ms of silence before Final.
+    pub text_hold_enabled: bool,
+    pub text_hold_extra_ms: u32,
     pub min_speech_ms: u32,
     pub partial_emit_interval_ms: u32,
     pub max_segment_ms: u32,
@@ -45,6 +53,9 @@ impl Default for VadEngineConfig {
             mode: 2,
             silence_hold_ms: 180,
             finalization_hold_ms: 350,
+            speech_pad_ms: 0,
+            text_hold_enabled: true,
+            text_hold_extra_ms: 350,
             min_speech_ms: 180,
             partial_emit_interval_ms: 280,
             max_segment_ms: 5_500,
@@ -58,9 +69,14 @@ impl Default for VadEngineConfig {
     }
 }
 
+enum VoiceClassifier {
+    Webrtc(Vad),
+    Silero(SileroVadEngine),
+}
+
 pub struct VadEngine {
     config: VadEngineConfig,
-    vad: Vad,
+    classifier: VoiceClassifier,
     frame_bytes: usize,
     pending_audio: Vec<u8>,
     speech_frames: Vec<Vec<u8>>,
@@ -76,15 +92,26 @@ pub struct VadEngine {
     pending_attack: Vec<(Vec<u8>, f32)>,
     silence_hold_frames: u32,
     finalization_hold_frames: u32,
+    text_hold_extra_frames: u32,
+    speech_pad_frames: u32,
     min_speech_frames: u32,
     first_partial_min_speech_frames: u32,
     partial_interval_frames: u32,
     max_segment_frames: u32,
     speech_attack_frames: u32,
+    draft_text: String,
 }
 
 impl VadEngine {
     pub fn new(config: VadEngineConfig) -> Self {
+        Self::new_with_classifier(config, None)
+    }
+
+    /// Prefer Silero when provided; otherwise WebRTC.
+    pub fn new_with_classifier(
+        config: VadEngineConfig,
+        silero: Option<SileroVadEngine>,
+    ) -> Self {
         let sample_rate = match config.sample_rate {
             8_000 => SampleRate::Rate8kHz,
             32_000 => SampleRate::Rate32kHz,
@@ -92,12 +119,15 @@ impl VadEngine {
             _ => SampleRate::Rate16kHz,
         };
         let mode = vad_mode_from_u8(config.mode);
-        let vad = Vad::new_with_rate_and_mode(sample_rate, mode);
+        let classifier = match silero {
+            Some(engine) => VoiceClassifier::Silero(engine),
+            None => VoiceClassifier::Webrtc(Vad::new_with_rate_and_mode(sample_rate, mode)),
+        };
         let frame_bytes =
             ((config.sample_rate as u64 * config.frame_duration_ms as u64 / 1000) * 2) as usize;
         let mut engine = Self {
             config,
-            vad,
+            classifier,
             frame_bytes,
             pending_audio: Vec::new(),
             speech_frames: Vec::new(),
@@ -113,11 +143,14 @@ impl VadEngine {
             pending_attack: Vec::new(),
             silence_hold_frames: 1,
             finalization_hold_frames: 1,
+            text_hold_extra_frames: 0,
+            speech_pad_frames: 0,
             min_speech_frames: 0,
             first_partial_min_speech_frames: 0,
             partial_interval_frames: 1,
             max_segment_frames: 1,
             speech_attack_frames: 2,
+            draft_text: String::new(),
         };
         engine.apply_config(engine.config.clone());
         engine
@@ -125,6 +158,18 @@ impl VadEngine {
 
     pub fn configure(&mut self, config: VadEngineConfig) {
         self.apply_config(config);
+    }
+
+    pub fn set_draft_text(&mut self, text: &str) {
+        self.draft_text = text.trim().to_string();
+    }
+
+    pub fn clear_draft_text(&mut self) {
+        self.draft_text.clear();
+    }
+
+    pub fn using_silero(&self) -> bool {
+        matches!(self.classifier, VoiceClassifier::Silero(_))
     }
 
     pub fn segment_dropped_count(&self) -> u64 {
@@ -145,6 +190,10 @@ impl VadEngine {
         self.segment_voiced_frames = 0;
         self.pending_attack.clear();
         self.preroll.clear();
+        self.draft_text.clear();
+        if let VoiceClassifier::Silero(silero) = &mut self.classifier {
+            silero.reset();
+        }
     }
 
     pub fn process_chunk(&mut self, audio_chunk: &[u8]) -> Vec<VadSegment> {
@@ -167,7 +216,7 @@ impl VadEngine {
             }
             let frame = chunk[start..start + self.frame_bytes].to_vec();
             let frame_rms = frame_rms(&frame);
-            let is_speech = self.is_webrtc_speech(&frame);
+            let is_speech = self.is_voice_frame(&frame);
             let mut admitted_speech = is_speech
                 && (!self.config.energy_gate_enabled
                     || frame_rms >= self.config.min_rms_for_recognition);
@@ -193,15 +242,20 @@ impl VadEngine {
                 self.remember_ambient_rms(frame_rms);
                 self.segment_total_frames += 1;
                 self.silence_frames += 1;
-                if self.silence_frames >= self.silence_hold_frames
+                // Keep trailing pad audio inside the segment (SST speech_pad).
+                if self.silence_frames <= self.speech_pad_frames {
+                    self.speech_frames.push(frame);
+                    self.speech_rms_values.push(frame_rms);
+                }
+                // Emit at most one mid-silence partial when silence hold is first reached.
+                if self.silence_frames == self.silence_hold_frames
                     && self.speech_frames.len() >= self.min_speech_frames as usize
-                    && self.last_partial_frame_count != self.speech_frames.len()
                     && let Some(partial) = self.build_segment(VadSegmentKind::Partial)
                 {
                     segments.push(partial);
                     self.last_partial_frame_count = self.speech_frames.len();
                 }
-                if self.silence_frames >= self.finalization_hold_frames {
+                if self.silence_frames >= self.effective_finalization_hold_frames() {
                     if let Some(final_segment) = self.build_segment(VadSegmentKind::Final) {
                         segments.push(final_segment);
                     } else {
@@ -241,7 +295,9 @@ impl VadEngine {
 
     fn apply_config(&mut self, config: VadEngineConfig) {
         let mode = vad_mode_from_u8(config.mode);
-        self.vad.set_mode(mode);
+        if let VoiceClassifier::Webrtc(vad) = &mut self.classifier {
+            vad.set_mode(mode);
+        }
         self.config = config;
         self.speech_attack_frames = self.config.speech_attack_frames.max(1);
         self.silence_hold_frames = ceil_frames(
@@ -251,13 +307,26 @@ impl VadEngine {
             self.config.frame_duration_ms,
         )
         .max(1);
-        self.finalization_hold_frames = ceil_frames(
-            self.config
-                .finalization_hold_ms
-                .max(self.config.silence_hold_ms),
+        // speech_pad extends finalize hold (golden: min_silence + speech_pad).
+        let finalize_ms = self
+            .config
+            .finalization_hold_ms
+            .saturating_add(self.config.speech_pad_ms)
+            .max(self.config.silence_hold_ms);
+        self.finalization_hold_frames =
+            ceil_frames(finalize_ms, self.config.frame_duration_ms).max(1);
+        self.speech_pad_frames = ceil_frames(
+            self.config.speech_pad_ms,
             self.config.frame_duration_ms,
-        )
-        .max(1);
+        );
+        self.text_hold_extra_frames = if self.config.text_hold_enabled {
+            ceil_frames(
+                self.config.text_hold_extra_ms,
+                self.config.frame_duration_ms,
+            )
+        } else {
+            0
+        };
         self.min_speech_frames =
             ceil_frames(self.config.min_speech_ms, self.config.frame_duration_ms);
         self.first_partial_min_speech_frames = ceil_frames(
@@ -286,21 +355,32 @@ impl VadEngine {
         }
     }
 
-    fn is_webrtc_speech(&mut self, frame: &[u8]) -> bool {
+    fn effective_finalization_hold_frames(&self) -> u32 {
+        let mut hold = self.finalization_hold_frames;
+        if self.text_hold_extra_frames > 0 && utterance_looks_incomplete(&self.draft_text) {
+            hold = hold.saturating_add(self.text_hold_extra_frames);
+        }
+        hold
+    }
+
+    fn is_voice_frame(&mut self, frame: &[u8]) -> bool {
         if frame.len() != self.frame_bytes {
             return false;
         }
-        let mut samples = [0i16; 960];
-        let count = frame.len() / 2;
-        if count > samples.len() {
-            return false;
+        match &mut self.classifier {
+            VoiceClassifier::Silero(silero) => silero.is_speech_pcm16(frame),
+            VoiceClassifier::Webrtc(vad) => {
+                let mut samples = [0i16; 960];
+                let count = frame.len() / 2;
+                if count > samples.len() {
+                    return false;
+                }
+                for (idx, chunk) in frame.chunks_exact(2).enumerate() {
+                    samples[idx] = i16::from_le_bytes([chunk[0], chunk[1]]);
+                }
+                vad.is_voice_segment(&samples[..count]).unwrap_or(false)
+            }
         }
-        for (idx, chunk) in frame.chunks_exact(2).enumerate() {
-            samples[idx] = i16::from_le_bytes([chunk[0], chunk[1]]);
-        }
-        self.vad
-            .is_voice_segment(&samples[..count])
-            .unwrap_or(false)
     }
 
     fn flush_speech_onset_from_preroll_and_attack(&mut self) {
@@ -561,5 +641,87 @@ mod tests {
         for _ in 0..50 {
             assert!(vad.process_chunk(&silence).is_empty());
         }
+    }
+
+    #[test]
+    fn speech_pad_delays_finalize() {
+        let mut vad = VadEngine::new(VadEngineConfig {
+            speech_attack_frames: 1,
+            speech_preroll_frames: 0,
+            energy_gate_enabled: false,
+            silence_hold_ms: 60,
+            finalization_hold_ms: 90,
+            speech_pad_ms: 180,
+            text_hold_enabled: false,
+            min_speech_ms: 60,
+            first_partial_min_speech_ms: 60,
+            partial_emit_interval_ms: 10_000,
+            ..VadEngineConfig::default()
+        });
+        let frame = sine_pcm(300.0, 480);
+        let silence = vec![0u8; 960];
+        for _ in 0..8 {
+            let _ = vad.process_chunk(&frame);
+        }
+        // 180ms silence < 90+180 pad finalize → still open
+        let mut finalized = false;
+        for _ in 0..6 {
+            for segment in vad.process_chunk(&silence) {
+                if segment.kind == VadSegmentKind::Final {
+                    finalized = true;
+                }
+            }
+        }
+        assert!(!finalized, "speech_pad should delay finalize");
+        for _ in 0..12 {
+            for segment in vad.process_chunk(&silence) {
+                if segment.kind == VadSegmentKind::Final {
+                    finalized = true;
+                }
+            }
+        }
+        assert!(finalized, "should finalize after pad + min silence");
+    }
+
+    #[test]
+    fn text_hold_extends_finalize_when_incomplete() {
+        let mut vad = VadEngine::new(VadEngineConfig {
+            speech_attack_frames: 1,
+            speech_preroll_frames: 0,
+            energy_gate_enabled: false,
+            silence_hold_ms: 60,
+            finalization_hold_ms: 90,
+            speech_pad_ms: 0,
+            text_hold_enabled: true,
+            text_hold_extra_ms: 240,
+            min_speech_ms: 60,
+            first_partial_min_speech_ms: 60,
+            partial_emit_interval_ms: 10_000,
+            ..VadEngineConfig::default()
+        });
+        let frame = sine_pcm(300.0, 480);
+        let silence = vec![0u8; 960];
+        for _ in 0..8 {
+            let _ = vad.process_chunk(&frame);
+        }
+        vad.set_draft_text("I went to the");
+        let mut finalized = false;
+        for _ in 0..4 {
+            for segment in vad.process_chunk(&silence) {
+                if segment.kind == VadSegmentKind::Final {
+                    finalized = true;
+                }
+            }
+        }
+        assert!(!finalized, "incomplete draft should extend silence hold");
+        vad.set_draft_text("I went to the store.");
+        for _ in 0..8 {
+            for segment in vad.process_chunk(&silence) {
+                if segment.kind == VadSegmentKind::Final {
+                    finalized = true;
+                }
+            }
+        }
+        assert!(finalized);
     }
 }

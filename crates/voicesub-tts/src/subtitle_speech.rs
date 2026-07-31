@@ -159,6 +159,14 @@ impl SubtitleSpeechPlanner {
                 );
                 continue;
             }
+            if obj.get("is_live_draft").and_then(|v| v.as_bool()) == Some(true) {
+                tts_trace::trace(
+                    "planner",
+                    "skip_live_draft",
+                    json!({ "sequence": sequence, "kind": kind }),
+                );
+                continue;
+            }
             if obj.get("success").and_then(|v| v.as_bool()) == Some(false) {
                 tts_trace::trace(
                     "planner",
@@ -287,6 +295,12 @@ fn skip_item_for_lifecycle(lifecycle: &str, kind: &str) -> bool {
 }
 
 fn speech_key(sequence: u64, kind: &str, slot_id: &str, text: &str) -> String {
+    // One speak per completed phrase + translation slot. Live-aligned drafts may
+    // arrive before authoritative final MT; including text in the key would make
+    // TTS repeat nearly the same line when the final polish lands.
+    if kind.eq_ignore_ascii_case("translation") {
+        return format!("{sequence}:{kind}:{slot_id}");
+    }
     format!(
         "{sequence}:{kind}:{slot_id}:{:016x}",
         stable_text_hash(text)
@@ -432,6 +446,128 @@ mod tests {
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0].text, "previous EN");
         assert_eq!(lines[0].source, "subtitle_translation_2");
+    }
+
+    #[test]
+    fn ignores_live_partial_draft_translations() {
+        let mut planner = SubtitleSpeechPlanner::new();
+        let settings = TtsSpeechSettings {
+            speak_source: false,
+            speak_translations: true,
+            translation_slots: vec!["translation_2".into()],
+            ..TtsSpeechSettings::default()
+        };
+        let growing = json!({
+            "sequence": 9,
+            "completed_sequence": 8,
+            "lifecycle_state": "completed_with_partial",
+            "completed_block_visible": true,
+            "active_partial_text": "новая фраза",
+            "visible_items": [
+                {"kind": "source", "text": "новая фраза"},
+                {
+                    "kind": "translation",
+                    "text": "a new",
+                    "slot_id": "translation_2",
+                    "target_lang": "en",
+                    "is_live_draft": true
+                },
+            ],
+        });
+        assert!(
+            planner.plan(&growing, &settings).is_empty(),
+            "live drafts must not be queued for TTS"
+        );
+
+        let next_draft = json!({
+            "sequence": 10,
+            "completed_sequence": 8,
+            "lifecycle_state": "completed_with_partial",
+            "completed_block_visible": true,
+            "active_partial_text": "новая фраза растёт",
+            "visible_items": [
+                {"kind": "source", "text": "новая фраза растёт"},
+                {
+                    "kind": "translation",
+                    "text": "a new phrase grows",
+                    "slot_id": "translation_2",
+                    "target_lang": "en",
+                    "is_live_draft": true
+                },
+            ],
+        });
+        assert!(planner.plan(&next_draft, &settings).is_empty());
+
+        let final_only = completed_payload(
+            11,
+            vec![json!({
+                "kind": "translation",
+                "text": "a new phrase grows fully",
+                "slot_id": "translation_2",
+                "target_lang": "en",
+                "is_live_draft": false
+            })],
+        );
+        let lines = planner.plan(&final_only, &settings);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].text, "a new phrase grows fully");
+    }
+
+    #[test]
+    fn ignores_lagging_live_draft_on_completed_only() {
+        let mut planner = SubtitleSpeechPlanner::new();
+        let settings = TtsSpeechSettings {
+            speak_source: false,
+            speak_translations: true,
+            ..TtsSpeechSettings::default()
+        };
+        let carried = completed_payload(
+            12,
+            vec![json!({
+                "kind": "translation",
+                "text": "draft of shorter partial",
+                "slot_id": "translation_1",
+                "is_live_draft": true
+            })],
+        );
+        assert!(
+            planner.plan(&carried, &settings).is_empty(),
+            "lagging live drafts must wait for exact-final alignment or authoritative MT"
+        );
+    }
+
+    #[test]
+    fn speaks_exact_match_draft_on_completed_only_without_waiting() {
+        let mut planner = SubtitleSpeechPlanner::new();
+        let settings = TtsSpeechSettings {
+            speak_source: false,
+            speak_translations: true,
+            ..TtsSpeechSettings::default()
+        };
+        let aligned = completed_payload(
+            13,
+            vec![json!({
+                "kind": "translation",
+                "text": "hello world",
+                "slot_id": "translation_1",
+                "is_live_draft": false
+            })],
+        );
+        let lines = planner.plan(&aligned, &settings);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].text, "hello world");
+
+        // Authoritative polish for the same slot must not re-trigger TTS.
+        let polished = completed_payload(
+            13,
+            vec![json!({
+                "kind": "translation",
+                "text": "hello world (final)",
+                "slot_id": "translation_1",
+                "is_live_draft": false
+            })],
+        );
+        assert!(planner.plan(&polished, &settings).is_empty());
     }
 
     #[test]

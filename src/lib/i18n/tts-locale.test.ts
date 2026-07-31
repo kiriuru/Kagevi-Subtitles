@@ -6,7 +6,7 @@ describe("TTS locale catalogs", () => {
   it("serves Japanese TTS strings", () => {
     setLocale("ja");
     expect(t("tts.module.title")).toBe("TTSモジュール");
-    expect(t("tts.speech.sample_default")).toContain("VoiceSub");
+    expect(t("tts.speech.sample_default")).toContain("Kagevi Subtitles");
   });
 
   it("serves Korean TTS strings", () => {

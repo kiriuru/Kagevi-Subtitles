@@ -99,6 +99,8 @@ impl Default for TranslationEvent {
             used_default_prompt: false,
             status_message: None,
             is_complete: true,
+            is_live_partial: false,
+            preview_lineage_key: None,
         }
     }
 }
@@ -123,6 +125,12 @@ pub struct TranslationEvent {
     pub status_message: Option<String>,
     #[serde(default = "default_true")]
     pub is_complete: bool,
+    /// Live MT draft for the active ASR partial (never TTS / never completed-block).
+    #[serde(default)]
+    pub is_live_partial: bool,
+    /// Segment-scoped identity used to reject drafts from a previous ASR phrase.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview_lineage_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,6 +161,9 @@ pub struct SubtitleLineItem {
     pub success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// Live-partial MT draft — overlay/dashboard only; TTS and OBS CC must ignore.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_live_draft: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

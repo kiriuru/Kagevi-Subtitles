@@ -13,7 +13,12 @@ use uuid::Uuid;
 
 use super::state::HttpState;
 
-pub const LOOPBACK_TOKEN_HEADER: &str = "x-voicesub-token";
+/// Primary loopback API auth header (Kagevi Subtitles).
+pub const LOOPBACK_TOKEN_HEADER: &str = "x-kagevi-subtitles-token";
+/// Previous Kagevi Voice header — still accepted during upgrades.
+pub const LOOPBACK_TOKEN_HEADER_PREV: &str = "x-kagevi-voice-token";
+/// Legacy VoiceSub header — still accepted for mixed-client upgrades.
+pub const LOOPBACK_TOKEN_HEADER_LEGACY: &str = "x-voicesub-token";
 
 #[derive(Clone)]
 pub struct LoopbackAuth {
@@ -32,19 +37,25 @@ impl LoopbackAuth {
     }
 
     pub fn authorize_headers(&self, headers: &HeaderMap) -> bool {
-        if let Some(value) = headers.get(LOOPBACK_TOKEN_HEADER)
-            && let Ok(provided) = value.to_str()
-            && constant_time_eq(provided.as_bytes(), self.token.as_bytes())
-        {
-            return true;
+        for name in [
+            LOOPBACK_TOKEN_HEADER,
+            LOOPBACK_TOKEN_HEADER_PREV,
+            LOOPBACK_TOKEN_HEADER_LEGACY,
+        ] {
+            if let Some(value) = headers.get(name)
+                && let Ok(provided) = value.to_str()
+                && constant_time_eq(provided.as_bytes(), self.token.as_bytes())
+            {
+                return true;
+            }
         }
         false
     }
 
     pub fn inject_token_script(&self, html: &str) -> String {
+        let json = serde_json::to_string(self.token()).unwrap_or_default();
         let script = format!(
-            "<script>window.__VOICESUB_API_TOKEN__={};</script>",
-            serde_json::to_string(self.token()).unwrap_or_default()
+            "<script>window.__KAGEVI_SUBTITLES_API_TOKEN__={json};window.__KAGEVI_VOICE_API_TOKEN__={json};window.__VOICESUB_API_TOKEN__={json};</script>"
         );
         if let Some(pos) = html.find("</head>") {
             let mut out = String::with_capacity(html.len() + script.len());
@@ -102,6 +113,28 @@ mod tests {
     }
 
     #[test]
+    fn authorize_accepts_prev_header() {
+        let auth = LoopbackAuth::generate();
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            LOOPBACK_TOKEN_HEADER_PREV,
+            HeaderValue::from_str(auth.token()).expect("token header"),
+        );
+        assert!(auth.authorize_headers(&headers));
+    }
+
+    #[test]
+    fn authorize_accepts_legacy_header() {
+        let auth = LoopbackAuth::generate();
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            LOOPBACK_TOKEN_HEADER_LEGACY,
+            HeaderValue::from_str(auth.token()).expect("token header"),
+        );
+        assert!(auth.authorize_headers(&headers));
+    }
+
+    #[test]
     fn authorize_rejects_missing_and_wrong_token() {
         let auth = LoopbackAuth::generate();
         assert!(!auth.authorize_headers(&HeaderMap::new()));
@@ -115,7 +148,8 @@ mod tests {
         let auth = LoopbackAuth::generate();
         let html = "<html><head><title>x</title></head><body></body></html>";
         let out = auth.inject_token_script(html);
+        assert!(out.contains("__KAGEVI_SUBTITLES_API_TOKEN__"));
         assert!(out.contains("__VOICESUB_API_TOKEN__"));
-        assert!(out.find("</head>").unwrap() > out.find("__VOICESUB_API_TOKEN__").unwrap());
+        assert!(out.find("</head>").unwrap() > out.find("__KAGEVI_SUBTITLES_API_TOKEN__").unwrap());
     }
 }

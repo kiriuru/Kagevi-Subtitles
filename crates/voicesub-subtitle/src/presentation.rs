@@ -199,7 +199,7 @@ impl SubtitlePresentation {
             .get("max_translation_languages")
             .and_then(|v| v.as_u64())
             .unwrap_or(0)
-            .min(5) as u32;
+            .min(4) as u32;
         let translation_slots = Self::translation_slot_map(&translation_config);
         let display_order = Self::resolved_display_order(&translation_config, &subtitle_output);
 
@@ -230,6 +230,7 @@ impl SubtitlePresentation {
                     visible: show_source,
                     success: true,
                     error: None,
+                    is_live_draft: false,
                 };
                 if source_item.visible && !source_item.text.is_empty() {
                     visible_items.push(source_item.clone());
@@ -290,6 +291,10 @@ impl SubtitlePresentation {
                 visible: can_show,
                 success,
                 error,
+                is_live_draft: translation
+                    .and_then(|t| t.get("is_live_draft"))
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
             };
             items.push(item.clone());
             if can_show {
@@ -355,6 +360,91 @@ impl SubtitlePresentation {
             .and_then(|v| v.get("show_source"))
             .and_then(|v| v.as_bool())
             .unwrap_or(true)
+    }
+
+    fn live_partial_translation_items(
+        active_partial: &Value,
+        translation_config: &Value,
+        subtitle_output: &Value,
+        display_order: &[String],
+    ) -> Vec<SubtitleLineItem> {
+        let show_translations = subtitle_output
+            .get("show_translations")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        let max_translation_languages = subtitle_output
+            .get("max_translation_languages")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0)
+            .min(4) as u32;
+        let translation_slots = Self::translation_slot_map(translation_config);
+        let translations = active_partial.get("translations").and_then(|v| v.as_object());
+        let mut items = Vec::new();
+        let mut visible_count = 0usize;
+        for code in display_order {
+            if code == "source" {
+                continue;
+            }
+            let Some(line_config) = translation_slots.get(code) else {
+                continue;
+            };
+            let translation = translations.and_then(|m| m.get(code));
+            let success = translation
+                .and_then(|t| t.get("success"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let text = translation
+                .and_then(|t| t.get("text"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+            if text.is_empty() || !success {
+                continue;
+            }
+            let can_show =
+                show_translations && visible_count < max_translation_languages as usize;
+            let target_lang = translation
+                .and_then(|t| t.get("target_lang"))
+                .and_then(|v| v.as_str())
+                .or_else(|| line_config.get("target_lang").and_then(|v| v.as_str()))
+                .unwrap_or(code);
+            let label = translation
+                .and_then(|t| t.get("label"))
+                .and_then(|v| v.as_str())
+                .or_else(|| line_config.get("label").and_then(|v| v.as_str()))
+                .unwrap_or(&target_lang.to_ascii_uppercase())
+                .to_string();
+            let item = SubtitleLineItem {
+                kind: "translation".into(),
+                lang: target_lang.into(),
+                label,
+                text: text.into(),
+                style_slot: if can_show { Some(code.clone()) } else { None },
+                slot_id: Some(code.clone()),
+                target_lang: Some(target_lang.into()),
+                provider: translation
+                    .and_then(|t| t.get("provider"))
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string),
+                visible: can_show,
+                success: true,
+                error: None,
+                is_live_draft: true,
+            };
+            if item.visible {
+                visible_count += 1;
+            }
+            items.push(item);
+        }
+        items
+    }
+
+    fn live_draft_should_replace_completed(
+        _active_partial: &Value,
+        completed: &SubtitleLineItem,
+    ) -> bool {
+        // Always prefer an available live draft over the previous completed phrase.
+        let _ = completed;
+        true
     }
 
     pub fn build_presentation_payload(&self, core: &SubtitleLifecycleCore) -> SubtitlePayloadEvent {
@@ -440,22 +530,49 @@ impl SubtitlePresentation {
                 visible: show_source && !active_partial_text.is_empty(),
                 success: true,
                 error: None,
+                is_live_draft: false,
             };
-            let visible_items: Vec<_> = if source_item.visible && !source_item.text.is_empty() {
-                vec![source_item.clone()]
-            } else {
-                vec![]
-            };
+            let live_translations = active_partial
+                .as_ref()
+                .map(|partial| {
+                    Self::live_partial_translation_items(
+                        partial,
+                        &translation_config,
+                        &subtitle_output,
+                        &display_order,
+                    )
+                })
+                .unwrap_or_default();
+            let mut items = vec![source_item.clone()];
+            items.extend(live_translations.iter().cloned());
+            let mut visible_items = Vec::new();
+            if source_item.visible && !source_item.text.is_empty() {
+                visible_items.push(source_item.clone());
+            }
+            visible_items.extend(
+                live_translations
+                    .into_iter()
+                    .filter(|item| item.visible && !item.text.is_empty()),
+            );
             let line1 = visible_items
                 .first()
                 .map(|i| i.text.clone())
                 .unwrap_or_default();
+            let line2 = if visible_items.len() > 1 {
+                visible_items[1..]
+                    .iter()
+                    .map(|i| i.text.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            } else {
+                String::new()
+            };
             let payload = SubtitlePayloadEvent {
                 sequence: active_partial_sequence.unwrap_or(0),
                 completed_sequence: core.completed_sequence(),
                 source_lang,
                 source_text: active_partial_text,
-                provider: source_item.provider.clone(),
+                provider: source_item.provider,
                 preset: overlay
                     .get("preset")
                     .and_then(|v| v.as_str())
@@ -475,7 +592,7 @@ impl SubtitlePresentation {
                     .get("max_translation_languages")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(0)
-                    .min(5) as u32,
+                    .min(4) as u32,
                 style: resolve_effective_subtitle_style(
                     &config.get("subtitle_style").cloned().unwrap_or(Value::Null),
                 ),
@@ -485,10 +602,10 @@ impl SubtitlePresentation {
                 active_partial_text: visible_partial_text,
                 active_partial_sequence,
                 active_partial_source_lang,
-                items: vec![source_item],
+                items,
                 visible_items,
                 line1,
-                line2: String::new(),
+                line2,
                 created_at_ms: None,
             };
             self.log
@@ -520,7 +637,7 @@ impl SubtitlePresentation {
                 .get("max_translation_languages")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0)
-                .min(5) as u32,
+                .min(4) as u32,
             style: resolve_effective_subtitle_style(
                 &config.get("subtitle_style").cloned().unwrap_or(Value::Null),
             ),
@@ -530,11 +647,21 @@ impl SubtitlePresentation {
         if !active_partial_text.is_empty()
             && let Some(completed_tp) = completed_tp_snapshot.as_ref()
         {
-            let preserve = core
-                .lifecycle_config()
-                .get("keep_completed_translation_during_active_partial")
+            // Live-partial MT must not reuse the previous phrase's completed translation
+            // while a new ASR partial is active — ignore keep_completed for this merge.
+            let live_partial_enabled = translation_config
+                .get("live_partial")
+                .and_then(|v| v.get("enabled"))
                 .and_then(|v| v.as_bool())
-                .unwrap_or(true);
+                .unwrap_or(false);
+            let preserve = if live_partial_enabled {
+                false
+            } else {
+                core.lifecycle_config()
+                    .get("keep_completed_translation_during_active_partial")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(true)
+            };
             if !preserve && !completed_tp.visible_items.is_empty() {
                 (self.payload_mismatch_count)(1);
             }
@@ -551,7 +678,7 @@ impl SubtitlePresentation {
                 .get("max_translation_languages")
                 .and_then(|v| v.as_u64())
                 .unwrap_or(0)
-                .min(5) as u32;
+                .min(4) as u32;
             let active_source_lang = active_partial_source_lang
                 .clone()
                 .unwrap_or_else(|| payload.source_lang.clone());
@@ -576,10 +703,22 @@ impl SubtitlePresentation {
                 visible: show_source && !active_partial_text.is_empty(),
                 success: true,
                 error: None,
+                is_live_draft: false,
             };
 
             let mut items = Vec::new();
             let mut visible_items = Vec::new();
+            let live_translations = active_partial
+                .as_ref()
+                .map(|partial| {
+                    Self::live_partial_translation_items(
+                        partial,
+                        &translation_config,
+                        &subtitle_output,
+                        &display_order,
+                    )
+                })
+                .unwrap_or_default();
             for code in &display_order {
                 if code == "source" {
                     items.push(source_item.clone());
@@ -588,7 +727,13 @@ impl SubtitlePresentation {
                     }
                     continue;
                 }
-                let translation_item = payload.items.iter().find(|item| {
+                let live_item = live_translations.iter().find(|item| {
+                    item.slot_id
+                        .as_deref()
+                        .unwrap_or(&item.lang)
+                        .eq_ignore_ascii_case(code)
+                });
+                let completed_item = payload.items.iter().find(|item| {
                     item.kind == "translation"
                         && item
                             .slot_id
@@ -596,6 +741,21 @@ impl SubtitlePresentation {
                             .unwrap_or(&item.lang)
                             .eq_ignore_ascii_case(code)
                 });
+                let (translation_item, using_live) = match (live_item, completed_item) {
+                    (Some(live), Some(completed)) if preserve => {
+                        if active_partial.as_ref().is_some_and(|partial| {
+                            Self::live_draft_should_replace_completed(partial, completed)
+                        }) {
+                            (Some(live), true)
+                        } else {
+                            (Some(completed), false)
+                        }
+                    }
+                    (Some(live), _) => (Some(live), true),
+                    // With live-partial on, never paint previous completed MT onto a new partial.
+                    (None, Some(completed)) if !live_partial_enabled => (Some(completed), false),
+                    _ => (None, false),
+                };
                 let Some(translation_item) = translation_item else {
                     continue;
                 };
@@ -603,12 +763,12 @@ impl SubtitlePresentation {
                     .iter()
                     .filter(|i| i.kind == "translation")
                     .count();
-                let can_show = preserve
+                let can_show = (using_live || preserve)
                     && show_translations
                     && translation_count < max_translation_languages as usize
                     && translation_item.success
                     && !translation_item.text.is_empty();
-                if !preserve && !translation_item.text.is_empty() {
+                if !using_live && !preserve && !translation_item.text.is_empty() {
                     (self.stale_translation_suppressed)(1);
                 }
                 let updated = SubtitleLineItem {

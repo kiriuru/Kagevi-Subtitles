@@ -6,7 +6,6 @@
   import type { ConfigPayload } from "../types";
   export let config: ConfigPayload;
   export let onChange: (next: ConfigPayload) => void;
-  let selectedOrderItem = "source";
   $: loc = $locale;
   $: tr = (key: string) => t(key, undefined, loc);
   $: overlay = (config.overlay || {}) as Record<string, unknown>;
@@ -19,9 +18,7 @@
       ? tr("overlay.preset_hint.single")
       : preset === "dual-line"
         ? tr("overlay.preset_hint.dual_line")
-        : preset === "stacked"
-          ? tr("overlay.preset_hint.stacked")
-          : tr("subtitles.compact");
+        : tr("overlay.preset_hint.stacked");
   function patchOverlay(partial: Record<string, unknown>) {
     onChange({ ...config, overlay: { ...overlay, ...partial } });
   }
@@ -64,9 +61,9 @@
     });
   }
 
-  function moveOrderItem(direction: -1 | 1) {
+  function moveOrderItem(code: string, direction: -1 | 1) {
     const items = [...displayOrder];
-    const index = items.indexOf(selectedOrderItem);
+    const index = items.indexOf(code);
     if (index < 0) return;
     const nextIndex = index + direction;
     if (nextIndex < 0 || nextIndex >= items.length) return;
@@ -82,27 +79,35 @@
 <section class="subtitles-layout bento-root stack">
   <article class="surface-card panel-padding bento-tile subtitles-order-panel stack">
     <p class="muted subtitles-order-label">{tr("subtitles.display_order")}</p>
-    <div class="subtitles-order-toolbar">
-      <div class="subtitles-order-actions">
-        <button type="button" class="btn btn-ghost" on:click={() => moveOrderItem(-1)}>
-          {tr("subtitles.move_up")}
-        </button>
-        <button type="button" class="btn btn-ghost" on:click={() => moveOrderItem(1)}>
-          {tr("subtitles.move_down")}
-        </button>
-      </div>
-
-      <ul class="ordered-list subtitles-order-list">
-        {#each displayOrder as code}
-          <li class:active={selectedOrderItem === code}>
-            <button type="button" class="order-item-btn" on:click={() => (selectedOrderItem = code)}>
-              {getSubtitleSlotLabel(code, loc)}
+    <ul class="ordered-list subtitles-order-list">
+      {#each displayOrder as code, index}
+        <li>
+          <span class="order-item-label">{getSubtitleSlotLabel(code, loc)}</span>
+          <div class="order-item-actions">
+            <button
+              type="button"
+              class="btn btn-ghost order-arrow-btn"
+              disabled={index === 0}
+              aria-label={tr("subtitles.move_up")}
+              title={tr("subtitles.move_up")}
+              on:click={() => moveOrderItem(code, -1)}
+            >
+              ↑
             </button>
-          </li>
-        {/each}
-      </ul>
-    </div>
-
+            <button
+              type="button"
+              class="btn btn-ghost order-arrow-btn"
+              disabled={index === displayOrder.length - 1}
+              aria-label={tr("subtitles.move_down")}
+              title={tr("subtitles.move_down")}
+              on:click={() => moveOrderItem(code, 1)}
+            >
+              ↓
+            </button>
+          </div>
+        </li>
+      {/each}
+    </ul>
   </article>
 
   <div class="subtitles-top bento-grid">
@@ -158,21 +163,6 @@
             patchOutput({ show_translations: (e.currentTarget as HTMLInputElement).checked })}
         />
         <span>{tr("subtitles.show_translations")}</span>
-      </label>
-
-      <label class="stack-field">
-        <span>{tr("subtitles.max_translations")}</span>
-        <input
-          class="control"
-          type="number"
-          min="0"
-          max="5"
-          value={Number(output.max_translation_languages ?? 2)}
-          on:input={(e) =>
-            patchOutput({
-              max_translation_languages: Number((e.currentTarget as HTMLInputElement).value),
-            })}
-        />
       </label>
 
     </article>
@@ -266,15 +256,6 @@
     margin: 0;
     font-size: 13px;
   }
-  .subtitles-order-toolbar {
-    display: grid;
-    gap: var(--space-3);
-  }
-  .subtitles-order-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
   .subtitles-order-list {
     list-style: none;
     padding: 0;
@@ -283,29 +264,36 @@
     gap: var(--space-2);
   }
   .subtitles-order-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
     border: 1px solid var(--line-subtle);
     border-radius: var(--radius-md);
     background: var(--bg-control);
-    padding: 9px 10px;
-    cursor: pointer;
-    transition: border-color 140ms ease, background-color 140ms ease;
+    padding: 6px 8px 6px 12px;
   }
-  .subtitles-order-list li:hover {
-    background: color-mix(in srgb, var(--bg-control) 80%, var(--accent-soft));
-  }
-  .subtitles-order-list li.active {
-    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-    background: var(--accent-soft);
-  }
-  .order-item-btn {
-    width: 100%;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
+  .order-item-label {
+    min-width: 0;
+    flex: 1;
     font: inherit;
-    text-align: left;
-    cursor: pointer;
+    color: inherit;
+  }
+  .order-item-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
+  }
+  .order-arrow-btn {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .order-arrow-btn:disabled {
+    opacity: 0.35;
   }
   .subtitles-timing-hint {
     margin: 0 0 var(--space-2);

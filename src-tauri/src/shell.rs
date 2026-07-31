@@ -36,6 +36,9 @@ const ALLOWED_EXTERNAL_HTTPS_HOSTS: &[&str] = &[
     "developer.nvidia.com",
     "www.nvidia.com",
     "nvidia.com",
+    // Credits / tips
+    "www.donationalerts.com",
+    "donationalerts.com",
     // Translation provider consoles / API key pages
     "console.cloud.google.com",
     "script.google.com",
@@ -98,10 +101,19 @@ mod tests {
 
     #[test]
     fn allows_github_release_urls() {
-        assert!(
-            validate_external_https_url("https://github.com/kiriuru/VoiceSub/releases/tag/v0.5.2")
-                .is_ok()
+        let url = voicesub_types::release_url_for(
+            voicesub_types::DEFAULT_GITHUB_REPO,
+            "0.5.2",
         );
+        assert!(validate_external_https_url(&url).is_ok());
+    }
+
+    #[test]
+    fn allows_donationalerts_tip_urls() {
+        assert!(
+            validate_external_https_url("https://www.donationalerts.com/r/kiriuru").is_ok()
+        );
+        assert!(validate_external_https_url("https://donationalerts.com/r/kiriuru").is_ok());
     }
 
     #[test]

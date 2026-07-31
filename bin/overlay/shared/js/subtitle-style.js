@@ -408,6 +408,13 @@
     return "source";
   }
 
+  function textAlignToJustify(textAlign) {
+    const align = String(textAlign || "center").trim().toLowerCase();
+    if (align === "left" || align === "start") return "flex-start";
+    if (align === "right" || align === "end") return "flex-end";
+    return "center";
+  }
+
   function composeRenderRows(payload) {
     const visibleItems = Array.isArray(payload?.visible_items)
       ? payload.visible_items.filter((item) => item && String(item.text || "").trim())
@@ -417,6 +424,14 @@
 
     const lifecycleState = String(payload?.lifecycle_state || "idle");
     const isCompletedWithPartial = lifecycleState === "completed_with_partial";
+    const isPartialOnly = lifecycleState === "partial_only";
+    // Live-partial MT publishes the draft translation alongside the growing
+    // source while the phrase is still partial. Those rows must render, so the
+    // source-only shortcut below applies only when no translation row exists.
+    const hasLivePartialTranslation =
+      (isPartialOnly || (!isCompletedWithPartial && !payload?.completed_block_visible))
+      && payload?.show_translations !== false
+      && visibleItems.some((item) => item.kind === "translation");
 
     // partial_only: no completed block yet — preview just the live source.
     // Never use this shortcut for completed_with_partial: that state mixes
@@ -424,6 +439,7 @@
     if (
       !isCompletedWithPartial
       && !payload?.completed_block_visible
+      && !hasLivePartialTranslation
       && allowSourcePartialPreview
       && activePartialText
     ) {
@@ -435,7 +451,10 @@
       ];
     }
 
-    if ((!payload?.completed_block_visible && !isCompletedWithPartial) || !visibleItems.length) {
+    if (
+      (!payload?.completed_block_visible && !isCompletedWithPartial && !hasLivePartialTranslation)
+      || !visibleItems.length
+    ) {
       return [];
     }
 
@@ -454,7 +473,7 @@
     // treatment (matches the explicit user request to leave translations
     // on the old logic).
     const livePartialSourceInVisibleItems =
-      payload?.lifecycle_state === "completed_with_partial"
+      (payload?.lifecycle_state === "completed_with_partial" || isPartialOnly)
       && activePartialText.length > 0;
     let translationIndex = 0;
     const entries = visibleItems.map((item) => {
@@ -1038,6 +1057,14 @@
   // in a *later* frame (which falls through to the slow path because the row
   // count actually changes), so source finalization frames are
   // finalization-compatible.
+  function _shapeLayoutTag(shapeSignature) {
+    if (typeof shapeSignature !== "string" || !shapeSignature) {
+      return null;
+    }
+    const parts = shapeSignature.split("||");
+    return parts.length >= 2 ? parts[parts.length - 1] : null;
+  }
+
   function _canFastPathFinalize(rows, previousDescriptors, previousPartialBySlot) {
     if (!Array.isArray(previousDescriptors) || rows.length === 0) {
       return false;
@@ -1191,7 +1218,11 @@
     let finalizedInPlaceCount = 0;
     let usedFastPath = false;
     const exactShapeMatch = previousShape !== null && previousShape === shapeSignature;
+    // Finalization fast path must keep the same layout tag (preset|compact|overlay).
+    // Otherwise single↔dual-line↔stacked switches reuse the old row DOM/classes.
     const finalizationCompatible = !exactShapeMatch
+      && _shapeLayoutTag(previousShape) !== null
+      && _shapeLayoutTag(previousShape) === _shapeLayoutTag(shapeSignature)
       && _canFastPathFinalize(rows, previousEntryDescriptors, previousPartialBySlot);
 
     // -----------------------------------------------------------------
@@ -1405,12 +1436,12 @@
       const row = document.createElement("div");
       row.className = "subtitle-line";
       row.dataset.slot = rowConfig.rowSlot || "source";
-      row.style.setProperty(
-        "--subtitle-text-align",
+      const textAlign =
         effectiveStyle.line_slots?.[rowConfig.rowSlot]?.text_align ||
-          effectiveStyle.container?.text_align ||
-          "center"
-      );
+        effectiveStyle.container?.text_align ||
+        "center";
+      row.style.setProperty("--subtitle-text-align", textAlign);
+      row.style.setProperty("--subtitle-justify", textAlignToJustify(textAlign));
       const content = document.createElement("div");
       content.className = `subtitle-line__content subtitle-line__content--${layoutPreset}`;
 
@@ -1708,6 +1739,7 @@
     buildOutlineTextShadow,
     buildCssVariables,
     composeRenderRows,
+    textAlignToJustify,
     effectClassName,
     colorToRgba,
     commonPrefixLength,

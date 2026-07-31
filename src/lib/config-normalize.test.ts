@@ -182,5 +182,35 @@ describe("normalizeConfigPayload SST parity", () => {
       false,
     );
     expect(out.translation?.target_languages).toEqual(["en"]);
+    expect(out.subtitle_output?.max_translation_languages).toBe(1);
+  });
+
+  it("caps translation lines at four and derives max_translation_languages", () => {
+    const out = normalizeConfigPayload({
+      translation: {
+        enabled: true,
+        provider: "google_translate_v2",
+        lines: [
+          { slot_id: "translation_1", enabled: true, target_lang: "en", provider: "google_translate_v2" },
+          { slot_id: "translation_2", enabled: true, target_lang: "ja", provider: "google_translate_v2" },
+          { slot_id: "translation_3", enabled: true, target_lang: "de", provider: "google_translate_v2" },
+          { slot_id: "translation_4", enabled: true, target_lang: "fr", provider: "google_translate_v2" },
+          { slot_id: "translation_5", enabled: true, target_lang: "ko", provider: "google_translate_v2" },
+        ],
+      },
+      subtitle_output: {
+        max_translation_languages: 2,
+        display_order: ["source", "translation_1", "translation_5"],
+      },
+    } as ConfigPayload);
+
+    expect(out.translation?.lines?.map((line) => line.slot_id)).toEqual([
+      "translation_1",
+      "translation_2",
+      "translation_3",
+      "translation_4",
+    ]);
+    expect(out.subtitle_output?.max_translation_languages).toBe(4);
+    expect(out.subtitle_output?.display_order).not.toContain("translation_5");
   });
 });

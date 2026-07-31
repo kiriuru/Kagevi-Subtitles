@@ -10,8 +10,8 @@ mod google_v3;
 mod http;
 mod lang_codes;
 mod libretranslate;
+mod microsoft_edge;
 mod openai_compatible;
-mod public_mirrors;
 mod stub;
 mod tencent_tmt;
 mod youdao;
@@ -36,8 +36,8 @@ pub use http::{
     effective_request_timeout,
 };
 pub use libretranslate::LibreTranslateProvider;
+pub use microsoft_edge::MicrosoftEdgeProvider;
 pub use openai_compatible::OpenAICompatibleChatProvider;
-pub use public_mirrors::PublicLibreTranslateMirrorProvider;
 pub use stub::StubTranslationProvider;
 pub use tencent_tmt::TencentTmtProvider;
 pub use youdao::YoudaoTranslateProvider;
@@ -54,7 +54,7 @@ pub const SUPPORTED_PROVIDERS: &[&str] = &[
     "openrouter",
     "lm_studio",
     "ollama",
-    "public_libretranslate_mirror",
+    "microsoft_edge",
     "free_web_translate",
     "baidu_translate",
     "youdao_translate",
@@ -68,6 +68,8 @@ pub struct ProviderInfo {
     pub group: &'static str,
     pub experimental: bool,
     pub local_provider: bool,
+    /// Classic MT may re-translate ASR partials; LLM / local LLM must stay false.
+    pub supports_live_partial: bool,
 }
 
 #[derive(Debug, Error)]
@@ -205,8 +207,8 @@ pub fn build_default_registry(
         )),
     );
     registry.insert(
-        "public_libretranslate_mirror".into(),
-        Arc::new(PublicLibreTranslateMirrorProvider::new(transport.clone())),
+        "microsoft_edge".into(),
+        Arc::new(MicrosoftEdgeProvider::new(transport.clone())),
     );
     registry.insert(
         "free_web_translate".into(),
@@ -263,6 +265,7 @@ pub fn base_diagnostics(info: &ProviderInfo, settings: &HashMap<String, String>)
         "provider_group": info.group,
         "experimental": info.experimental,
         "local_provider": info.local_provider,
+        "supports_live_partial": info.supports_live_partial,
         "settings_keys": settings.keys().collect::<Vec<_>>(),
     })
 }
@@ -270,6 +273,21 @@ pub fn base_diagnostics(info: &ProviderInfo, settings: &HashMap<String, String>)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_registry_live_partial_excludes_llm_providers() {
+        let transport = SharedHttpClient::new(reqwest::Client::new());
+        let registry = build_default_registry(transport);
+        for name in SUPPORTED_PROVIDERS {
+            let info = registry.get(*name).expect(name).info();
+            let is_llm = info.group == "llm" || info.group == "local_llm";
+            assert_eq!(
+                info.supports_live_partial, !is_llm,
+                "{name} supports_live_partial mismatch for group {}",
+                info.group
+            );
+        }
+    }
 
     #[test]
     fn default_registry_registers_all_supported_providers() {

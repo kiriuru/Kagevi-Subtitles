@@ -49,6 +49,7 @@ impl TranslationProvider for YoudaoTranslateProvider {
             group: "china",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

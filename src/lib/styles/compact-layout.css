@@ -1,12 +1,12 @@
 /* Compact = phone portrait window (390×844 logical) — single column, bottom tabs */
 
-body.voicesub-layout-compact {
+body.kagevi-subtitles-layout-compact {
   --compact-phone-width: 390px;
   overflow: hidden;
   height: 100dvh;
 }
 
-body.voicesub-layout-compact .app-shell {
+body.kagevi-subtitles-layout-compact .app-shell {
   display: flex !important;
   flex-direction: column;
   align-items: stretch;
@@ -21,11 +21,11 @@ body.voicesub-layout-compact .app-shell {
   overflow: hidden;
 }
 
-body.voicesub-layout-compact .app-footer {
+body.kagevi-subtitles-layout-compact .app-footer {
   display: none;
 }
 
-body.voicesub-layout-compact .compact-phone-shell {
+body.kagevi-subtitles-layout-compact .compact-phone-shell {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -37,7 +37,7 @@ body.voicesub-layout-compact .compact-phone-shell {
 }
 
 /* Top app bar */
-body.voicesub-layout-compact .compact-top-bar {
+body.kagevi-subtitles-layout-compact .compact-top-bar {
   flex: 0 0 auto;
   z-index: 20;
   display: flex;
@@ -48,7 +48,7 @@ body.voicesub-layout-compact .compact-top-bar {
   background: var(--bg-panel);
 }
 
-body.voicesub-layout-compact .compact-top-row {
+body.kagevi-subtitles-layout-compact .compact-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -56,69 +56,69 @@ body.voicesub-layout-compact .compact-top-row {
   min-width: 0;
 }
 
-body.voicesub-layout-compact .compact-brand {
+body.kagevi-subtitles-layout-compact .compact-brand {
   display: flex;
   align-items: baseline;
   gap: 6px;
   min-width: 0;
 }
 
-body.voicesub-layout-compact .compact-brand-title {
+body.kagevi-subtitles-layout-compact .compact-brand-title {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-body.voicesub-layout-compact .compact-brand-version {
+body.kagevi-subtitles-layout-compact .compact-brand-version {
   font-size: 10px;
 }
 
-body.voicesub-layout-compact .compact-top-actions {
+body.kagevi-subtitles-layout-compact .compact-top-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-body.voicesub-layout-compact .compact-locale-field {
+body.kagevi-subtitles-layout-compact .compact-locale-field {
   margin: 0;
 }
 
-body.voicesub-layout-compact .compact-locale-field .control {
+body.kagevi-subtitles-layout-compact .compact-locale-field .control {
   min-height: 40px;
   width: 100%;
   font-size: 14px;
 }
 
-body.voicesub-layout-compact .compact-icon-btn {
+body.kagevi-subtitles-layout-compact .compact-icon-btn {
   min-width: 40px;
   min-height: 40px;
   padding-inline: 10px;
 }
 
-body.voicesub-layout-compact .compact-save-btn {
+body.kagevi-subtitles-layout-compact .compact-save-btn {
   min-height: 40px;
   padding-inline: 14px;
   font-size: 13px;
 }
 
-body.voicesub-layout-compact .runtime-mini-strip {
+body.kagevi-subtitles-layout-compact .runtime-mini-strip {
   margin: 0 12px 8px;
   padding: 8px 10px;
 }
 
-body.voicesub-layout-compact .badges {
+body.kagevi-subtitles-layout-compact .badges {
   flex-wrap: wrap;
   gap: 4px;
 }
 
-body.voicesub-layout-compact .badge {
+body.kagevi-subtitles-layout-compact .badge {
   font-size: 10px;
   padding: 3px 6px;
 }
 
 /* Scrollable main content */
-body.voicesub-layout-compact .compact-content-scroll {
+body.kagevi-subtitles-layout-compact .compact-content-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -127,7 +127,7 @@ body.voicesub-layout-compact .compact-content-scroll {
   position: relative;
 }
 
-body.voicesub-layout-compact .compact-content-scroll > .tab-panel.active {
+body.kagevi-subtitles-layout-compact .compact-content-scroll > .tab-panel.active {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -135,7 +135,7 @@ body.voicesub-layout-compact .compact-content-scroll > .tab-panel.active {
 }
 
 /* Live overview — compact single column */
-body.voicesub-layout-compact .compact-overview.overview-section-root {
+body.kagevi-subtitles-layout-compact .compact-overview.overview-section-root {
   display: flex !important;
   flex-direction: column;
   gap: 10px;
@@ -143,33 +143,33 @@ body.voicesub-layout-compact .compact-overview.overview-section-root {
   margin: 0;
 }
 
-body.voicesub-layout-compact .compact-overview .overview-main-body {
+body.kagevi-subtitles-layout-compact .compact-overview .overview-main-body {
   grid-template-columns: 1fr;
   margin-top: var(--space-2);
 }
 
-body.voicesub-layout-compact .compact-overview .overview-recognition-panel,
-body.voicesub-layout-compact .compact-overview .overview-preview-card {
+body.kagevi-subtitles-layout-compact .compact-overview .overview-recognition-panel,
+body.kagevi-subtitles-layout-compact .compact-overview .overview-preview-card {
   display: none;
 }
 
-body.voicesub-layout-compact .compact-overview .overview-transcript-cols {
+body.kagevi-subtitles-layout-compact .compact-overview .overview-transcript-cols {
   grid-template-columns: 1fr;
 }
 
-body.voicesub-layout-compact .compact-overview .transcript-box--live {
+body.kagevi-subtitles-layout-compact .compact-overview .transcript-box--live {
   min-height: 88px;
   max-height: 120px;
   font-size: 12px;
 }
 
-body.voicesub-layout-compact .compact-overview .section-heading h2,
-body.voicesub-layout-compact .compact-overview .overview-main-header h2 {
+body.kagevi-subtitles-layout-compact .compact-overview .section-heading h2,
+body.kagevi-subtitles-layout-compact .compact-overview .overview-main-header h2 {
   font-size: 16px;
 }
 
 /* Bottom tab bar (phone pattern) */
-body.voicesub-layout-compact .compact-bottom-nav {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav {
   flex: 0 0 auto;
   z-index: 30;
   position: relative;
@@ -185,13 +185,13 @@ body.voicesub-layout-compact .compact-bottom-nav {
 }
 
 @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  body.voicesub-layout-compact .compact-bottom-nav {
+  body.kagevi-subtitles-layout-compact .compact-bottom-nav {
     -webkit-backdrop-filter: blur(16px) saturate(1.3);
     backdrop-filter: blur(16px) saturate(1.3);
   }
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-scroll {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-scroll {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -205,16 +205,16 @@ body.voicesub-layout-compact .compact-bottom-nav-scroll {
   scrollbar-color: color-mix(in srgb, var(--text-secondary) 55%, transparent) transparent;
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-scroll::-webkit-scrollbar {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-scroll::-webkit-scrollbar {
   height: 4px;
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-scroll::-webkit-scrollbar-thumb {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-scroll::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-track {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-track {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -225,7 +225,7 @@ body.voicesub-layout-compact .compact-bottom-nav-track {
   padding-inline: 4px;
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-edge {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-edge {
   flex: 0 0 28px;
   width: 28px;
   margin: 0;
@@ -239,16 +239,16 @@ body.voicesub-layout-compact .compact-bottom-nav-edge {
   z-index: 2;
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-edge--left {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-edge--left {
   border-right: 1px solid var(--line-subtle);
 }
 
-body.voicesub-layout-compact .compact-bottom-nav-edge--right {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav-edge--right {
   border-left: 1px solid var(--line-subtle);
 }
 
-body.voicesub-layout-compact .compact-bottom-nav.can-scroll-right::after,
-body.voicesub-layout-compact .compact-bottom-nav.can-scroll-left::before {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav.can-scroll-right::after,
+body.kagevi-subtitles-layout-compact .compact-bottom-nav.can-scroll-left::before {
   content: "";
   position: absolute;
   top: 0;
@@ -258,17 +258,17 @@ body.voicesub-layout-compact .compact-bottom-nav.can-scroll-left::before {
   z-index: 1;
 }
 
-body.voicesub-layout-compact .compact-bottom-nav.can-scroll-right::after {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav.can-scroll-right::after {
   right: 0;
   background: linear-gradient(270deg, var(--glass-2) 10%, transparent);
 }
 
-body.voicesub-layout-compact .compact-bottom-nav.can-scroll-left::before {
+body.kagevi-subtitles-layout-compact .compact-bottom-nav.can-scroll-left::before {
   left: 0;
   background: linear-gradient(90deg, var(--glass-2) 10%, transparent);
 }
 
-body.voicesub-layout-compact .compact-bottom-tab {
+body.kagevi-subtitles-layout-compact .compact-bottom-tab {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
@@ -287,7 +287,7 @@ body.voicesub-layout-compact .compact-bottom-tab {
   text-align: center;
 }
 
-body.voicesub-layout-compact .compact-bottom-tab-icon {
+body.kagevi-subtitles-layout-compact .compact-bottom-tab-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -295,7 +295,7 @@ body.voicesub-layout-compact .compact-bottom-tab-icon {
   height: 32px;
 }
 
-body.voicesub-layout-compact .compact-bottom-tab-label {
+body.kagevi-subtitles-layout-compact .compact-bottom-tab-label {
   font-size: 9px;
   font-weight: 600;
   line-height: 1.15;
@@ -305,109 +305,109 @@ body.voicesub-layout-compact .compact-bottom-tab-label {
   white-space: nowrap;
 }
 
-body.voicesub-layout-compact .compact-bottom-tab.is-active {
+body.kagevi-subtitles-layout-compact .compact-bottom-tab.is-active {
   color: var(--text-primary);
   background: var(--accent-soft);
 }
 
-body.voicesub-layout-compact .compact-bottom-tab.is-active .compact-bottom-tab-icon {
+body.kagevi-subtitles-layout-compact .compact-bottom-tab.is-active .compact-bottom-tab-icon {
   color: rgb(var(--ui-accent-rgb, 108 199 255) / 1);
 }
 
 /* Settings panels — single column only */
-body.voicesub-layout-compact .grid-2:not(.bento-grid),
-body.voicesub-layout-compact .panel-bento-root .bento-grid {
+body.kagevi-subtitles-layout-compact .grid-2:not(.bento-grid),
+body.kagevi-subtitles-layout-compact .panel-bento-root .bento-grid {
   grid-template-columns: 1fr !important;
 }
 
-body.voicesub-layout-compact .control,
-body.voicesub-layout-compact .btn {
+body.kagevi-subtitles-layout-compact .control,
+body.kagevi-subtitles-layout-compact .btn {
   min-height: 44px;
 }
 
-body.voicesub-layout-compact .url-row {
+body.kagevi-subtitles-layout-compact .url-row {
   flex-direction: column;
   align-items: stretch;
   min-width: 0;
 }
 
-body.voicesub-layout-compact .url-row input {
+body.kagevi-subtitles-layout-compact .url-row input {
   min-width: 0;
   width: 100%;
 }
 
-body.voicesub-layout-compact .url-row .btn {
+body.kagevi-subtitles-layout-compact .url-row .btn {
   width: 100%;
   justify-content: center;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="translation"] .translation-line-list {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="translation"] .translation-line-list {
   grid-template-columns: 1fr;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="translation"] .translation-layout,
-body.voicesub-layout-compact .tab-panel[data-tab-panel="translation"] .translation-bottom,
-body.voicesub-layout-compact .tab-panel[data-tab-panel="translation"] .translation-results {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="translation"] .translation-layout,
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="translation"] .translation-bottom,
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="translation"] .translation-results {
   min-width: 0;
   width: 100%;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="subtitles"] .subtitles-layout {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="subtitles"] .subtitles-layout {
   gap: var(--space-2);
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="subtitles"] .subtitles-order-toolbar {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="subtitles"] .subtitles-order-toolbar {
   gap: var(--space-2);
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="subtitles"] .subtitles-order-list li {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="subtitles"] .subtitles-order-list li {
   min-width: 0;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="subtitles"] .order-item-btn {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="subtitles"] .order-item-btn {
   width: 100%;
   text-align: left;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="subtitles"] .surface-card.panel-padding {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="subtitles"] .surface-card.panel-padding {
   padding: var(--space-3);
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .style-surface {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .style-surface {
   padding: var(--space-2);
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .slot-surface-header {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .slot-surface-header {
   flex-direction: column;
   align-items: stretch;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .slot-enable-row {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .slot-enable-row {
   white-space: normal;
   width: 100%;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .preview-surface {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .preview-surface {
   --preview-surface-height: 140px;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .style-color-strip {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .style-color-strip {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .badges .tab-btn {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .badges .tab-btn {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .style-metric-grid {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .style-metric-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .style-select-row {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .style-select-row {
   grid-template-columns: 1fr;
 }
 
-body.voicesub-layout-compact .tab-panel[data-tab-panel="style"] .control-metric {
+body.kagevi-subtitles-layout-compact .tab-panel[data-tab-panel="style"] .control-metric {
   max-width: 7rem;
 }

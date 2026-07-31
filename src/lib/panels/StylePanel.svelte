@@ -23,7 +23,6 @@
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
   ] as const;
 
   export let config: ConfigPayload;

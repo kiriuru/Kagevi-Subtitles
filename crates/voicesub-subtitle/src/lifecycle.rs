@@ -173,11 +173,32 @@ impl SubtitleLifecycleCore {
                         .into()
                 });
             let provider = event.segment.as_ref().and_then(|s| s.provider.clone());
+            let segment_id = event
+                .segment
+                .as_ref()
+                .map(|s| s.segment_id.clone())
+                .unwrap_or_default();
+            let previous = self.active_partial.as_ref();
+            let same_segment = previous
+                .and_then(|p| p.get("segment_id"))
+                .and_then(|v| v.as_str())
+                == Some(segment_id.as_str())
+                && !segment_id.is_empty();
+            let preserved_translations = if same_segment {
+                previous
+                    .and_then(|p| p.get("translations").cloned())
+                    .unwrap_or_else(|| json!({}))
+            } else {
+                json!({})
+            };
             self.active_partial = Some(json!({
                 "sequence": event.sequence,
+                "revision": event.segment.as_ref().map(|s| s.revision).unwrap_or(0),
                 "text": event.text,
                 "source_lang": source_lang,
                 "provider": provider,
+                "segment_id": segment_id,
+                "translations": preserved_translations,
             }));
             self.log.transcript_partial(&event);
             if let Some(completed) = self.completed_sequence {
@@ -203,6 +224,72 @@ impl SubtitleLifecycleCore {
                 .into()
         });
         let provider = segment.and_then(|s| s.provider.clone());
+        let final_segment_id = segment.map(|s| s.segment_id.clone()).unwrap_or_default();
+        // Keep last live MT drafts until the final translation lands — clearing them
+        // left a source-only gap (translation "disappears" until final HTTP returns).
+        let mut carried_translations = self
+            .active_partial
+            .as_ref()
+            .filter(|partial| {
+                let prev_id = partial
+                    .get("segment_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                !final_segment_id.is_empty() && prev_id == final_segment_id.as_str()
+            })
+            .and_then(|partial| partial.get("translations").cloned())
+            .unwrap_or_else(|| json!({}));
+        // Exact-match drafts of the finalized source are TTS-eligible immediately so we
+        // do not wait for a redundant final MT round-trip. Lagging shorter drafts stay
+        // marked live until authoritative final (or an exact late draft) arrives.
+        let final_text = event.text.trim();
+        let final_len = final_text.chars().count() as u64;
+        let mut aligned_slots = 0usize;
+        if let Some(translations) = carried_translations.as_object_mut() {
+            for translation in translations.values_mut() {
+                let Some(obj) = translation.as_object_mut() else {
+                    continue;
+                };
+                let aligned = match obj.get("source_text").and_then(|v| v.as_str()) {
+                    Some(src) => src.trim() == final_text,
+                    None => obj
+                        .get("source_text_len")
+                        .and_then(|v| v.as_u64())
+                        .is_some_and(|len| len == final_len),
+                };
+                obj.insert("is_live_draft".into(), json!(!aligned));
+                if aligned {
+                    aligned_slots += 1;
+                }
+            }
+        }
+        let translation_required = self.translation_required_for_display();
+        let translation_received = !translation_required
+            || (aligned_slots > 0 && {
+                let required = SubtitlePresentation::translation_slot_map(
+                    &self
+                        .config()
+                        .get("translation")
+                        .cloned()
+                        .unwrap_or(Value::Null),
+                );
+                if required.is_empty() {
+                    true
+                } else if let Some(map) = carried_translations.as_object() {
+                    required.keys().all(|slot| {
+                        map.get(slot).is_some_and(|item| {
+                            item.get("success").and_then(|v| v.as_bool()) == Some(true)
+                                && item.get("is_live_draft").and_then(|v| v.as_bool()) != Some(true)
+                                && item
+                                    .get("text")
+                                    .and_then(|v| v.as_str())
+                                    .is_some_and(|t| !t.trim().is_empty())
+                        })
+                    })
+                } else {
+                    false
+                }
+            });
 
         self.records.insert(
             event.sequence,
@@ -210,9 +297,9 @@ impl SubtitleLifecycleCore {
                 "sequence": event.sequence,
                 "source_text": event.text,
                 "source_lang": source_lang,
-                "translations": {},
+                "translations": carried_translations.clone(),
                 "provider": provider,
-                "translation_received": !self.translation_required_for_display(),
+                "translation_received": translation_received,
                 "duration_ms": duration_ms,
                 "finalized_at_utc": utc_now_iso(),
                 "finalized_at_monotonic": self.monotonic_now(),
@@ -220,9 +307,12 @@ impl SubtitleLifecycleCore {
         );
         self.active_partial = Some(json!({
             "sequence": event.sequence,
+            "revision": segment.map(|s| s.revision).unwrap_or(0),
             "text": event.text,
             "source_lang": source_lang,
             "provider": provider,
+            "segment_id": final_segment_id,
+            "translations": carried_translations,
         }));
         self.pending_final_sequence = Some(event.sequence);
         if self.latest_final_sequence.is_none()
@@ -241,6 +331,12 @@ impl SubtitleLifecycleCore {
         event: TranslationEvent,
         presentation: &SubtitlePresentation,
     ) {
+        if event.is_live_partial {
+            self.apply_live_partial_translation(&event);
+            self.log.translation_received(&event);
+            return;
+        }
+
         let config = self.config();
         let translation_config = config.get("translation").cloned().unwrap_or(Value::Null);
         let language_to_slot =
@@ -302,12 +398,22 @@ impl SubtitleLifecycleCore {
                         "provider": item.provider,
                         "success": item.success,
                         "error": item.error,
+                        "is_live_draft": false,
                     }),
                 );
             }
             obj.insert("translations".into(), Value::Object(translations.clone()));
 
-            let received_targets: HashSet<String> = translations.keys().cloned().collect();
+            let received_targets: HashSet<String> = translations
+                .iter()
+                .filter(|(_, item)| {
+                    !item
+                        .get("is_live_draft")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false)
+                })
+                .map(|(slot, _)| slot.clone())
+                .collect();
             let translation_received = event.is_complete
                 || required_slot_ids.is_empty()
                 || required_slot_ids
@@ -327,6 +433,208 @@ impl SubtitleLifecycleCore {
             self.promote_or_defer(event.sequence, presentation);
         }
         self.maybe_flush_pending_when_unblocked(presentation);
+    }
+
+    fn apply_live_partial_translation(&mut self, event: &TranslationEvent) {
+        if self.active_partial.is_none()
+            && self.pending_final_sequence.is_none()
+            && self.completed_sequence.is_none()
+        {
+            return;
+        }
+        let config = self.config();
+        let translation_config = config.get("translation").cloned().unwrap_or(Value::Null);
+        let language_to_slot =
+            SubtitlePresentation::legacy_language_to_slot_map(&translation_config);
+
+        let merge_items = |translations: &mut serde_json::Map<String, Value>,
+                           active_sequence: u64,
+                           require_exact_source: Option<&str>,
+                           final_aligned: bool| {
+            if let Some(expected) = require_exact_source {
+                if event.source_text.trim() != expected.trim()
+                    && event.sequence == active_sequence
+                {
+                    return 0usize;
+                }
+            }
+            let source_text_len = event.source_text.chars().count() as u64;
+            let mut applied = 0usize;
+            for item in &event.translations {
+                if !item.success || item.text.trim().is_empty() {
+                    continue;
+                }
+                let mut slot_id = item
+                    .slot_id
+                    .as_deref()
+                    .unwrap_or("")
+                    .trim()
+                    .to_ascii_lowercase();
+                if slot_id.is_empty() {
+                    let target = item.target_lang.trim().to_ascii_lowercase();
+                    slot_id = language_to_slot.get(&target).cloned().unwrap_or_default();
+                }
+                let translation_key = if slot_id.is_empty() {
+                    item.target_lang.trim().to_ascii_lowercase()
+                } else {
+                    slot_id.clone()
+                };
+                if translation_key.is_empty() {
+                    continue;
+                }
+                let existing_source_sequence = translations
+                    .get(&translation_key)
+                    .and_then(|t| t.get("source_sequence"))
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(0);
+                if event.sequence < existing_source_sequence {
+                    continue;
+                }
+                // Do not overwrite an authoritative final slot with a late live draft.
+                let existing_is_final = translations
+                    .get(&translation_key)
+                    .and_then(|t| t.get("is_live_draft"))
+                    .and_then(|v| v.as_bool())
+                    == Some(false);
+                if existing_is_final {
+                    continue;
+                }
+                translations.insert(
+                    translation_key,
+                    json!({
+                        "slot_id": if slot_id.is_empty() { item.slot_id.clone() } else { Some(slot_id) },
+                        "target_lang": item.target_lang,
+                        "label": item.label,
+                        "text": item.text,
+                        "provider": item.provider,
+                        "success": item.success,
+                        "error": item.error,
+                        "source_text": event.source_text,
+                        "source_text_len": source_text_len,
+                        "source_sequence": event.sequence,
+                        // Exact match against the finalized source may be spoken by TTS
+                        // immediately; growing partials stay drafts only.
+                        "is_live_draft": !final_aligned,
+                    }),
+                );
+                applied += 1;
+            }
+            applied
+        };
+
+        if let Some(partial) = self.active_partial.as_mut() {
+            if let Some(obj) = partial.as_object_mut() {
+                let active_sequence = obj.get("sequence").and_then(|v| v.as_u64()).unwrap_or(0);
+                let active_segment_id = obj
+                    .get("segment_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                if event.preview_lineage_key.as_deref() == Some(active_segment_id)
+                    && event.sequence <= active_sequence
+                {
+                    let active_source_text = obj
+                        .get("text")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let mut translations = obj
+                        .get("translations")
+                        .and_then(|v| v.as_object())
+                        .cloned()
+                        .unwrap_or_default();
+                    let applied = merge_items(
+                        &mut translations,
+                        active_sequence,
+                        Some(active_source_text.as_str()),
+                        false,
+                    );
+                    if applied > 0 {
+                        obj.insert("translations".into(), Value::Object(translations));
+                    }
+                }
+            }
+        }
+
+        // After ASR final, the overlay reads the completed *record*. Keep carried
+        // live-draft slots fresh when a slightly older in-flight MT finally returns.
+        if let Some(seq) = self
+            .pending_final_sequence
+            .or(self.completed_sequence)
+        {
+            let segment_ok = self
+                .active_partial
+                .as_ref()
+                .and_then(|p| p.get("segment_id"))
+                .and_then(|v| v.as_str())
+                .zip(event.preview_lineage_key.as_deref())
+                .is_some_and(|(active, key)| active == key);
+            if segment_ok || event.preview_lineage_key.is_some() {
+                if let Some(record) = self.records.get_mut(&seq) {
+                    if let Some(obj) = record.as_object_mut() {
+                        let record_source = obj
+                            .get("source_text")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        // Prefer drafts that match the finalized source; also accept
+                        // strictly older drafts that still improve empty/live slots.
+                        let mut translations = obj
+                            .get("translations")
+                            .and_then(|v| v.as_object())
+                            .cloned()
+                            .unwrap_or_default();
+                        let exact = event.source_text.trim() == record_source.trim();
+                        let require = if exact {
+                            Some(record_source.as_str())
+                        } else {
+                            None
+                        };
+                        let applied = merge_items(&mut translations, seq, require, exact);
+                        if applied > 0 {
+                            obj.insert("translations".into(), Value::Object(translations.clone()));
+                            if exact {
+                                let required =
+                                    SubtitlePresentation::translation_slot_map(&translation_config);
+                                let all_ready = !required.is_empty()
+                                    && required.keys().all(|slot| {
+                                        translations.get(slot).is_some_and(|item| {
+                                            item.get("success").and_then(|v| v.as_bool())
+                                                == Some(true)
+                                                && item
+                                                    .get("is_live_draft")
+                                                    .and_then(|v| v.as_bool())
+                                                    != Some(true)
+                                                && item
+                                                    .get("text")
+                                                    .and_then(|v| v.as_str())
+                                                    .is_some_and(|t| !t.trim().is_empty())
+                                        })
+                                    });
+                                if all_ready {
+                                    obj.insert("translation_received".into(), json!(true));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        voicesub_logging::subtitle_trace(
+            "lifecycle",
+            "subtitle_lifecycle",
+            "live_partial_draft_applied",
+            json!({
+                "sequence": event.sequence,
+                "source_text_len": event.source_text.chars().count(),
+                "slots": event.translations.iter().map(|t| t.slot_id.clone()).collect::<Vec<_>>(),
+                "translated_lens": event
+                    .translations
+                    .iter()
+                    .map(|t| t.text.chars().count())
+                    .collect::<Vec<_>>(),
+            }),
+        );
     }
 
     pub fn is_sequence_relevant_for_presentation(
@@ -364,6 +672,17 @@ impl SubtitleLifecycleCore {
         sequence: u64,
         presentation: &SubtitlePresentation,
     ) -> bool {
+        // Live MT drafts: accept while the active partial still matches this sequence
+        // (final path uses records; partials may not create a record).
+        if self
+            .active_partial
+            .as_ref()
+            .and_then(|p| p.get("sequence"))
+            .and_then(|v| v.as_u64())
+            == Some(sequence)
+        {
+            return true;
+        }
         if !self.records.contains_key(&sequence) {
             return false;
         }
@@ -727,7 +1046,17 @@ impl SubtitleLifecycleCore {
         let received: HashSet<String> = record
             .get("translations")
             .and_then(|v| v.as_object())
-            .map(|map| map.keys().cloned().collect())
+            .map(|map| {
+                map.iter()
+                    .filter(|(_, item)| {
+                        !item
+                            .get("is_live_draft")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false)
+                    })
+                    .map(|(slot, _)| slot.clone())
+                    .collect()
+            })
             .unwrap_or_default();
         if received.is_empty() {
             return false;

@@ -93,6 +93,7 @@ impl TranslationProvider for TencentTmtProvider {
             group: "china",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

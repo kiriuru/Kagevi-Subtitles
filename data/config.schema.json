@@ -438,15 +438,9 @@
       "title": "OverlayConfig",
       "type": "object"
     },
-    "PublicLibreTranslateMirrorProviderSettings": {
-      "properties": {
-        "api_url": {
-          "default": "https://translate.fedilab.app/translate",
-          "title": "Api Url",
-          "type": "string"
-        }
-      },
-      "title": "PublicLibreTranslateMirrorProviderSettings",
+    "MicrosoftEdgeProviderSettings": {
+      "properties": {},
+      "title": "MicrosoftEdgeProviderSettings",
       "type": "object"
     },
     "RemoteConfig": {
@@ -610,7 +604,8 @@
           "type": "boolean"
         },
         "max_translation_languages": {
-          "default": 2,
+          "default": 1,
+          "description": "Derived from the count of enabled translation lines (max 4). Not a separate UI control.",
           "title": "Max Translation Languages",
           "type": "integer"
         },
@@ -667,7 +662,7 @@
             "openrouter",
             "lm_studio",
             "ollama",
-            "public_libretranslate_mirror",
+            "microsoft_edge",
             "free_web_translate"
           ],
           "title": "Provider",
@@ -727,8 +722,7 @@
             "translation_1",
             "translation_2",
             "translation_3",
-            "translation_4",
-            "translation_5"
+            "translation_4"
           ],
           "title": "Slot Id",
           "type": "string"
@@ -756,7 +750,7 @@
             "openrouter",
             "lm_studio",
             "ollama",
-            "public_libretranslate_mirror",
+            "microsoft_edge",
             "free_web_translate"
           ],
           "title": "Provider",
@@ -810,8 +804,8 @@
         "ollama": {
           "$ref": "#/$defs/LlmTranslationProviderSettings"
         },
-        "public_libretranslate_mirror": {
-          "$ref": "#/$defs/PublicLibreTranslateMirrorProviderSettings"
+        "microsoft_edge": {
+          "$ref": "#/$defs/MicrosoftEdgeProviderSettings"
         },
         "free_web_translate": {
           "$ref": "#/$defs/FreeWebTranslateProviderSettings"

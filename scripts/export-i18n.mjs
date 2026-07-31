@@ -1,6 +1,6 @@
 /**
  * Extracts SST locale objects from scripts/i18n-source/locales/*.js into src/lib/i18n/locales/*.json
- * Merges dynamic-locales.js fallbacks and VoiceSub dashboard keys.
+ * Merges dynamic-locales.js fallbacks and Kagevi Subtitles dashboard keys.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -71,7 +71,7 @@ const voicesubExtras = {
   "save.status.saved": "Settings saved.",
   "obs.overlay.copy": "Copy URL",
   "obs.overlay.copied": "Copied",
-  "obs.overlay.instructions": "Add this URL as an OBS Browser Source. Update the URL when VoiceSub bind address changes.",
+  "obs.overlay.instructions": "Add this URL as an OBS Browser Source. Update the URL when Kagevi Subtitles bind address changes.",
   "subtitles.display_order": "Line display order",
   "settings.fonts.eyebrow": "Resources",
   "settings.fonts.title": "Font catalog",
@@ -125,7 +125,7 @@ const voicesubExtras = {
   "settings.webspeech.advanced.force_final_min_stable_ms.help":
     "How long the partial text must stay unchanged before a forced final on interruption is allowed. Longer values require more stable text.",
   "settings.webspeech.advanced.minimum_reconnect_interval_ms.help":
-    "Minimum wait between WebSocket reconnect attempts from the worker to VoiceSub. Prevents reconnect storms.",
+    "Minimum wait between WebSocket reconnect attempts from the worker to Kagevi Subtitles. Prevents reconnect storms.",
   "settings.webspeech.advanced.normal_restart_delay_ms.help":
     "Delay after a normal SpeechRecognition onend before restarting. Lower values resume faster; very low values may increase restart churn.",
   "settings.webspeech.advanced.no_speech_restart_delay_ms.help":
@@ -336,7 +336,7 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.force_final_min_stable_ms.help":
       "Сколько миллисекунд partial должен оставаться без изменений перед forced final при прерывании. Больше — нужен более стабильный текст.",
     "settings.webspeech.advanced.minimum_reconnect_interval_ms.help":
-      "Минимальная пауза между попытками переподключения WebSocket воркера к VoiceSub. Защита от частых reconnect.",
+      "Минимальная пауза между попытками переподключения WebSocket воркера к Kagevi Subtitles. Защита от частых reconnect.",
     "settings.webspeech.advanced.normal_restart_delay_ms.help":
       "Задержка после обычного onend SpeechRecognition перед новым стартом. Меньше — быстрее возобновление; слишком мало — лишние перезапуски.",
     "settings.webspeech.advanced.no_speech_restart_delay_ms.help":
@@ -387,7 +387,7 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.force_final_min_stable_ms.help":
       "中断時の forced final の前に partial が変化しない最小時間 (ms)。長いほど安定したテキストが必要です。",
     "settings.webspeech.advanced.minimum_reconnect_interval_ms.help":
-      "ワーカーから VoiceSub への WebSocket 再接続の最小間隔。再接続の連打を防ぎます。",
+      "ワーカーから Kagevi Subtitles への WebSocket 再接続の最小間隔。再接続の連打を防ぎます。",
     "settings.webspeech.advanced.normal_restart_delay_ms.help":
       "通常の SpeechRecognition onend 後、再起動までの待機 (ms)。小さいほど早く再開しますが、低すぎると再起動が増えることがあります。",
     "settings.webspeech.advanced.no_speech_restart_delay_ms.help":
@@ -438,7 +438,7 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.force_final_min_stable_ms.help":
       "중단 시 forced final 전에 partial이 변하지 않아야 하는 최소 시간(ms). 길수록 더 안정된 텍스트가 필요합니다.",
     "settings.webspeech.advanced.minimum_reconnect_interval_ms.help":
-      "워커가 VoiceSub WebSocket에 재연결할 때 최소 간격. reconnect 폭주를 막습니다.",
+      "워커가 Kagevi Subtitles WebSocket에 재연결할 때 최소 간격. reconnect 폭주를 막습니다.",
     "settings.webspeech.advanced.normal_restart_delay_ms.help":
       "일반 SpeechRecognition onend 후 재시작까지 지연(ms). 짧으면 빨리 재개하지만 너무 짧으면 재시작이 잦아질 수 있습니다.",
     "settings.webspeech.advanced.no_speech_restart_delay_ms.help":
@@ -489,7 +489,7 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.force_final_min_stable_ms.help":
       "中断时 forced final 前 partial 必须保持不变的最短时间 (ms)。更长需要更稳定的文本。",
     "settings.webspeech.advanced.minimum_reconnect_interval_ms.help":
-      "worker 与 VoiceSub 之间 WebSocket 重连的最小间隔，防止频繁重连。",
+      "worker 与 Kagevi Subtitles 之间 WebSocket 重连的最小间隔，防止频繁重连。",
     "settings.webspeech.advanced.normal_restart_delay_ms.help":
       "SpeechRecognition 正常 onend 后、再次启动前的延迟 (ms)。更短恢复更快，过低可能增加重启次数。",
     "settings.webspeech.advanced.no_speech_restart_delay_ms.help":

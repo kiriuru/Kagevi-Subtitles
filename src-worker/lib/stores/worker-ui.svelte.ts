@@ -1,4 +1,5 @@
 import { getLocale, setLocale as setAppLocale, t } from "../../../src/lib/i18n/index";
+import { PROJECT_VERSION } from "../../../src/lib/project-version";
 import type { LocaleCode } from "../../../src/lib/types";
 
 export function createWorkerUiStore() {
@@ -21,7 +22,7 @@ export function createWorkerUiStore() {
   let documentHidden = $state(false);
   let lastConfiguredLanguage = $state("");
   let lastSourceLang = $state("");
-  let appVersion = $state("0.6.0");
+  let appVersion = $state(PROJECT_VERSION);
 
   function recognitionStatusLabel(value: string): string {
     const normalized = String(value || "").replace(/-/g, "_");

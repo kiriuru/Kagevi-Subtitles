@@ -99,7 +99,7 @@
   "subtitle_output": {
     "show_source": true,
     "show_translations": true,
-    "max_translation_languages": 2,
+    "max_translation_languages": 1,
     "display_order": ["source", "translation_1"]
   },
   "subtitle_lifecycle": {
@@ -123,7 +123,7 @@
   "updates": {
     "enabled": true,
     "provider": "github_releases",
-    "github_repo": "kiriuru/VoiceSub",
+    "github_repo": "kiriuru/Kagevi-Subtitles",
     "release_channel": "stable",
     "check_interval_hours": 12,
     "last_checked_utc": "",

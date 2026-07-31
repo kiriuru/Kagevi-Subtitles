@@ -34,8 +34,10 @@
     TranscriptState,
     TranslationResultState,
   } from "../types";
+  import { PROJECT_VERSION } from "../project-version";
+  import { PRODUCT_NAME } from "../brand";
 
-  export let version = "0.6.0";
+  export let version = PROJECT_VERSION;
   export let standardNav: NavDestinationId = "live";
   export let moreHubOpen = true;
   export let subtitlesHubOpen = false;
@@ -198,7 +200,7 @@
 
     <footer class="app-footer">
       <span class="app-footer__line">
-        VoiceSub <span class="app-footer__version">v{version}</span>
+        {PRODUCT_NAME} <span class="app-footer__version">v{version}</span>
         <span class="app-footer__sep" aria-hidden="true">·</span>
         Powered by Kiriuru
       </span>

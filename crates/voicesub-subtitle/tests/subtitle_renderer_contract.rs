@@ -156,6 +156,27 @@ fn compose_render_rows_skips_partial_only_shortcut_for_completed_with_partial() 
 }
 
 #[test]
+fn compose_render_rows_renders_live_partial_translation_rows() {
+    let source = subtitle_style_js();
+    assert_contains(&source, "hasLivePartialTranslation", "live partial gate");
+    assert_contains(
+        &source,
+        "!hasLivePartialTranslation",
+        "source-only shortcut must yield to live translation rows",
+    );
+    assert_contains(
+        &source,
+        "!isCompletedWithPartial && !hasLivePartialTranslation",
+        "empty-rows guard must allow live partial translations",
+    );
+    assert_contains(
+        &source,
+        "isPartialOnly",
+        "partial_only lifecycle must be recognized by the composer",
+    );
+}
+
+#[test]
 fn renderer_emits_structured_debug_trace_events() {
     let source = subtitle_style_js();
     assert_contains(&source, "_resolveTraceCallback(options)", "trace callback");

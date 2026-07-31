@@ -3,6 +3,7 @@
 mod cache;
 mod dispatcher;
 mod engine;
+mod live_partial;
 mod preview_lineage;
 mod providers;
 mod readiness;
@@ -15,6 +16,10 @@ pub use dispatcher::{
 };
 pub use engine::{
     PreparedLine, PreparedRequest, TranslateTargetOptions, TranslationBatch, TranslationEngine,
+};
+pub use live_partial::{
+    LivePartialDecideInput, LivePartialDecision, LivePartialGate, LivePartialGateReason,
+    LivePartialSettings,
 };
 pub use preview_lineage::TranslationPreviewLineage;
 pub use providers::{

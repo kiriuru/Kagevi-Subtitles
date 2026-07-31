@@ -14,7 +14,7 @@ pub fn select_payload_text(payload: &SubtitlePayloadEvent, mode: &str) -> String
     let visible: Vec<_> = payload
         .visible_items
         .iter()
-        .filter(|item| !item.text.trim().is_empty())
+        .filter(|item| !item.is_live_draft && !item.text.trim().is_empty())
         .collect();
     if mode == "first_visible_line" {
         return visible
@@ -64,7 +64,7 @@ pub fn select_first_visible_text(payload: &SubtitlePayloadEvent) -> String {
     payload
         .visible_items
         .iter()
-        .find(|item| !item.text.trim().is_empty())
+        .find(|item| !item.is_live_draft && !item.text.trim().is_empty())
         .map(|item| item.text.clone())
         .unwrap_or_default()
 }
@@ -138,10 +138,36 @@ mod tests {
                 visible: true,
                 success: true,
                 error: None,
+                is_live_draft: false,
             }],
             lifecycle_state: LifecycleState::CompletedOnly,
             ..SubtitlePayloadEvent::default()
         };
         assert_eq!(select_payload_text(&payload, "translation_1"), "Hello");
+    }
+
+    #[test]
+    fn ignores_live_draft_translation_for_captions() {
+        let payload = SubtitlePayloadEvent {
+            visible_items: vec![SubtitleLineItem {
+                kind: "translation".into(),
+                lang: "en".into(),
+                label: "EN".into(),
+                text: "growing draft".into(),
+                style_slot: None,
+                slot_id: Some("translation_1".into()),
+                target_lang: Some("en".into()),
+                provider: None,
+                visible: true,
+                success: true,
+                error: None,
+                is_live_draft: true,
+            }],
+            lifecycle_state: LifecycleState::CompletedWithPartial,
+            completed_block_visible: true,
+            ..SubtitlePayloadEvent::default()
+        };
+        assert_eq!(select_payload_text(&payload, "translation_1"), "");
+        assert_eq!(select_first_visible_text(&payload), "");
     }
 }

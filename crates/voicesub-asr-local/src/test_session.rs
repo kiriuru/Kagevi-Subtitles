@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
@@ -125,6 +126,7 @@ impl TestBench {
         &self,
         inference: Arc<InferenceEngine>,
         config: LocalAsrConfig,
+        module_dir: PathBuf,
         duration_ms: u64,
         execution_provider: String,
         device_id: String,
@@ -169,6 +171,7 @@ impl TestBench {
                 worker_state,
                 inference,
                 config,
+                module_dir,
                 duration_ms,
                 execution_provider,
                 device_id,
@@ -226,6 +229,7 @@ fn run_streaming_test_bench(
     shared: Arc<Mutex<TestBenchInner>>,
     inference: Arc<InferenceEngine>,
     config: LocalAsrConfig,
+    module_dir: PathBuf,
     duration_ms: u64,
     execution_provider: String,
     device_id: String,
@@ -242,7 +246,12 @@ fn run_streaming_test_bench(
 
     let queue = AsrSegmentQueue::new(64);
     let generation = Arc::new(RuntimeGeneration::new(1));
-    let mut pipeline = RealtimePipeline::new(&config, Arc::clone(&queue), Arc::clone(&generation));
+    let mut pipeline = RealtimePipeline::new_with_module_dir(
+        &config,
+        Arc::clone(&queue),
+        Arc::clone(&generation),
+        Some(module_dir.as_path()),
+    );
     let last_decode_ms = pipeline.last_decode_ms_handle();
     let mut emit_policy = RealtimeEmitPolicy::default();
     let decode_worker = AsyncDecodeWorker::spawn_with_feedback(

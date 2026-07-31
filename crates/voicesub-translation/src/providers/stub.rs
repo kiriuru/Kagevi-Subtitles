@@ -44,6 +44,7 @@ impl TranslationProvider for StubTranslationProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
+            supports_live_partial: true,
         }
     }
 

@@ -300,7 +300,7 @@ async fn dispatcher_drops_stale_translation_result() {
     dispatcher.submit_final(1, "hello", "ru", None).await;
     tokio::time::sleep(Duration::from_millis(20)).await;
     relevance.clear();
-    tokio::time::sleep(Duration::from_millis(250)).await;
+    tokio::time::sleep(Duration::from_millis(350)).await;
     dispatcher.stop().await;
 
     assert!(recorder.events.lock().unwrap().is_empty());
@@ -488,7 +488,10 @@ async fn dispatcher_skips_superseded_preview_with_concurrent_jobs() {
     dispatcher.stop().await;
 
     let events = recorder.events.lock().unwrap().clone();
-    assert!(events.iter().all(|event| event.sequence == 2));
+    assert!(
+        events.iter().all(|event| event.sequence == 2),
+        "obsolete segment leaked events: {events:?}"
+    );
     assert!(!events.is_empty());
 }
 
@@ -1099,5 +1102,177 @@ async fn dispatcher_provider_concurrency_limit_serializes_targets() {
         started.elapsed() >= Duration::from_millis(200),
         "expected serialized provider calls, elapsed={:?}",
         started.elapsed()
+    );
+}
+
+#[tokio::test]
+async fn live_partial_publishes_draft_without_completion_and_final_wins() {
+    let config = stub_config(json!({
+        "translation": {
+            "live_partial": { "enabled": true, "min_interval_ms": 0, "word_growth": false }
+        }
+    }));
+    let (recorder, publish) = RecordingPublisher::new();
+    let (_, relevance) = RelevanceSet::new(&[1, 2, 3]);
+    let dispatcher = make_dispatcher(config, publish, relevance);
+    dispatcher.start().await;
+
+    dispatcher
+        .submit_partial(1, "hello", "en", Some("seg-a"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    dispatcher
+        .submit_partial(2, "hello world", "en", Some("seg-a"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    dispatcher
+        .submit_final(3, "hello world", "en", Some("seg-a"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    dispatcher.stop().await;
+
+    let events = recorder.events.lock().unwrap().clone();
+    let live: Vec<_> = events.iter().filter(|e| e.is_live_partial).collect();
+    assert!(!live.is_empty(), "expected live partial drafts");
+    assert!(live.iter().all(|e| !e.is_complete));
+    let finals: Vec<_> = events
+        .iter()
+        .filter(|e| e.is_complete && !e.is_live_partial)
+        .collect();
+    assert!(!finals.is_empty());
+    assert_eq!(finals.last().unwrap().sequence, 3);
+    let metrics = dispatcher.metrics_snapshot();
+    assert!(
+        metrics["translation_live_partial_submitted"]
+            .as_u64()
+            .unwrap_or(0)
+            >= 2
+    );
+}
+
+#[tokio::test]
+async fn live_partial_skips_when_disabled() {
+    let config = stub_config(json!({}));
+    let (recorder, publish) = RecordingPublisher::new();
+    let (_, relevance) = RelevanceSet::new(&[1]);
+    let dispatcher = make_dispatcher(config, publish, relevance);
+    dispatcher.start().await;
+    dispatcher
+        .submit_partial(1, "hello", "en", Some("seg-b:1"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    dispatcher.stop().await;
+    let events = recorder.events.lock().unwrap().clone();
+    assert!(events.iter().all(|e| !e.is_live_partial));
+    assert!(events.is_empty());
+}
+
+#[tokio::test]
+async fn active_partial_completes_then_latest_partial_runs() {
+    let config = stub_config(json!({
+        "translation": {
+            "live_partial": { "enabled": true, "min_interval_ms": 0 },
+            "provider_settings": { "stub": { "delay_ms_translation_1": "150" } }
+        }
+    }));
+    let (recorder, publish) = RecordingPublisher::new();
+    let (relevance, relevance_fn) = RelevanceSet::new(&[1]);
+    let dispatcher = make_dispatcher(config, publish, relevance_fn);
+    dispatcher.start().await;
+
+    dispatcher
+        .submit_partial(1, "hello", "ru", Some("seg-latest"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    relevance.clear();
+    relevance.insert(2);
+    dispatcher
+        .submit_partial(2, "hello world", "ru", Some("seg-latest"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(350)).await;
+    dispatcher.stop().await;
+
+    let events = recorder.events.lock().unwrap().clone();
+    let sequences = events
+        .iter()
+        .map(|event| event.sequence)
+        .collect::<Vec<_>>();
+    assert!(sequences.contains(&1), "in-flight draft must make progress");
+    assert_eq!(sequences.last(), Some(&2), "latest draft must run next");
+}
+
+#[tokio::test]
+async fn new_segment_cancels_obsolete_in_flight_partial() {
+    let config = stub_config(json!({
+        "translation": {
+            "max_concurrent_jobs": 1,
+            "live_partial": { "enabled": true, "min_interval_ms": 0 },
+            "provider_settings": { "stub": { "delay_ms_translation_1": "150" } }
+        }
+    }));
+    let (recorder, publish) = RecordingPublisher::new();
+    let (_, relevance) = RelevanceSet::new(&[1, 2]);
+    let dispatcher = make_dispatcher(config, publish, relevance);
+    dispatcher.start().await;
+
+    dispatcher
+        .submit_partial(1, "old phrase", "ru", Some("seg-old"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(30)).await;
+    dispatcher
+        .submit_partial(2, "new phrase", "ru", Some("seg-new"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(350)).await;
+    dispatcher.stop().await;
+
+    let events = recorder.events.lock().unwrap().clone();
+    assert!(
+        events.iter().any(|event| event.sequence == 2),
+        "new segment draft must publish: {events:?}"
+    );
+    assert!(
+        events.iter().all(|event| event.sequence != 1),
+        "obsolete segment must not publish after cancel: {events:?}"
+    );
+}
+
+#[tokio::test]
+async fn queue_overflow_drops_partial_before_final() {
+    let config = stub_config(json!({
+        "translation": {
+            "queue_max_size": 1,
+            "max_concurrent_jobs": 1,
+            "live_partial": { "enabled": true, "min_interval_ms": 0 },
+            "provider_settings": { "stub": { "delay_ms_translation_1": "120" } }
+        }
+    }));
+    let (recorder, publish) = RecordingPublisher::new();
+    let (_, relevance) = RelevanceSet::new(&[1, 2, 3]);
+    let dispatcher = make_dispatcher(config, publish, relevance);
+    dispatcher.start().await;
+
+    dispatcher
+        .submit_final(1, "active final", "ru", Some("seg-active"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(30)).await;
+    dispatcher
+        .submit_partial(2, "queued preview", "ru", Some("seg-queued"))
+        .await;
+    dispatcher
+        .submit_final(3, "authoritative final", "ru", Some("seg-final"))
+        .await;
+    tokio::time::sleep(Duration::from_millis(400)).await;
+    dispatcher.stop().await;
+
+    let events = recorder.events.lock().unwrap().clone();
+    assert!(
+        events.iter().all(|event| event.sequence != 2),
+        "queued partial must yield to finals: {events:?}"
+    );
+    assert!(
+        events
+            .iter()
+            .any(|event| event.sequence == 3 && event.is_complete),
+        "final job must survive partial-heavy queue overflow: {events:?}"
     );
 }

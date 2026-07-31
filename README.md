@@ -1,13 +1,15 @@
-# VoiceSub
+# Kagevi Subtitles
 
 **Live translated subtitles for streamers — local-first, privacy-first, OBS-ready.**
 
-[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](./docs/CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](./docs/CHANGELOG.en.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#system-requirements)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](./docs/CHANGELOG.en.md)
+[![Support](https://img.shields.io/badge/Support-DonationAlerts-ff4747.svg)](https://www.donationalerts.com/r/kiriuru)
 
 <p align="center">
+  <a href="https://kiriuru.github.io/Kagevi-Subtitles/">Website</a> ·
   <a href="./README.md">English</a> ·
   <a href="./README.ru.md">Русский</a> ·
   <a href="./docs/WIKI.en.md">Wiki</a> ·
@@ -15,12 +17,12 @@
   <a href="./docs/CHANGELOG.en.md">Changelog</a>
 </p>
 
-VoiceSub is a Windows desktop app that turns speech into real-time subtitles with optional translation. Recognition runs through **Google Chrome Web Speech** or optional offline **Local ASR** (Parakeet / ONNX). Everything stays on your machine — default bind `127.0.0.1:8765`, no cloud backend, no accounts.
+Kagevi Subtitles is a Windows desktop app that turns speech into real-time subtitles with optional translation. Recognition runs through **Google Chrome Web Speech** or optional offline **Local ASR** (Parakeet / ONNX). Everything stays on your machine — default bind `127.0.0.1:8765`, no cloud backend, no accounts.
 
-Successor to SST Desktop `0.4.4`. First VoiceSub release: **`0.5.0`**. Current line: **`0.6.0`**.
+First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.1`**.
 
 <p align="center">
-  <img src="./Images/Live_window.jpg" alt="VoiceSub Live tab" width="860">
+  <img src="./Images/kagevi_live.png" alt="Kagevi Subtitles Live tab" width="860">
   <br>
   <em>Live — Start/Stop, recognition status, transcript, and subtitle preview</em>
 </p>
@@ -43,8 +45,8 @@ Successor to SST Desktop `0.4.4`. First VoiceSub release: **`0.5.0`**. Current l
 | Area | What you get |
 | --- | --- |
 | **Speech** | Google Chrome Web Speech worker, or offline Local ASR (Parakeet / ONNX, CPU or CUDA) |
-| **Translation** | 17 providers (incl. Baidu / Youdao / Tencent / Caiyun), up to 5 translation lines |
-| **OBS** | Browser Source overlay + optional Closed Captions (WebSocket) |
+| **Translation** | 17 providers (incl. Baidu / Youdao / Tencent / Caiyun), up to **4** translation lines (source is separate). Optional **realtime** translation for classic MT (off by default). Three need **no API key**: Google Web, Free Web Translate, and Microsoft Edge Translate |
+| **OBS** | Browser Source overlay + optional Closed Captions via OBS WebSocket (mainly for Twitch) |
 | **Style** | Animated presets, per-slot styling, theme palette |
 | **TTS** | Native / Sonic playback; subtitle speech + Twitch chat TTS (up to 5 channels) |
 | **Local ASR** | Setup wizard at `/local-asr`; Live mode `local_parakeet` when ready |
@@ -57,67 +59,79 @@ Compact phone-style layout is available for secondary monitors.
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./Images/Translation_window.jpg" alt="Translation tab" width="420"><br>
+      <img src="./Images/kagevi_translation.png" alt="Translation tab" width="420"><br>
       <strong>Translation</strong><br>
-      <sub>Providers, cache, and up to 5 translation lines</sub>
+      <sub>Providers, cache, and up to 4 translation lines</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./Images/Subtitles_window.jpg" alt="Subtitles tab" width="420"><br>
+      <img src="./Images/kagevi_subtitles.png" alt="Subtitles tab" width="420"><br>
       <strong>Subtitles</strong><br>
       <sub>Overlay preset, visibility, order, and TTL</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/Subtitle_Style_window.jpg" alt="Subtitle Style tab" width="420"><br>
+      <img src="./Images/kagevi_style.png" alt="Subtitle Style tab" width="420"><br>
       <strong>Subtitle Style</strong><br>
       <sub>Fonts, colors, effects, and per-slot styles</sub>
     </td>
     <td align="center">
-      <img src="./Images/OBS_window.jpg" alt="OBS tab" width="420"><br>
+      <img src="./Images/kagevi_obs.png" alt="OBS tab" width="420"><br>
       <strong>OBS</strong><br>
-      <sub>Overlay URL and Closed Captions</sub>
+      <sub>Overlay URL and Closed Captions (Twitch)</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/modules_window.jpg" alt="Modules tab" width="420"><br>
+      <img src="./Images/kagevi_modules_main.png" alt="Modules tab" width="420"><br>
       <strong>Modules</strong><br>
       <sub>Open sidecar TTS and Local ASR windows</sub>
     </td>
     <td align="center">
-      <img src="./Images/Web_Speech_Window.jpg" alt="Web Speech settings" width="420"><br>
-      <strong>Web Speech</strong><br>
-      <sub>Chrome worker language and advanced recognition options</sub>
+      <img src="./Images/kagevi_settings.png" alt="Settings" width="420"><br>
+      <strong>Settings</strong><br>
+      <sub>Layout, dispatcher, fonts, Advanced Web Speech</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/Local_ASR_window.jpg" alt="Local ASR module" width="420"><br>
+      <img src="./Images/kagevi_localASR_1.png" alt="Local ASR module" width="420"><br>
       <strong>Local ASR</strong><br>
-      <sub>Offline Parakeet / ONNX setup (CPU or CUDA)</sub>
+      <sub>Offline Parakeet / ONNX (CPU or CUDA)</sub>
     </td>
     <td align="center">
-      <img src="./Images/TTS_window.jpg" alt="TTS module" width="420"><br>
+      <img src="./Images/kagevi_tts_1.png" alt="TTS module" width="420"><br>
       <strong>TTS</strong><br>
-      <sub>Subtitle speech and Twitch chat TTS</sub>
+      <sub>Subtitle speech and playback</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/UI_Theme_window.jpg" alt="UI Theme tab" width="420"><br>
+      <img src="./Images/kagevi_UI_theme.png" alt="UI Theme tab" width="420"><br>
       <strong>UI Theme</strong><br>
       <sub>Dark/light mode and accent palette</sub>
     </td>
     <td align="center">
-      <img src="./Images/Settings_window.jpg" alt="Settings tab" width="420"><br>
-      <strong>Settings</strong><br>
-      <sub>UI language, layout, and SST config import</sub>
+      <img src="./Images/kagevi_compact_UI.png" alt="Compact layout" width="420"><br>
+      <strong>Compact layout</strong><br>
+      <sub>Phone-style window for a second monitor</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_tts_twitch.png" alt="Twitch TTS" width="420"><br>
+      <strong>Twitch TTS</strong><br>
+      <sub>Chat TTS for up to five channels</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR setup" width="420"><br>
+      <strong>Local ASR setup</strong><br>
+      <sub>ORT / CUDA components and Parakeet models</sub>
     </td>
   </tr>
 </table>
 
-More UI walkthroughs (Word Replace, Tools & Data, Help, Local ASR components): [Wiki](./docs/WIKI.en.md).
+More UI walkthroughs (Word Replace, Tools & Data, More/Help, Local ASR test bench): [Wiki](./docs/WIKI.en.md).
 
 ## System requirements
 
@@ -131,12 +145,12 @@ No Python, Node.js, or CUDA in the core installer. CUDA is an optional Local ASR
 
 ## Quick start
 
-1. Install from `VoiceSub_0.6.0_x64-setup.exe` (or the latest build in your release folder).
-2. Launch **VoiceSub.exe** — the dashboard opens at `http://127.0.0.1:8765/`.
+1. Install from `Kagevi Subtitles_0.6.1_x64-setup.exe` (or the latest build in your release folder).
+2. Launch **Kagevi Subtitles.exe** — the dashboard opens at `http://127.0.0.1:8765/`.
 3. In OBS, add a **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. Configure translation and subtitle style if needed, then click **Start**.
 5. Choose recognition:
-   - **Web Speech** — keep the browser worker window open and visible (mic permission is granted there).
+   - **Web Speech** — don't minimize the Chrome worker (it can sit behind other apps; mic permission is granted there).
    - **Local ASR** — **Modules → Local ASR**, finish setup until ready, select Local ASR on Live, then Start.
 
 Step-by-step UI guide: [Wiki (EN)](./docs/WIKI.en.md) · [Wiki (RU)](./docs/WIKI.ru.md)
@@ -165,13 +179,11 @@ Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default`
 | `logs/` | `core.log`, `runtime-events.log`, `session-latest.jsonl` |
 | `bin/fonts/` | Subtitle fonts |
 
-SST `config.json` can be imported on first run or from settings. Legacy `local` / experimental modes map to `browser_google`; `local_parakeet` is preserved. Details: [Architecture §7](./docs/TECHNICAL_ARCHITECTURE.en.md).
-
 ## Troubleshooting
 
 | Symptom | What to check |
 | --- | --- |
-| No subtitles | **Start** pressed; worker open (Web Speech) **or** Local ASR ready + mic selected |
+| No subtitles | **Start** pressed; Chrome worker not minimized (Web Speech) **or** Local ASR ready + mic selected |
 | Source text, no translation | Translation on; at least one line active; provider credentials |
 | Empty OBS | Browser Source URL is `/overlay`; visibility on Subtitles tab; reload source after updates |
 | Text stuck after TTL / Stop | Update build; reload Browser Source |
@@ -204,11 +216,11 @@ npm run test:frontend
 | Layer | Tech |
 | --- | --- |
 | Core | Rust workspace (`crates/voicesub-*`) + Axum HTTP/WS |
-| Shell | Tauri 2 → `VoiceSub.exe` (NSIS) |
+| Shell | Tauri 2 → `Kagevi Subtitles.exe` (NSIS) |
 | Dashboard | Svelte 5 + Vite → `bin/dashboard/` |
 | Worker | Svelte 5 → `bin/worker/` |
 | Overlay | Vanilla HTML/JS → `bin/overlay/` |
-| TTS | Svelte + Rust service + embedded Python sidecar |
+| TTS | Svelte + Rust service + embedded `google_tts_fetch.exe` runtime |
 | Local ASR | Svelte + `voicesub-asr-local` + ONNX Runtime (lazy download) |
 
 Node.js is **build-time only** — not shipped in the installer.
@@ -232,7 +244,7 @@ Tauri `beforeBuildCommand`: `npm run build`. Bundled resources: `bin/dashboard`,
 
 `src-tauri/` is a thin IPC shell — no domain logic.
 
-Version source: `voicesub-types::PROJECT_VERSION` = **`0.6.0`**.
+Version source: `voicesub-types::PROJECT_VERSION` in `crates/voicesub-types/src/version.rs` — bump there, then `npm run version:sync` (also from `npm run build`).
 
 Full reference: [Technical Architecture](./docs/TECHNICAL_ARCHITECTURE.en.md).
 
@@ -241,3 +253,5 @@ Full reference: [Technical Architecture](./docs/TECHNICAL_ARCHITECTURE.en.md).
 ## License
 
 [MIT](./LICENSE) © 2026 Kiriuru
+
+Third-party model weights and runtimes (NVIDIA Parakeet under **CC-BY-4.0**, ONNX Runtime, Silero VAD, Sonic/libsonic, and others) keep their own licenses — see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

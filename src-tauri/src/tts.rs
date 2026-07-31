@@ -545,7 +545,7 @@ async fn open_tts_window(
     let _ = fs::create_dir_all(&data_dir);
 
     let window = WebviewWindowBuilder::new(&app, TTS_WINDOW_LABEL, WebviewUrl::External(parsed))
-        .title("VoiceSub TTS")
+        .title("Kagevi Subtitles TTS")
         .inner_size(720.0, 560.0)
         .min_inner_size(480.0, 420.0)
         .resizable(true)

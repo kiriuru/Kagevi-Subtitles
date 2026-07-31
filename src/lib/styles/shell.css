@@ -1,4 +1,4 @@
-/* VoiceSub app shell — two explicit modes: standard (desktop rail) + compact (bottom nav).
+/* Kagevi Subtitles app shell — two explicit modes: standard (desktop rail) + compact (bottom nav).
    No breakpoint-driven nav switching (desktop-first product). */
 
 /* —— Standard (desktop) —— */
@@ -74,11 +74,21 @@
 }
 
 .nav-rail__title {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
   line-height: 1.1;
   text-align: center;
+}
+
+.nav-rail__title--main {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.nav-rail__title--sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.82;
 }
 
 .nav-rail__items {
@@ -528,7 +538,7 @@
   pointer-events: auto;
 }
 
-body.voicesub-layout-compact .scroll-to-top-fab {
+body.kagevi-subtitles-layout-compact .scroll-to-top-fab {
   right: 14px;
 }
 

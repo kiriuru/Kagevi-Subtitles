@@ -5,6 +5,7 @@ import {
   minimalStyle,
   partialOnlyPayload,
   renderer,
+  type SubtitleStyleRenderer,
 } from "./helpers";
 
 describe("SubtitleStyleRenderer runtime", () => {
@@ -38,6 +39,81 @@ describe("SubtitleStyleRenderer runtime", () => {
     expect(R.commonPrefixLength(`${waving} there`, waving)).toBe(waving.length);
     // Differing emoji after a shared ASCII prefix must not leave a lone high surrogate.
     expect(R.commonPrefixLength(`A${waveOnly}`, "A😀")).toBe(1);
+  });
+
+  it("groups visible items by overlay preset (single / dual-line / stacked)", () => {
+    const items = [
+      { kind: "source", text: "Hello", style_slot: "source" },
+      { kind: "translation", text: "Hola", style_slot: "translation_1", lang: "es" },
+      { kind: "translation", text: "Bonjour", style_slot: "translation_2", lang: "fr" },
+    ];
+    const base = {
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      show_source: true,
+      show_translations: true,
+      visible_items: items,
+    };
+    const R = renderer();
+
+    const single = R.composeRenderRows({ ...base, preset: "single" });
+    expect(single).toHaveLength(1);
+    expect(single[0]?.entries.map((e) => e.text)).toEqual(["Hello", "Hola", "Bonjour"]);
+
+    const dual = R.composeRenderRows({ ...base, preset: "dual-line" });
+    expect(dual).toHaveLength(2);
+    expect(dual[0]?.entries.map((e) => e.text)).toEqual(["Hello"]);
+    expect(dual[1]?.entries.map((e) => e.text)).toEqual(["Hola", "Bonjour"]);
+
+    const stacked = R.composeRenderRows({ ...base, preset: "stacked" });
+    expect(stacked).toHaveLength(3);
+    expect(stacked.map((row) => row.entries.map((e) => e.text))).toEqual([
+      ["Hello"],
+      ["Hola"],
+      ["Bonjour"],
+    ]);
+  });
+
+  it("applies horizontal content class for single and dual-line layouts", () => {
+    const R = renderer();
+    const payload = {
+      preset: "single",
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      show_source: true,
+      show_translations: true,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        { kind: "translation", text: "Hola", style_slot: "translation_1", lang: "es" },
+      ],
+      style: minimalStyle(),
+    };
+    R.render(container, payload, { overlay: true });
+    const content = container.querySelector(".subtitle-line__content");
+    expect(content?.classList.contains("subtitle-line__content--single")).toBe(true);
+    expect(container.querySelectorAll(".subtitle-line")).toHaveLength(1);
+
+    // Preset switches must rebuild (not finalize-fast-path) so row classes update.
+    R.render(container, { ...payload, preset: "dual-line" }, { overlay: true });
+    expect(container.querySelector(".subtitle-line__content--dual-line")).toBeTruthy();
+    expect(container.querySelector(".subtitle-line__content--single")).toBeNull();
+    expect(container.querySelectorAll(".subtitle-line")).toHaveLength(2);
+
+    R.render(container, { ...payload, preset: "stacked" }, { overlay: true });
+    expect(container.querySelector(".subtitle-line__content--stacked")).toBeTruthy();
+    expect(container.querySelector(".subtitle-line__content--dual-line")).toBeNull();
+    expect(container.querySelectorAll(".subtitle-line")).toHaveLength(2);
+  });
+
+  it("maps text-align to flex justify for shared rows", () => {
+    const R = renderer() as SubtitleStyleRenderer & {
+      textAlignToJustify?: (align: string) => string;
+    };
+    expect(R.textAlignToJustify?.("left")).toBe("flex-start");
+    expect(R.textAlignToJustify?.("right")).toBe("flex-end");
+    expect(R.textAlignToJustify?.("center")).toBe("center");
   });
 
   it("preserves non-contiguous style_slot overrides in composeRenderRows", () => {
@@ -234,6 +310,63 @@ describe("SubtitleStyleRenderer runtime", () => {
     const translation = entries.find((entry) => entry.kind === "translation");
     expect(source?.transient).toBe(true);
     expect(translation?.transient).toBeFalsy();
+  });
+
+  it("renders live partial translation rows during partial_only", () => {
+    const rows = renderer().composeRenderRows({
+      preset: "stacked",
+      lifecycle_state: "partial_only",
+      completed_block_visible: false,
+      active_partial_text: "растущая фраза",
+      show_source: true,
+      show_translations: true,
+      visible_items: [
+        { kind: "source", text: "растущая фраза", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "a growing phrase",
+          style_slot: "translation_1",
+          lang: "en",
+        },
+      ],
+    });
+
+    const entries = rows.flatMap((row) => row.entries);
+    const source = entries.find((entry) => entry.kind === "source");
+    const translation = entries.find((entry) => entry.kind === "translation");
+    expect(source?.text).toBe("растущая фраза");
+    expect(source?.transient).toBe(true);
+    expect(translation?.text).toBe("a growing phrase");
+  });
+
+  it("keeps the source-only shortcut for partial_only without translations", () => {
+    const rows = renderer().composeRenderRows(partialOnlyPayload("растущая фраза"));
+    const entries = rows.flatMap((row) => row.entries);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.kind).toBe("source");
+    expect(entries[0]?.transient).toBe(true);
+  });
+
+  it("renders live partial translation when the source row is hidden", () => {
+    const rows = renderer().composeRenderRows({
+      preset: "stacked",
+      lifecycle_state: "partial_only",
+      completed_block_visible: false,
+      active_partial_text: "",
+      show_source: false,
+      show_translations: true,
+      visible_items: [
+        {
+          kind: "translation",
+          text: "a growing phrase",
+          style_slot: "translation_1",
+          lang: "en",
+        },
+      ],
+    });
+
+    const entries = rows.flatMap((row) => row.entries);
+    expect(entries.map((entry) => entry.text)).toEqual(["a growing phrase"]);
   });
 
   it("flags recogniser revision without rebuilding the wrapper", () => {

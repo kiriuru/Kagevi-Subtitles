@@ -1,5 +1,6 @@
 import { writable, get } from "svelte/store";
 import { publishUiLocaleSync } from "../ui-config-sync";
+import { readMigratedLocalStorage, writeBrandLocalStorage } from "../brand";
 import type { LocaleCode } from "../types";
 
 export type { LocaleCode };
@@ -22,8 +23,16 @@ const catalogs: Record<LocaleCode, Record<string, string>> = {
   zh: { ...zh, ...ttsZh },
 };
 
+const LOCALE_STORAGE_KEY = "kagevi-subtitles.ui.locale";
+const LOCALE_STORAGE_KEY_PREV = "kagevi-voice.ui.locale";
+const LOCALE_STORAGE_KEY_LEGACY = "voicesub.ui.locale";
+
 function detectLocale(): LocaleCode {
-  const stored = localStorage.getItem("voicesub.ui.locale");
+  const stored = readMigratedLocalStorage(
+    LOCALE_STORAGE_KEY,
+    LOCALE_STORAGE_KEY_PREV,
+    LOCALE_STORAGE_KEY_LEGACY,
+  );
   if (stored && stored in catalogs) return stored as LocaleCode;
   const nav = (navigator.language || "en").slice(0, 2).toLowerCase();
   if (nav in catalogs) return nav as LocaleCode;
@@ -34,7 +43,12 @@ export const locale = writable<LocaleCode>(detectLocale());
 
 locale.subscribe((code) => {
   document.documentElement.lang = code;
-  localStorage.setItem("voicesub.ui.locale", code);
+  writeBrandLocalStorage(
+    LOCALE_STORAGE_KEY,
+    code,
+    LOCALE_STORAGE_KEY_PREV,
+    LOCALE_STORAGE_KEY_LEGACY,
+  );
 });
 
 type Interpolation = Record<string, string | number | boolean | null | undefined>;

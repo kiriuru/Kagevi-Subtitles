@@ -29,7 +29,9 @@ use crate::defaults::default_config_payload;
 use crate::logging_preferences::normalize_logging_config;
 use crate::obs_normalize::normalize_obs_closed_captions;
 use crate::translation_normalize::normalize_translation_config;
-use voicesub_types::{DEFAULT_GITHUB_REPO, LEGACY_GITHUB_REPO};
+use voicesub_types::{
+    DEFAULT_GITHUB_REPO, LEGACY_GITHUB_REPO, LEGACY_VOICESUB_GITHUB_REPO, is_product_github_repo,
+};
 
 fn as_object_mut(value: &mut Value) -> &mut Map<String, Value> {
     if !value.is_object() {
@@ -80,12 +82,7 @@ fn normalize_ui_language(raw: &str) -> String {
 }
 
 pub(crate) fn canonical_translation_provider(raw: &str, fallback: &str) -> String {
-    let provider = raw.trim();
-    if provider.is_empty() || provider == "mymemory" {
-        fallback.to_string()
-    } else {
-        provider.to_string()
-    }
+    crate::translation_normalize::resolve_translation_provider(raw, fallback)
 }
 
 fn normalize_ui_config(root: &mut Map<String, Value>) {
@@ -290,12 +287,11 @@ fn normalize_subtitle_lifecycle(root: &mut Map<String, Value>) {
     }
 }
 
-const CANONICAL_SLOT_IDS: [&str; 5] = [
+const CANONICAL_SLOT_IDS: [&str; 4] = [
     "translation_1",
     "translation_2",
     "translation_3",
     "translation_4",
-    "translation_5",
 ];
 
 fn enabled_slot_ids(translation_lines: &[Value]) -> Vec<String> {
@@ -411,7 +407,7 @@ fn normalize_subtitle_output(root: &mut Map<String, Value>) {
     {
         output.insert("show_translations".into(), json!(true));
     }
-    let max_langs = clamp_i64(int_or(output.get("max_translation_languages"), 2), 0, 5);
+    let max_langs = enabled_slot_ids(&translation_lines).len().min(CANONICAL_SLOT_IDS.len()) as i64;
     output.insert("max_translation_languages".into(), json!(max_langs));
 
     let display_order = output
@@ -481,7 +477,8 @@ fn normalize_updates_config(root: &mut Map<String, Value>) {
                     .trim();
                 if current.is_empty() {
                     updates.insert("github_repo".into(), default_value.clone());
-                } else if current == LEGACY_GITHUB_REPO {
+                } else if current == LEGACY_GITHUB_REPO || current == LEGACY_VOICESUB_GITHUB_REPO
+                {
                     updates.insert(
                         "github_repo".into(),
                         Value::String(DEFAULT_GITHUB_REPO.to_string()),
@@ -516,7 +513,7 @@ fn normalize_updates_config(root: &mut Map<String, Value>) {
             .unwrap_or("")
             .trim()
             .is_empty();
-    let voice_sub_repo = github_repo == DEFAULT_GITHUB_REPO || github_repo == LEGACY_GITHUB_REPO;
+    let voice_sub_repo = is_product_github_repo(&github_repo);
     if updates.get("enabled").and_then(|v| v.as_bool()) == Some(false)
         && never_checked
         && voice_sub_repo
@@ -594,13 +591,13 @@ pub fn normalize_config_payload(mut payload: Value) -> Value {
     let root = as_object_mut(&mut payload);
 
     normalize_subtitle_lifecycle(root);
+    normalize_translation_section(root);
     normalize_subtitle_output(root);
     normalize_source_text_replacement(root);
     normalize_obs_closed_captions(root);
     normalize_overlay_config(root);
     normalize_asr_browser_config(root);
     normalize_ui_config(root);
-    normalize_translation_section(root);
     normalize_updates_config(root);
     root.insert("logging".into(), logging);
 
@@ -669,6 +666,15 @@ mod tests {
         let out = normalize_config_payload(json!({
             "config_version": CURRENT_CONFIG_VERSION,
             "updates": { "github_repo": LEGACY_GITHUB_REPO }
+        }));
+        assert_eq!(out["updates"]["github_repo"], DEFAULT_GITHUB_REPO);
+    }
+
+    #[test]
+    fn migrates_legacy_voicesub_github_repo_slug() {
+        let out = normalize_config_payload(json!({
+            "config_version": CURRENT_CONFIG_VERSION,
+            "updates": { "github_repo": LEGACY_VOICESUB_GITHUB_REPO }
         }));
         assert_eq!(out["updates"]["github_repo"], DEFAULT_GITHUB_REPO);
     }
@@ -758,6 +764,36 @@ mod tests {
         assert_eq!(
             out["subtitle_output"]["display_order"],
             json!(["translation_2", "source", "translation_1"])
+        );
+        assert_eq!(out["subtitle_output"]["max_translation_languages"], 2);
+    }
+
+    #[test]
+    fn max_translation_languages_follows_enabled_lines_and_caps_at_four() {
+        let out = normalize_config_payload(json!({
+            "config_version": 8,
+            "translation": {
+                "enabled": true,
+                "provider": "google_translate_v2",
+                "lines": [
+                    { "slot_id": "translation_1", "enabled": true, "target_lang": "en", "provider": "google_translate_v2", "label": "EN" },
+                    { "slot_id": "translation_2", "enabled": false, "target_lang": "ja", "provider": "google_translate_v2", "label": "JA" },
+                    { "slot_id": "translation_3", "enabled": true, "target_lang": "de", "provider": "google_translate_v2", "label": "DE" },
+                    { "slot_id": "translation_4", "enabled": true, "target_lang": "fr", "provider": "google_translate_v2", "label": "FR" },
+                    { "slot_id": "translation_5", "enabled": true, "target_lang": "ko", "provider": "google_translate_v2", "label": "KO" }
+                ]
+            },
+            "subtitle_output": {
+                "max_translation_languages": 1,
+                "display_order": ["source", "translation_1", "translation_5"]
+            }
+        }));
+        let lines = out["translation"]["lines"].as_array().unwrap();
+        assert_eq!(lines.len(), 4);
+        assert_eq!(out["subtitle_output"]["max_translation_languages"], 3);
+        assert_eq!(
+            out["subtitle_output"]["display_order"],
+            json!(["source", "translation_1", "translation_3", "translation_4"])
         );
     }
 

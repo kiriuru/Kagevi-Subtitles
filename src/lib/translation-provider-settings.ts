@@ -59,9 +59,7 @@ export function defaultTranslationProviderSettings(): ProviderSettingsMap {
       custom_prompt: "",
       override_prompt: "false",
     },
-    public_libretranslate_mirror: {
-      api_url: "https://translate.fedilab.app/translate",
-    },
+    microsoft_edge: {},
     free_web_translate: {},
     baidu_translate: {
       app_id: "",
@@ -113,7 +111,11 @@ export function normalizeTranslationProviderSettings(
       continue;
     }
 
-    if (providerName === "google_web" || providerName === "free_web_translate") {
+    if (
+      providerName === "google_web" ||
+      providerName === "free_web_translate" ||
+      providerName === "microsoft_edge"
+    ) {
       normalized[providerName] = {};
       continue;
     }
@@ -145,10 +147,6 @@ export function normalizeTranslationProviderSettings(
     }
     if (providerName === "ollama") {
       next.base_url = str(current.base_url) || PROVIDERS.ollama.baseUrlPlaceholder;
-    }
-    if (providerName === "public_libretranslate_mirror") {
-      next.api_url =
-        str(current.api_url) || PROVIDERS.public_libretranslate_mirror.apiUrlPlaceholder;
     }
     if (providerName === "tencent_tmt") {
       next.region = str(current.region) || "ap-guangzhou";
