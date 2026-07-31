@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Kagevi Subtitles — live translated subtitles for streamers. Local-first, privacy-first, OBS-ready."
+    />
+    <meta name="theme-color" content="#0b0c10" />
+    <meta property="og:title" content="Kagevi Subtitles" />
+    <meta
+      property="og:description"
+      content="Live translated subtitles for streamers — local-first, privacy-first, OBS-ready."
+    />
+    <meta property="og:image" content="images/kagevi_live.png" />
+    <meta property="og:type" content="website" />
+    <title>Kagevi Subtitles</title>
+    <link rel="icon" type="image/png" href="assets/kagevi-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Sora:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#top">Skip to content</a>
+    <div class="noise" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand-mark" href="#top" data-i18n-aria="brandAria">
+        <img src="assets/kagevi-icon.png" alt="" width="40" height="40" />
+        <span class="brand-mark__text">
+          <span class="brand-mark__main">Kagevi</span>
+          <span class="brand-mark__sub">Subtitles</span>
+        </span>
+      </a>
+      <div class="topbar__actions">
+        <button
+          type="button"
+          class="nav-toggle"
+          aria-controls="site-nav"
+          aria-expanded="false"
+          data-i18n-aria="navMenu"
+          aria-label="Menu"
+        >
+          <span class="nav-toggle__bars" aria-hidden="true"></span>
+        </button>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" class="lang__btn is-active" data-lang="en">EN</button>
+          <button type="button" class="lang__btn" data-lang="ru">RU</button>
+          <button type="button" class="lang__btn" data-lang="ja">JA</button>
+          <button type="button" class="lang__btn" data-lang="zh">ZH</button>
+          <button type="button" class="lang__btn" data-lang="ko">KO</button>
+        </div>
+        <a
+          class="btn btn--ghost btn--sm topbar__github"
+          href="https://github.com/kiriuru/Kagevi-Subtitles"
+          data-github="home"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-i18n="navGithub"
+          >GitHub</a
+        >
+      </div>
+      <nav class="topbar__nav" id="site-nav" aria-label="Primary">
+        <a href="#guide" data-i18n="navGuide">Guide</a>
+        <a href="wiki.html" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" data-i18n="navChangelog">Changelog</a>
+        <a href="#download" data-i18n="navDownload">Download</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero__media" aria-hidden="true">
+          <img
+            class="hero__shot"
+            src="images/kagevi_live.png"
+            alt=""
+            width="1400"
+            height="900"
+            fetchpriority="high"
+          />
+          <div class="hero__veil"></div>
+        </div>
+        <div class="hero__content">
+          <p class="hero__brand">
+            <img src="assets/kagevi-icon.png" alt="" width="64" height="64" />
+            <span>
+              <span class="hero__brand-main">Kagevi</span>
+              <span class="hero__brand-sub">Subtitles</span>
+            </span>
+          </p>
+          <h1 class="hero__title" data-i18n="heroTitle">
+            Live translated subtitles for streamers
+          </h1>
+          <p class="hero__lede" data-i18n="heroLede">
+            Speech to on-screen captions with optional translation — local-first,
+            privacy-first, ready for OBS.
+          </p>
+          <div class="hero__cta">
+            <a
+              class="btn btn--primary"
+              href="https://github.com/kiriuru/Kagevi-Subtitles/releases/latest"
+              data-github="releases-latest"
+              data-i18n="ctaDownload"
+              >Download for Windows</a
+            >
+            <a class="btn btn--secondary" href="#guide" data-i18n="ctaGuide">Feature guide</a>
+          </div>
+          <p class="hero__meta">
+            <span data-i18n="heroMeta">Windows 10/11 · MIT · v0.6.1</span>
+          </p>
+        </div>
+      </section>
+
+      <section class="section guide" id="guide">
+        <div class="section__head">
+          <h2 data-i18n="guideTitle">How the product works</h2>
+          <p data-i18n="guideLede">
+            Wiki-style walkthrough of each major surface — recognition, translation,
+            overlay, modules, and style.
+          </p>
+        </div>
+
+        <div class="guide-shell">
+          <div class="guide-tabs" role="tablist" aria-label="Feature guide">
+            <button type="button" class="guide-tab is-active" role="tab" aria-selected="true" data-tab="live" data-i18n="tabLive">Live</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="speech" data-i18n="tabSpeech">Web Speech</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="local" data-i18n="tabLocal">Local ASR</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="translate" data-i18n="tabTranslate">Translation</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="subs" data-i18n="tabSubs">Subtitles</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="obs" data-i18n="tabObs">OBS</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="tts" data-i18n="tabTts">TTS</button>
+            <button type="button" class="guide-tab" role="tab" aria-selected="false" data-tab="style" data-i18n="tabStyle">Style</button>
+          </div>
+
+          <div class="guide-panels">
+            <article class="guide-panel is-active" data-panel="live" role="tabpanel">
+              <figure class="guide-panel__media guide-carousel" data-carousel data-multi>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_live.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Live — full layout" data-caption-ru="Эфир — полный layout" />
+                  <img data-slide src="images/kagevi_compact_UI.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Live — compact layout" data-caption-ru="Эфир — компактный layout" />
+                </div>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--prev" data-carousel-prev data-i18n-aria="carouselPrev" aria-label="Previous">‹</button>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--next" data-carousel-next data-i18n-aria="carouselNext" aria-label="Next">›</button>
+                <div class="guide-carousel__dots" data-carousel-dots></div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gLiveTitle">Live — the control desk</h3>
+                <p data-i18n="gLiveIntro">
+                  Start and stop recognition, watch status chips, read the live
+                  transcript, and preview subtitle output before it hits OBS.
+                </p>
+                <ul>
+                  <li data-i18n="gLive1">Start sends the current config snapshot (including unsaved edits).</li>
+                  <li data-i18n="gLive2">Choose Web Speech or Local ASR when the module is ready.</li>
+                  <li data-i18n="gLive3">Subtitle preview mirrors the OBS overlay payload shape.</li>
+                  <li data-i18n="gLive4">Compact layout fits a secondary monitor or phone-style window.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="speech" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_settings.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Settings — Web Speech options" data-caption-ru="Настройки — опции Web Speech" />
+                </div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gSpeechTitle">Web Speech — Chrome worker</h3>
+                <p data-i18n="gSpeechIntro">
+                  Production mode browser_google runs Google Chrome Web Speech in a
+                  separate visible window with an address bar — not a hidden tab.
+                </p>
+                <ul>
+                  <li data-i18n="gSpeech1">Microphone permission is granted inside Chrome (getUserMedia).</li>
+                  <li data-i18n="gSpeech2">Isolated worker profile under user-data; anti-throttling flags on Windows.</li>
+                  <li data-i18n="gSpeech3">Recognition language and advanced restart / force-final options in Settings.</li>
+                  <li data-i18n="gSpeech4">Don't minimize the worker window — it can stay behind other apps.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="local" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel data-multi>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_localASR_1.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Local ASR — module" data-caption-ru="Local ASR — модуль" />
+                  <img data-slide src="images/kagevi_localASR_2.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Local ASR — tuning" data-caption-ru="Local ASR — тюнинг" />
+                  <img data-slide src="images/kagevi_localASR_setup.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Local ASR — setup" data-caption-ru="Local ASR — setup" />
+                </div>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--prev" data-carousel-prev data-i18n-aria="carouselPrev" aria-label="Previous">‹</button>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--next" data-carousel-next data-i18n-aria="carouselNext" aria-label="Next">›</button>
+                <div class="guide-carousel__dots" data-carousel-dots></div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gLocalTitle">Local ASR — offline Parakeet</h3>
+                <p data-i18n="gLocalIntro">
+                  Optional sidecar module: Parakeet TDT via ONNX Runtime (CPU or CUDA).
+                  No Chrome worker when Live mode is local_parakeet.
+                </p>
+                <ul>
+                  <li data-i18n="gLocal1">Open Modules → Local ASR and finish setup until ready.</li>
+                  <li data-i18n="gLocal2">Lazy-download ORT, model weights, optional Silero VAD and CUDA redist.</li>
+                  <li data-i18n="gLocal3">Native mic capture (cpal) with WebRTC or Silero VAD.</li>
+                  <li data-i18n="gLocal4">Same subtitle / translation / overlay path as Web Speech after ingest.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="translate" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_translation.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Translation — up to four lines" data-caption-ru="Перевод — до четырёх линий" />
+                </div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gTranslateTitle">Translation — up to four lines</h3>
+                <p data-i18n="gTranslateIntro">
+                  Seventeen providers with queueing, cache, and stale-drop protection.
+                  ASR still works with translation turned off (source-only).
+                </p>
+                <ul>
+                  <li data-i18n="gTranslate1">Up to four translation lines (source text is separate).</li>
+                  <li data-i18n="gTranslate2">Keyless options: Google Web, Free Web Translate, Microsoft Edge Translate.</li>
+                  <li data-i18n="gTranslate3">Optional realtime translation — captions update while you speak, without waiting for the phrase to finish (off by default).</li>
+                  <li data-i18n="gTranslate4">Memory/disk cache; late translations allowed; completed blocks stay until the next phrase finalizes.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="subs" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_subtitles.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Subtitles — overlay layout" data-caption-ru="Субтитры — раскладка overlay" />
+                </div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gSubsTitle">Subtitles — overlay layout</h3>
+                <p data-i18n="gSubsIntro">
+                  Control which lines appear on the OBS overlay, their order, preset,
+                  and how long completed text remains visible.
+                </p>
+                <ul>
+                  <li data-i18n="gSubs1">Presets: single, dual-line, stacked, compact (URL query overrides available).</li>
+                  <li data-i18n="gSubs2">Toggle source and translation visibility independently.</li>
+                  <li data-i18n="gSubs3">TTL / lifecycle settings keep completed text stable during the next partial.</li>
+                  <li data-i18n="gSubs4">Reorder lines to control what appears first on the overlay.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="obs" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_obs.png" alt="" loading="lazy" width="860" height="540" data-caption-en="OBS — overlay URL and Closed Captions" data-caption-ru="OBS — URL overlay и Closed Captions" />
+                </div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gObsTitle">OBS — Browser Source &amp; CC</h3>
+                <p data-i18n="gObsIntro">
+                  Primary output is a lightweight vanilla overlay page over WebSocket.
+                  Optional Closed Captions via OBS WebSocket are mainly for Twitch.
+                </p>
+                <ul>
+                  <li data-i18n="gObs1">Add Browser Source → http://127.0.0.1:8765/overlay</li>
+                  <li data-i18n="gObs2">Copy URL / open overlay helpers live on the OBS tab.</li>
+                  <li data-i18n="gObs3">Closed Captions: meant for Twitch stream captions (other uses are uncommon).</li>
+                  <li data-i18n="gObs4">After app updates, reload the Browser Source if the overlay looks stale.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="tts" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel data-multi>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_tts_1.png" alt="" loading="lazy" width="860" height="540" data-caption-en="TTS — subtitle speech" data-caption-ru="TTS — озвучка субтитров" />
+                  <img data-slide src="images/kagevi_tts_twitch.png" alt="" loading="lazy" width="860" height="540" data-caption-en="TTS — Twitch chat" data-caption-ru="TTS — Twitch chat" />
+                </div>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--prev" data-carousel-prev data-i18n-aria="carouselPrev" aria-label="Previous">‹</button>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--next" data-carousel-next data-i18n-aria="carouselNext" aria-label="Next">›</button>
+                <div class="guide-carousel__dots" data-carousel-dots></div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gTtsTitle">TTS — speech &amp; Twitch chat</h3>
+                <p data-i18n="gTtsIntro">
+                  Sidecar module for subtitle speech and Twitch chat TTS with native or
+                  Sonic pitch-preserving playback.
+                </p>
+                <ul>
+                  <li data-i18n="gTts1">Open from Modules → TTS (separate window, /tts).</li>
+                  <li data-i18n="gTts2">Speak translated or source lines as they finalize.</li>
+                  <li data-i18n="gTts3">Twitch chat TTS for up to five channels.</li>
+                  <li data-i18n="gTts4">Audio devices and tempo are configured in the TTS module, not OBS.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="guide-panel" data-panel="style" role="tabpanel" hidden>
+              <figure class="guide-panel__media guide-carousel" data-carousel data-multi>
+                <div class="guide-carousel__frame">
+                  <img class="is-active" data-slide src="images/kagevi_style.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Subtitle Style" data-caption-ru="Стиль субтитров" />
+                  <img data-slide src="images/kagevi_UI_theme.png" alt="" loading="lazy" width="860" height="540" data-caption-en="UI Theme" data-caption-ru="Тема UI" />
+                </div>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--prev" data-carousel-prev data-i18n-aria="carouselPrev" aria-label="Previous">‹</button>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--next" data-carousel-next data-i18n-aria="carouselNext" aria-label="Next">›</button>
+                <div class="guide-carousel__dots" data-carousel-dots></div>
+              </figure>
+              <div class="guide-panel__body">
+                <h3 data-i18n="gStyleTitle">Style — look of the captions</h3>
+                <p data-i18n="gStyleIntro">
+                  Fonts, colors, outline, shadow, backgrounds, and animated entrance
+                  effects — shared by dashboard preview and OBS overlay.
+                </p>
+                <ul>
+                  <li data-i18n="gStyle1">Built-in and custom presets; Save after edits.</li>
+                  <li data-i18n="gStyle2">Per-slot overrides for source and each translation line.</li>
+                  <li data-i18n="gStyle3">Effects: fade, slide-up, zoom, blur-in, glow, and more.</li>
+                  <li data-i18n="gStyle4">UI Theme (dark/light palette) styles the dashboard only — not the overlay.</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section pipeline" id="pipeline">
+        <div class="section__head">
+          <h2 data-i18n="pipeTitle">One local pipeline</h2>
+          <p data-i18n="pipeLede">
+            From microphone to OBS — without shipping your stream audio to a
+            proprietary backend.
+          </p>
+        </div>
+        <ol class="pipe">
+          <li>
+            <span class="pipe__step">01</span>
+            <span class="pipe__label" data-i18n="pipe1">ASR</span>
+          </li>
+          <li>
+            <span class="pipe__step">02</span>
+            <span class="pipe__label" data-i18n="pipe2">Translate</span>
+          </li>
+          <li>
+            <span class="pipe__step">03</span>
+            <span class="pipe__label" data-i18n="pipe3">Overlay / TTS</span>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section start" id="start">
+        <div class="section__head">
+          <h2 data-i18n="startTitle">Quick start</h2>
+          <p data-i18n="startLede">Four steps from installer to OBS captions.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <h3 data-i18n="s1Title">Install</h3>
+            <p data-i18n="s1Body">Run the Windows x64 setup from the latest GitHub Release.</p>
+          </li>
+          <li>
+            <h3 data-i18n="s2Title">Launch</h3>
+            <p data-i18n="s2Body">Open Kagevi Subtitles — the dashboard opens in the main window.</p>
+          </li>
+          <li>
+            <h3 data-i18n="s3Title">Add OBS source</h3>
+            <p data-i18n="s3Body">Browser Source → http://127.0.0.1:8765/overlay</p>
+          </li>
+          <li>
+            <h3 data-i18n="s4Title">Start recognition</h3>
+            <p data-i18n="s4Body">
+              Web Speech (don't minimize the Chrome worker) or Local ASR when the module is ready — then press Start.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section download" id="download">
+        <div class="download__panel">
+          <div>
+            <h2 data-i18n="dlTitle">Get Kagevi Subtitles</h2>
+            <p data-i18n="dlLede">
+              Free and open source under MIT. WebView2 required; Chrome only for the
+              Web Speech worker.
+            </p>
+            <ul class="req-list">
+              <li data-i18n="req1">Windows 10 or 11 (x64)</li>
+              <li data-i18n="req2">Microsoft Edge WebView2 Runtime</li>
+              <li data-i18n="req3">Microphone access</li>
+              <li data-i18n="req4">Internet optional (cloud translation / first Local ASR download)</li>
+            </ul>
+          </div>
+          <div class="download__actions">
+            <a
+              class="btn btn--primary btn--lg"
+              href="https://github.com/kiriuru/Kagevi-Subtitles/releases/latest"
+              data-github="releases-latest"
+              data-i18n="ctaDownload"
+              >Download for Windows</a
+            >
+            <a
+              class="btn btn--secondary"
+              href="https://github.com/kiriuru/Kagevi-Subtitles"
+              data-github="home"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-i18n="ctaSource"
+              >Source on GitHub</a
+            >
+            <a
+              class="btn btn--ghost"
+              href="https://www.donationalerts.com/r/kiriuru"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-i18n="ctaSupport"
+              >Support the project</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section licenses" id="licenses">
+        <div class="section__head">
+          <h2 data-i18n="licTitle">Licenses &amp; attribution</h2>
+          <p data-i18n="licLede">
+            Application code is MIT. Local ASR models and several runtimes keep their
+            own licenses — key attributions below.
+          </p>
+        </div>
+        <ul class="lic-list">
+          <li>
+            <strong data-i18n="licAppName">Kagevi Subtitles</strong>
+            <span data-i18n="licAppBody">MIT © 2026 Kiriuru</span>
+          </li>
+          <li>
+            <strong data-i18n="licParaName">NVIDIA Parakeet ASR</strong>
+            <span data-i18n="licParaBody">CC-BY-4.0 — NeMo / Suno.ai models via ONNX exports</span>
+          </li>
+          <li>
+            <strong data-i18n="licOrtName">ONNX Runtime</strong>
+            <span data-i18n="licOrtBody">MIT © Microsoft</span>
+          </li>
+          <li>
+            <strong data-i18n="licSilName">Silero VAD</strong>
+            <span data-i18n="licSilBody">MIT © Silero Team (optional)</span>
+          </li>
+          <li>
+            <strong data-i18n="licSonicName">Sonic / libsonic</strong>
+            <span data-i18n="licSonicBody">Apache-2.0 — TTS tempo</span>
+          </li>
+        </ul>
+        <div class="lic-actions">
+          <a
+            class="btn btn--secondary"
+            href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE"
+            data-github="license"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="licMitLink"
+            >MIT License</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__brand">
+        <img src="assets/kagevi-icon.png" alt="" width="36" height="36" />
+        <div>
+          <strong>Kagevi Subtitles</strong>
+          <p data-i18n="footerTag">Local-first live subtitles for streamers.</p>
+        </div>
+      </div>
+      <div class="footer__links">
+        <a href="wiki.html" data-i18n="linkWiki">Wiki</a>
+        <a href="changelog.html" data-i18n="linkChangelog">Changelog</a>
+        <a href="#licenses" data-i18n="navLicenses">Licenses</a>
+        <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE" data-github="license">MIT</a>
+      </div>
+      <p class="footer__copy">© 2026 Kiriuru · <span data-i18n="footerPowered">Powered by Kiriuru</span></p>
+    </footer>
+
+    <dialog class="lightbox" id="lightbox" aria-label="Screenshot">
+      <button type="button" class="lightbox__close" data-i18n-aria="closeAria" aria-label="Close">×</button>
+      <img src="" alt="" />
+      <p class="lightbox__cap"></p>
+    </dialog>
+
+    <script src="main.js" defer></script>
+  </body>
+</html>

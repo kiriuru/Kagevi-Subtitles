@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Kagevi Subtitles Changelog" />
+    <meta name="theme-color" content="#0a0b0f" />
+    <title>Changelog · Kagevi Subtitles</title>
+    <link rel="icon" type="image/png" href="assets/kagevi-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,550;12..96,750;12..96,800&family=Sora:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="doc.css" />
+  </head>
+  <body class="doc-page" data-doc="changelog">
+    <a class="skip-link" href="#doc-main">Skip to content</a>
+    <div class="noise" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand-mark" href="index.html">
+        <img src="assets/kagevi-icon.png" alt="" width="40" height="40" />
+        <span class="brand-mark__text">
+          <span class="brand-mark__main">Kagevi</span>
+          <span class="brand-mark__sub">Subtitles</span>
+        </span>
+      </a>
+      <div class="topbar__actions">
+        <button
+          type="button"
+          class="nav-toggle"
+          aria-controls="site-nav"
+          aria-expanded="false"
+          data-i18n-aria="navMenu"
+          aria-label="Menu"
+        >
+          <span class="nav-toggle__bars" aria-hidden="true"></span>
+        </button>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" class="lang__btn is-active" data-lang="en">EN</button>
+          <button type="button" class="lang__btn" data-lang="ru">RU</button>
+          <button type="button" class="lang__btn" data-lang="ja">JA</button>
+          <button type="button" class="lang__btn" data-lang="zh">ZH</button>
+          <button type="button" class="lang__btn" data-lang="ko">KO</button>
+        </div>
+        <a class="btn btn--ghost btn--sm" href="index.html" data-i18n="navHome">Home</a>
+      </div>
+      <nav class="topbar__nav" id="site-nav" aria-label="Primary">
+        <a href="index.html#guide" data-i18n="navGuide">Guide</a>
+        <a href="wiki.html" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" class="is-current" data-i18n="navChangelog">Changelog</a>
+        <a href="index.html#download" data-i18n="navDownload">Download</a>
+      </nav>
+    </header>
+
+    <div class="doc-shell">
+      <aside class="doc-toc" aria-label="On this page">
+        <p class="doc-toc__title" data-i18n="tocTitle">On this page</p>
+        <nav class="doc-toc__nav" id="doc-toc"></nav>
+      </aside>
+
+      <main class="doc-main" id="doc-main">
+        <header class="doc-hero">
+          <p class="doc-hero__eyebrow" data-i18n="changelogEyebrow">Release notes</p>
+          <h1 data-i18n="changelogTitle">Changelog</h1>
+          <p class="doc-hero__lede" data-i18n="changelogLede">
+            Notable changes across Kagevi Subtitles releases.
+          </p>
+        </header>
+
+        <div class="doc-panels">
+          <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
+            <!-- BUILD:CHANGELOG_EN -->
+          </article>
+          <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
+            <!-- BUILD:CHANGELOG_RU -->
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <footer class="footer doc-footer">
+      <div class="footer__brand">
+        <img src="assets/kagevi-icon.png" alt="" width="36" height="36" />
+        <div>
+          <strong>Kagevi Subtitles</strong>
+          <p data-i18n="footerTag">Local-first live subtitles for streamers.</p>
+        </div>
+      </div>
+      <div class="footer__links">
+        <a href="index.html" data-i18n="navHome">Home</a>
+        <a href="wiki.html" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" data-i18n="navChangelog">Changelog</a>
+        <a href="index.html#licenses" data-i18n="navLicenses">Licenses</a>
+      </div>
+      <p class="footer__copy">© 2026 Kiriuru</p>
+    </footer>
+
+    <script src="doc.js" defer></script>
+  </body>
+</html>

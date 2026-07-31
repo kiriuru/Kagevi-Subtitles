@@ -1,18 +1,18 @@
-# VoiceSub Wiki
+# Kagevi Subtitles Wiki
 
-Операционный гайд по интерфейсу VoiceSub **`0.6.0`** — зачем каждый элемент, как он работает и что чаще всего ломается.
+Операционный гайд по интерфейсу Kagevi Subtitles **`0.6.1`** — зачем каждый элемент, как он работает и что чаще всего ломается.
 
 <p align="center">
   <a href="../README.ru.md">README</a> ·
   <a href="./WIKI.en.md">English</a> ·
   <a href="./TECHNICAL_ARCHITECTURE.md">Архитектура</a> ·
-  <a href="./CHANGELOG.md">Changelog</a>
+  <a href="./CHANGELOG.md">Список изменений</a>
 </p>
 
 > [!TIP]
-> На GitHub откройте **Outline** (иконка списка в шапке файла) — боковое оглавление строится из заголовков автоматически. Ниже — jump bar и оглавление со ссылками внутри страницы.
+> На GitHub откройте **Outline** (иконка списка в шапке файла) — боковое оглавление строится из заголовков автоматически. Ниже — **быстрые ссылки** и содержание для переходов внутри страницы.
 
-## Jump bar
+## Быстрые ссылки
 
 <p align="center">
   <a href="#быстрый-старт"><code>Старт</code></a> ·
@@ -52,7 +52,6 @@
 16. [Справка](#справка)
 17. [Приватность и local-first](#приватность-и-local-first)
 18. [Глоссарий](#глоссарий)
-19. [Архивные возможности](#архивные-возможности)
 
 </details>
 
@@ -60,28 +59,28 @@
 
 ## О продукте
 
-VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseline первого релиза: `0.5.0`. SST Desktop `0.4.4` — frozen predecessor: настройки импортируются, но legacy local ASR и experimental browser в core не поднимаются.
+Kagevi Subtitles — активная линия `0.6.1` (Rust + Tauri + Svelte). Baseline первого релиза: `0.5.0`.
 
 > [!IMPORTANT]
-> Overlay URL: `http://127.0.0.1:8765/overlay`. После апгрейда с SST обновите Browser Source в OBS вручную.
+> Overlay URL: `http://127.0.0.1:8765/overlay`. После обновления приложения перезагрузите OBS Browser Source, если overlay выглядит устаревшим.
 
 ### Системные требования
 
 | Требование | Заметки |
 | --- | --- |
 | Windows 10/11 x64 | Обязательно |
-| WebView2 Runtime | Нужен для `VoiceSub.exe`, `/tts`, `/local-asr`. На Win11 чаще уже есть; на Win10 установщик может предложить bootstrapper |
+| WebView2 Runtime | Нужен для `Kagevi Subtitles.exe`, `/tts`, `/local-asr`. На Win11 чаще уже есть; на Win10 установщик может предложить bootstrapper |
 | Google Chrome | Только для Web Speech worker (`/google-asr`). Не нужен при одном Local ASR |
 | Микрофон | Chrome worker **или** нативный захват Local ASR |
 | Интернет | Опционально для облачного перевода; также для первой загрузки модели / ORT Local ASR |
 
 ### Установка и обновление (NSIS)
 
-- Установщик: `VoiceSub_0.6.0_x64-setup.exe` → `VoiceSub.exe` + ресурсы (dashboard, overlay, worker, tts, local-asr).
+- Установщик: `Kagevi Subtitles_0.6.1_x64-setup.exe` → `Kagevi Subtitles.exe` + ресурсы (dashboard, overlay, worker, tts, local-asr).
 - Без Python/Node в runtime; WebView2 через Tauri `downloadBootstrapper` при отсутствии.
 - **Обновление:** закройте приложение → новый `setup.exe` поверх → `user-data/` и `logs/` сохраняются.
 - **Проверка обновлений:** dashboard опрашивает GitHub Releases (`POST /api/updates/check`). Баннер при более новом теге; **Скачать** открывает страницу release. Конфиг: `user-data/config.toml` → `[updates]`.
-- Разработчикам: `build-release-msi.bat` → `build-release.ps1` → `F:\AI\VoiceSub - release\v{version}\`.
+- Разработчикам: `build-release-msi.bat` → `build-release.ps1` → `F:\AI\Kagevi Subtitles - release\v{version}\`.
 
 ### Локальные URL
 
@@ -93,20 +92,20 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 | `/tts` | UI TTS-модуля |
 | `/local-asr` | UI модуля Local ASR |
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Быстрый старт
 
 <p align="center">
-  <img src="../Images/Live_window.jpg" alt="Вкладка Live" width="820"><br>
+  <img src="../Images/kagevi_live.png" alt="Вкладка Live" width="820"><br>
   <em><strong>Live</strong> — Start/Stop, статус распознавания, транскрипт, превью субтитров</em>
 </p>
 
 ### Первый запуск
 
-1. Запустите **VoiceSub.exe**.
+1. Запустите **Kagevi Subtitles.exe**.
 2. Dashboard откроется в главном окне Tauri (`http://127.0.0.1:8765/`).
 3. Добавьте в OBS Browser Source: `http://127.0.0.1:8765/overlay`.
 4. При необходимости настройте язык UI (**Settings**) и перевод (**Translation**).
@@ -131,7 +130,7 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 
 Переключает окно Tauri (~390×844) с pane **Live** + вкладками настроек. Кнопка layout или command palette (`Ctrl+K`). IPC: `set_dashboard_layout`.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
@@ -170,7 +169,7 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 
 </details>
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
@@ -185,7 +184,7 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 | **OBS** | Overlay URL, Closed Captions | [OBS](#obs) |
 | **Word Replace** | Замена текста до перевода | [Замена слов](#замена-слов) |
 | **Tools & Data** | Профили, диагностика, ZIP export | [Инструменты и данные](#инструменты-и-данные) |
-| **Settings** | Язык, layout, импорт SST, Web Speech advanced | [Настройки](#настройки) |
+| **Settings** | Язык, layout, Web Speech advanced | [Настройки](#настройки) |
 | **Help** | Встроенные темы справки | [Справка](#справка) |
 
 **Command palette** (`Ctrl+K` / поиск в header): быстрый переход, Start/Stop, Save, export diagnostics.
@@ -193,43 +192,43 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="../Images/Translation_window.jpg" alt="Перевод" width="280"><br>
+      <img src="../Images/kagevi_translation.png" alt="Перевод" width="280"><br>
       <sub><a href="#перевод">Перевод</a></sub>
     </td>
     <td align="center" width="33%">
-      <img src="../Images/Subtitles_window.jpg" alt="Субтитры" width="280"><br>
+      <img src="../Images/kagevi_subtitles.png" alt="Субтитры" width="280"><br>
       <sub><a href="#субтитры">Субтитры</a></sub>
     </td>
     <td align="center" width="33%">
-      <img src="../Images/Subtitle_Style_window.jpg" alt="Стиль" width="280"><br>
+      <img src="../Images/kagevi_style.png" alt="Стиль" width="280"><br>
       <sub><a href="#стиль-субтитров">Стиль</a></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="../Images/UI_Theme_window.jpg" alt="Тема UI" width="280"><br>
+      <img src="../Images/kagevi_UI_theme.png" alt="Тема UI" width="280"><br>
       <sub><a href="#тема-ui">Тема UI</a></sub>
     </td>
     <td align="center">
-      <img src="../Images/OBS_window.jpg" alt="OBS" width="280"><br>
+      <img src="../Images/kagevi_obs.png" alt="OBS" width="280"><br>
       <sub><a href="#obs">OBS</a></sub>
     </td>
     <td align="center">
-      <img src="../Images/Word_replacement_window.jpg" alt="Замена слов" width="280"><br>
+      <img src="../Images/kagevi_wordReplace.png" alt="Замена слов" width="280"><br>
       <sub><a href="#замена-слов">Замена слов</a></sub>
     </td>
   </tr>
 </table>
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Browser Speech (Web Speech)
 
 <p align="center">
-  <img src="../Images/Web_Speech_Window.jpg" alt="Настройки Web Speech" width="820"><br>
-  <em><strong>Web Speech</strong> — язык распознавания и расширенные опции worker</em>
+  <img src="../Images/kagevi_settings.png" alt="Settings — Advanced Web Speech" width="820"><br>
+  <em><strong>Settings</strong> — Advanced Web Speech / опции lifecycle worker</em>
 </p>
 
 ### Режим
@@ -273,24 +272,29 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 </details>
 
 > [!WARNING]
-> Legacy SST `asr.mode: local` и experimental `/google-asr-experimental` **нет** в core. Используйте модуль [Local ASR](#local-asr) (`local_parakeet`).
+> Experimental `/google-asr-experimental` **нет** в core. Для офлайн-распознавания используйте модуль [Local ASR](#local-asr) (`local_parakeet`).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Local ASR
 
 <p align="center">
-  <img src="../Images/modules_window.jpg" alt="Модули" width="400">
+  <img src="../Images/kagevi_modules_main.png" alt="Модули" width="400">
   &nbsp;
-  <img src="../Images/Local_ASR_window.jpg" alt="Модуль Local ASR" width="400"><br>
+  <img src="../Images/kagevi_localASR_1.png" alt="Модуль Local ASR" width="400"><br>
   <em><strong>Модули</strong> / <strong>Local ASR</strong> — sidecar и setup до ready</em>
 </p>
 
 <p align="center">
-  <img src="../Images/Local_ASR_components_window.jpg" alt="Компоненты Local ASR" width="720"><br>
-  <em><strong>Компоненты</strong> — ORT, модель Parakeet, опционально CUDA</em>
+  <img src="../Images/kagevi_localASR_setup.png" alt="Local ASR setup" width="720"><br>
+  <em><strong>Setup</strong> — ORT, CUDA, варианты моделей Parakeet</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_localASR_2.png" alt="Local ASR inference / test bench" width="720"><br>
+  <em><strong>Inference / Test bench</strong> — warm load, mic test, partial emit</em>
 </p>
 
 ### Окно модуля (`/local-asr`)
@@ -307,15 +311,15 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 
 Выберите `local_parakeet` на Live → **Start** — без Chrome worker; захват mic нативный (cpal). Текст идёт в тот же путь subtitle/translation/overlay. Подробно: [Архитектура §18](./TECHNICAL_ARCHITECTURE.md).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Перевод
 
 <p align="center">
-  <img src="../Images/Translation_window.jpg" alt="Вкладка Перевод" width="820"><br>
-  <em><strong>Перевод</strong> — pipeline, провайдеры и до 5 линий</em>
+  <img src="../Images/kagevi_translation.png" alt="Вкладка Перевод" width="820"><br>
+  <em><strong>Перевод</strong> — pipeline, провайдеры и до 4 линий</em>
 </p>
 
 ### Основные переключатели
@@ -329,13 +333,13 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 > [!NOTE]
 > Старый disk-кэш при смене промпта LLM может давать устаревший стиль.
 
-### Линии перевода (`translation_1`…`translation_5`)
+### Линии перевода (`translation_1`…`translation_4`)
 
-До **5** независимых линий: `enabled`, `target_lang`, `provider`, `label`. Каждая активная линия — нагрузка на dispatcher. Порядок отображения — вкладка **Subtitles**.
+До **4** независимых линий: `enabled`, `target_lang`, `provider`, `label`. Каждая активная линия — нагрузка на dispatcher. Порядок отображения — вкладка **Subtitles**.
 
 ### Провайдеры (17)
 
-`google_translate_v2` (default), `google_cloud_translation_v3`, `google_gas_url`, `google_web`, `azure_translator`, `deepl`, `libretranslate`, `openai`, `openrouter`, `lm_studio`, `ollama`, `public_libretranslate_mirror`, `free_web_translate`, `baidu_translate`, `youdao_translate`, `tencent_tmt`, `caiyun_translator`.
+`google_translate_v2` (default), `google_cloud_translation_v3`, `google_gas_url`, `google_web`, `azure_translator`, `deepl`, `libretranslate`, `openai`, `openrouter`, `lm_studio`, `ollama`, `microsoft_edge`, `free_web_translate`, `baidu_translate`, `youdao_translate`, `tencent_tmt`, `caiyun_translator`.
 
 - OpenAI-compatible helpers: `/api/openai/recommended-models`, `/api/openai/models`.
 - Credentials в `translation.provider_settings` — только локальный `config.toml`.
@@ -346,14 +350,14 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 - **Lifecycle:** завершённый блок остаётся до финализации новой фразы; late translations разрешены; stale drop только для устаревших in-flight jobs.
 - Блок результатов показывает переводы и ошибки. Задержка ≠ всегда ошибка (supersession / stale protection).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Субтитры
 
 <p align="center">
-  <img src="../Images/Subtitles_window.jpg" alt="Вкладка Субтитры" width="820"><br>
+  <img src="../Images/kagevi_subtitles.png" alt="Вкладка Субтитры" width="820"><br>
   <em><strong>Субтитры</strong> — пресет overlay, видимость, порядок, TTL</em>
 </p>
 
@@ -367,44 +371,44 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 > [!IMPORTANT]
 > Завершённый перевод виден, пока новая фраза ещё partial; замена — после final новой фразы.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Стиль субтитров
 
 <p align="center">
-  <img src="../Images/Subtitle_Style_window.jpg" alt="Стиль субтитров" width="820"><br>
+  <img src="../Images/kagevi_style.png" alt="Стиль субтитров" width="820"><br>
   <em><strong>Стиль</strong> — шрифты, цвета, эффекты, overrides по слотам</em>
 </p>
 
 - Built-in и custom presets.
 - Base controls: font, size, weight, color, outline, shadow, background, alignment, spacing.
 - Effects: `none`, `fade`, `subtle_pop`, `slide_up`, `zoom_in`, `blur_in`, `glow`.
-- Per-slot overrides: `source`, `translation_1`…`translation_5`.
+- Per-slot overrides: `source`, `translation_1`…`translation_4`.
 - **Единый payload** для dashboard preview и OBS overlay — сохраняйте config/profile после правок.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Тема UI
 
 <p align="center">
-  <img src="../Images/UI_Theme_window.jpg" alt="Тема UI" width="820"><br>
+  <img src="../Images/kagevi_UI_theme.png" alt="Тема UI" width="820"><br>
   <em><strong>Тема UI</strong> — dark/light и accent palette</em>
 </p>
 
 Влияет только на **dashboard chrome**. OBS overlay использует subtitle-style config, не тему UI.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## OBS
 
 <p align="center">
-  <img src="../Images/OBS_window.jpg" alt="Вкладка OBS" width="820"><br>
+  <img src="../Images/kagevi_obs.png" alt="Вкладка OBS" width="820"><br>
   <em><strong>OBS</strong> — URL overlay и Closed Captions</em>
 </p>
 
@@ -419,14 +423,14 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 - Timing: partial throttle, min delta, clear after ms, dedupe.
 - Debug mirror — текстовый источник для отладки CC.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Замена слов
 
 <p align="center">
-  <img src="../Images/Word_replacement_window.jpg" alt="Замена слов" width="820"><br>
+  <img src="../Images/kagevi_wordReplace.png" alt="Замена слов" width="820"><br>
   <em><strong>Word Replace</strong> — find/replace до перевода и вывода</em>
 </p>
 
@@ -435,15 +439,20 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 - Case-insensitive / whole words (CJK — substring, без `\b`).
 - Twitch chat TTS использует свой флаг `include_builtin_profanity` (не кастомные пары dashboard).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## TTS-модуль
 
 <p align="center">
-  <img src="../Images/TTS_window.jpg" alt="Модуль TTS" width="820"><br>
-  <em><strong>TTS</strong> — вкладки Speech и Twitch в sidecar-окне</em>
+  <img src="../Images/kagevi_tts_1.png" alt="Модуль TTS" width="820"><br>
+  <em><strong>TTS</strong> — озвучка субтитров и playback</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_tts_twitch.png" alt="Twitch TTS" width="820"><br>
+  <em><strong>Twitch TTS</strong> — до пяти каналов, OAuth, маршрутизация chat audio</em>
 </p>
 
 Открытие: **Модули** или Tauri IPC `tts_open_window`. Конфиг: `user-data/modules/tts/config.toml`.
@@ -473,14 +482,14 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 
 `bin/modules/tts/runtime/` — embedded fetcher для Google TTS proxy. Probe: `/api/tts/python/status`.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Инструменты и данные
 
 <p align="center">
-  <img src="../Images/Tools%26Data_window.jpg" alt="Tools and Data" width="820"><br>
+  <img src="../Images/kagevi_tools%26data.png" alt="Tools and Data" width="820"><br>
   <em><strong>Tools & Data</strong> — профили, диагностика, ZIP export</em>
 </p>
 
@@ -499,43 +508,39 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 
 </details>
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Настройки
 
 <p align="center">
-  <img src="../Images/Settings_window.jpg" alt="Settings" width="820"><br>
-  <em><strong>Settings</strong> — язык, layout, импорт SST, Web Speech advanced</em>
+  <img src="../Images/kagevi_settings.png" alt="Settings" width="820"><br>
+  <em><strong>Settings</strong> — язык, layout, Web Speech advanced</em>
 </p>
 
 ### Язык интерфейса (EN / RU / JA / KO / ZH)
 
 Сохраняется в `ui.language` → Save config. Worker получает `locale` при launch. Overlay i18n: `npm run i18n:bundle`. Подробно: [Архитектура §24](./TECHNICAL_ARCHITECTURE.md).
 
-### Импорт SST `config.json`
-
-Миграция в `config.toml`, `config_version` → 8. Legacy `local` / experimental → `browser_google`. `local_parakeet` **сохраняется** (для Live всё равно нужен `ready` модуля).
-
 ### Layout
 
 `standard` vs `compact` — размер окна Tauri.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
 ## Справка
 
 <p align="center">
-  <img src="../Images/Help_window.jpg" alt="Справка" width="820"><br>
-  <em><strong>Help</strong> — встроенные темы внутри приложения</em>
+  <img src="../Images/kagevi_more.png" alt="More" width="820"><br>
+  <em><strong>More</strong> — Theme, Word Replace, Settings, Tools & Data, Help</em>
 </p>
 
 Темы: обзор, распознавание, перевод, субтитры/стиль, OBS, инструменты.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
@@ -546,7 +551,7 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 - Diagnostics export — redacted secrets.
 - Chrome worker — isolated profile, без sync.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
 
@@ -556,32 +561,21 @@ VoiceSub — активная линия `0.6.0` (Rust + Tauri + Svelte). Baseli
 | --- | --- |
 | **partial** | Черновой распознанный текст |
 | **final** | Зафиксированная фраза |
-| **translation slot** | Линия `translation_1`…`translation_5` |
+| **translation slot** | Линия `translation_1`…`translation_4` |
 | **overlay** | Vanilla страница `/overlay` для OBS |
 | **browser worker** | Окно Chrome с Web Speech |
 | **completed block** | Финальный субтитр до следующей финализации |
 | **TTS module** | Sidecar `/tts` + Rust service |
 | **Local ASR** | Sidecar `/local-asr` + Parakeet ONNX (`local_parakeet`) |
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#содержание">↑ Содержание</a></p>
+<p align="right"><a href="#быстрые-ссылки">↑ Быстрые ссылки</a> · <a href="#содержание">↑ Содержание</a></p>
 
 ---
-
-## Архивные возможности
-
-| Было в SST | Статус в VoiceSub |
-| --- | --- |
-| Legacy local ASR (`asr.mode: local`) | Удалено из core; SST import → `browser_google`. Преемник: модуль Local ASR |
-| Experimental browser | Routes удалены (`legacy/experimental-browser/`) |
-| PyInstaller bootstrap | Заменён Tauri NSIS installer |
-| Splash startup profiles | Нет — единый `VoiceSub.exe` |
-
-Для parity browser/translation/subtitle см. golden tests в `tests/golden/`.
 
 ---
 
 <p align="center">
-  <a href="#jump-bar">↑ Наверх</a> ·
+  <a href="#быстрые-ссылки">↑ Наверх</a> ·
   <a href="../README.ru.md">README</a> ·
   <a href="./WIKI.en.md">English</a> ·
   <a href="./TECHNICAL_ARCHITECTURE.md">Архитектура</a>

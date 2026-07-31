@@ -81,7 +81,10 @@ legacy/
 docs/COMMIT_CONVENTIONS.md
 docs/LOCAL_ASR_MODULE_PLAN.ru.md
 docs/GITHUB_RELEASE_NOTES.template.md
-.github/
+# Local-only GitHub notes / hooks (workflows are tracked — needed for Pages + CI)
+.github/*
+!.github/workflows/
+!.github/workflows/**
 .husky/
 
 # --- OS / IDE ---

@@ -1,6 +1,6 @@
-# VoiceSub Wiki
+# Kagevi Subtitles Wiki
 
-Operational guide for the VoiceSub **`0.6.0`** UI — what each control is for, how it behaves, and what usually goes wrong.
+Operational guide for the Kagevi Subtitles **`0.6.1`** UI — what each control is for, how it behaves, and what usually goes wrong.
 
 <p align="center">
   <a href="../README.md">README</a> ·
@@ -10,9 +10,9 @@ Operational guide for the VoiceSub **`0.6.0`** UI — what each control is for, 
 </p>
 
 > [!TIP]
-> On GitHub, open **Outline** (list icon in the file header) for an auto-generated sidebar from headings. Use the jump bar and table of contents below for in-page links.
+> On GitHub, open **Outline** (list icon in the file header) for an auto-generated sidebar from headings. Use **Quick links** and the table of contents below for in-page jumps.
 
-## Jump bar
+## Quick links
 
 <p align="center">
   <a href="#quick-start"><code>Start</code></a> ·
@@ -52,7 +52,6 @@ Operational guide for the VoiceSub **`0.6.0`** UI — what each control is for, 
 16. [Help](#help)
 17. [Privacy and local-first](#privacy-and-local-first)
 18. [Glossary](#glossary)
-19. [Archived features](#archived-features)
 
 </details>
 
@@ -62,28 +61,28 @@ Operational guide for the VoiceSub **`0.6.0`** UI — what each control is for, 
 
 <a id="about-top"></a>
 
-VoiceSub is the active `0.6.0` line (Rust + Tauri + Svelte). Baseline first release: `0.5.0`. SST Desktop `0.4.4` is a frozen predecessor — settings import works, but legacy local ASR and experimental browser modes are not started in core.
+Kagevi Subtitles is the active `0.6.1` line (Rust + Tauri + Svelte). Baseline first release: `0.5.0`.
 
 > [!IMPORTANT]
-> Overlay URL is `http://127.0.0.1:8765/overlay`. If you upgraded from SST, update the OBS Browser Source manually.
+> Overlay URL is `http://127.0.0.1:8765/overlay`. After app updates, reload the OBS Browser Source if the overlay looks stale.
 
 ### System requirements
 
 | Requirement | Notes |
 | --- | --- |
 | Windows 10/11 x64 | Required |
-| WebView2 Runtime | Required for `VoiceSub.exe`, `/tts`, `/local-asr`. Usually present on Windows 11; installer may bootstrap on Windows 10 |
+| WebView2 Runtime | Required for `Kagevi Subtitles.exe`, `/tts`, `/local-asr`. Usually present on Windows 11; installer may bootstrap on Windows 10 |
 | Google Chrome | Only for Web Speech worker (`/google-asr`). Not needed for Local ASR alone |
 | Microphone | Chrome worker **or** Local ASR native capture |
 | Internet | Optional for cloud translation; also used for first-time Local ASR model / ORT downloads |
 
 ### Install and update (NSIS)
 
-- Installer: `VoiceSub_0.6.0_x64-setup.exe` → `VoiceSub.exe` + bundled assets (dashboard, overlay, worker, tts, local-asr).
+- Installer: `Kagevi Subtitles_0.6.1_x64-setup.exe` → `Kagevi Subtitles.exe` + bundled assets (dashboard, overlay, worker, tts, local-asr).
 - No Python/Node in runtime; WebView2 via Tauri `downloadBootstrapper` when missing.
 - **Update:** close app → run new `setup.exe` over existing → `user-data/` and `logs/` persist.
 - **Update check:** dashboard polls GitHub Releases (`POST /api/updates/check`). Banner shows when a newer tag exists; **Download** opens the release page. Config: `user-data/config.toml` → `[updates]`.
-- Developers: `build-release-msi.bat` → `build-release.ps1` → release folder under `F:\AI\VoiceSub - release\v{version}\`.
+- Developers: `build-release-msi.bat` → `build-release.ps1` → release folder under `F:\AI\Kagevi Subtitles - release\v{version}\`.
 
 ### Local URLs
 
@@ -95,20 +94,20 @@ VoiceSub is the active `0.6.0` line (Rust + Tauri + Svelte). Baseline first rele
 | `/tts` | TTS module UI |
 | `/local-asr` | Local ASR module UI |
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Quick start
 
 <p align="center">
-  <img src="../Images/Live_window.jpg" alt="Live tab" width="820"><br>
+  <img src="../Images/kagevi_live.png" alt="Live tab" width="820"><br>
   <em><strong>Live</strong> — Start/Stop, recognition status, transcript, subtitle preview</em>
 </p>
 
 ### First run
 
-1. Launch **VoiceSub.exe**.
+1. Launch **Kagevi Subtitles.exe**.
 2. Dashboard opens in the Tauri main window (`http://127.0.0.1:8765/`).
 3. Add OBS Browser Source: `http://127.0.0.1:8765/overlay`.
 4. Set UI language (**Settings**) and translation (**Translation**) if needed.
@@ -133,7 +132,7 @@ Top **Subtitle Output Preview** shows placeholders before Start and the live pay
 
 Switches the Tauri window (~390×844) with a **Live** pane + settings tabs. Toggle via the layout button or command palette (`Ctrl+K`). IPC: `set_dashboard_layout`.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
@@ -172,7 +171,7 @@ Switches the Tauri window (~390×844) with a **Live** pane + settings tabs. Togg
 
 </details>
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
@@ -187,7 +186,7 @@ Switches the Tauri window (~390×844) with a **Live** pane + settings tabs. Togg
 | **OBS** | Overlay URL, Closed Captions | [OBS](#obs) |
 | **Word Replace** | Text replacement before translation | [Word replacement](#word-replacement) |
 | **Tools & Data** | Profiles, diagnostics, ZIP export | [Tools and data](#tools-and-data) |
-| **Settings** | Language, layout, SST import, Web Speech advanced | [Settings](#settings) |
+| **Settings** | Language, layout, Web Speech advanced | [Settings](#settings) |
 | **Help** | Built-in topics | [Help](#help) |
 
 **Command palette** (header search / `Ctrl+K`): quick navigation, Start/Stop, Save, export diagnostics.
@@ -195,43 +194,43 @@ Switches the Tauri window (~390×844) with a **Live** pane + settings tabs. Togg
 <table>
   <tr>
     <td align="center" width="33%">
-      <img src="../Images/Translation_window.jpg" alt="Translation" width="280"><br>
+      <img src="../Images/kagevi_translation.png" alt="Translation" width="280"><br>
       <sub><a href="#translation">Translation</a></sub>
     </td>
     <td align="center" width="33%">
-      <img src="../Images/Subtitles_window.jpg" alt="Subtitles" width="280"><br>
+      <img src="../Images/kagevi_subtitles.png" alt="Subtitles" width="280"><br>
       <sub><a href="#subtitles">Subtitles</a></sub>
     </td>
     <td align="center" width="33%">
-      <img src="../Images/Subtitle_Style_window.jpg" alt="Style" width="280"><br>
+      <img src="../Images/kagevi_style.png" alt="Style" width="280"><br>
       <sub><a href="#subtitle-style">Style</a></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="../Images/UI_Theme_window.jpg" alt="UI Theme" width="280"><br>
+      <img src="../Images/kagevi_UI_theme.png" alt="UI Theme" width="280"><br>
       <sub><a href="#ui-theme">UI Theme</a></sub>
     </td>
     <td align="center">
-      <img src="../Images/OBS_window.jpg" alt="OBS" width="280"><br>
+      <img src="../Images/kagevi_obs.png" alt="OBS" width="280"><br>
       <sub><a href="#obs">OBS</a></sub>
     </td>
     <td align="center">
-      <img src="../Images/Word_replacement_window.jpg" alt="Word Replace" width="280"><br>
+      <img src="../Images/kagevi_wordReplace.png" alt="Word Replace" width="280"><br>
       <sub><a href="#word-replacement">Word Replace</a></sub>
     </td>
   </tr>
 </table>
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Browser Speech (Web Speech)
 
 <p align="center">
-  <img src="../Images/Web_Speech_Window.jpg" alt="Web Speech settings" width="820"><br>
-  <em><strong>Web Speech</strong> — recognition language and advanced worker options</em>
+  <img src="../Images/kagevi_settings.png" alt="Settings — Advanced Web Speech" width="820"><br>
+  <em><strong>Settings</strong> — Advanced Web Speech / worker lifecycle options</em>
 </p>
 
 ### Mode
@@ -275,24 +274,29 @@ Switches the Tauri window (~390×844) with a **Live** pane + settings tabs. Togg
 </details>
 
 > [!WARNING]
-> Legacy SST `asr.mode: local` and experimental `/google-asr-experimental` are **not** in core. Use the [Local ASR](#local-asr) module (`local_parakeet`) instead.
+> Experimental `/google-asr-experimental` is **not** in core. For offline recognition use the [Local ASR](#local-asr) module (`local_parakeet`).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Local ASR
 
 <p align="center">
-  <img src="../Images/modules_window.jpg" alt="Modules" width="400">
+  <img src="../Images/kagevi_modules_main.png" alt="Modules" width="400">
   &nbsp;
-  <img src="../Images/Local_ASR_window.jpg" alt="Local ASR module" width="400"><br>
+  <img src="../Images/kagevi_localASR_1.png" alt="Local ASR module" width="400"><br>
   <em><strong>Modules</strong> / <strong>Local ASR</strong> — open sidecar and finish setup until ready</em>
 </p>
 
 <p align="center">
-  <img src="../Images/Local_ASR_components_window.jpg" alt="Local ASR components" width="720"><br>
-  <em><strong>Components</strong> — ORT, Parakeet model, optional CUDA</em>
+  <img src="../Images/kagevi_localASR_setup.png" alt="Local ASR setup" width="720"><br>
+  <em><strong>Setup</strong> — ORT, CUDA components, Parakeet model variants</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_localASR_2.png" alt="Local ASR inference and test bench" width="720"><br>
+  <em><strong>Inference / Test bench</strong> — warm load, mic test, partial emit</em>
 </p>
 
 ### Module window (`/local-asr`)
@@ -309,15 +313,15 @@ Separate UI (like TTS): deps check, model download, CPU/CUDA EP, realtime preset
 
 Select `local_parakeet` on Live → **Start** — no Chrome worker; mic capture is native (cpal). Text uses the same subtitle/translation/overlay path as Web Speech. Details: [Architecture §18](./TECHNICAL_ARCHITECTURE.en.md).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Translation
 
 <p align="center">
-  <img src="../Images/Translation_window.jpg" alt="Translation tab" width="820"><br>
-  <em><strong>Translation</strong> — enable pipeline, providers, and up to 5 lines</em>
+  <img src="../Images/kagevi_translation.png" alt="Translation tab" width="820"><br>
+  <em><strong>Translation</strong> — enable pipeline, providers, and up to 4 lines</em>
 </p>
 
 ### Main toggles
@@ -331,13 +335,13 @@ Select `local_parakeet` on Live → **Start** — no Chrome worker; mic capture 
 > [!NOTE]
 > Old disk cache may conflict with changed LLM prompts.
 
-### Translation lines (`translation_1`…`translation_5`)
+### Translation lines (`translation_1`…`translation_4`)
 
-Up to **5** independent lines: `enabled`, `target_lang`, `provider`, `label`. Each enabled line adds dispatcher load. Display order is set on the **Subtitles** tab.
+Up to **4** independent lines: `enabled`, `target_lang`, `provider`, `label`. Each enabled line adds dispatcher load. Display order is set on the **Subtitles** tab.
 
 ### Providers (17)
 
-`google_translate_v2` (default), `google_cloud_translation_v3`, `google_gas_url`, `google_web`, `azure_translator`, `deepl`, `libretranslate`, `openai`, `openrouter`, `lm_studio`, `ollama`, `public_libretranslate_mirror`, `free_web_translate`, `baidu_translate`, `youdao_translate`, `tencent_tmt`, `caiyun_translator`.
+`google_translate_v2` (default), `google_cloud_translation_v3`, `google_gas_url`, `google_web`, `azure_translator`, `deepl`, `libretranslate`, `openai`, `openrouter`, `lm_studio`, `ollama`, `microsoft_edge`, `free_web_translate`, `baidu_translate`, `youdao_translate`, `tencent_tmt`, `caiyun_translator`.
 
 - OpenAI-compatible helpers: `/api/openai/recommended-models`, `/api/openai/models`.
 - Credentials in `translation.provider_settings` — local `config.toml` only.
@@ -348,14 +352,14 @@ Up to **5** independent lines: `enabled`, `target_lang`, `provider`, `label`. Ea
 - **Lifecycle:** completed block stays until a new phrase finalizes; late translations allowed; stale drop only for superseded in-flight jobs.
 - Results block shows latest translations and provider errors. Delay is not always failure (supersession / stale protection).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Subtitles
 
 <p align="center">
-  <img src="../Images/Subtitles_window.jpg" alt="Subtitles tab" width="820"><br>
+  <img src="../Images/kagevi_subtitles.png" alt="Subtitles tab" width="820"><br>
   <em><strong>Subtitles</strong> — overlay preset, visibility, order, TTL</em>
 </p>
 
@@ -369,44 +373,44 @@ Up to **5** independent lines: `enabled`, `target_lang`, `provider`, `label`. Ea
 > [!IMPORTANT]
 > Completed translation stays visible while the next phrase is still partial; replacement happens after the new phrase finalizes.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Subtitle style
 
 <p align="center">
-  <img src="../Images/Subtitle_Style_window.jpg" alt="Subtitle Style tab" width="820"><br>
+  <img src="../Images/kagevi_style.png" alt="Subtitle Style tab" width="820"><br>
   <em><strong>Subtitle Style</strong> — fonts, colors, effects, per-slot overrides</em>
 </p>
 
 - Built-in and custom presets.
 - Base controls: font, size, weight, color, outline, shadow, background, alignment, spacing.
 - Effects: `none`, `fade`, `subtle_pop`, `slide_up`, `zoom_in`, `blur_in`, `glow`.
-- Per-slot overrides: `source`, `translation_1`…`translation_5`.
+- Per-slot overrides: `source`, `translation_1`…`translation_4`.
 - **Shared payload** for dashboard preview and OBS overlay — Save config/profile after edits.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## UI theme
 
 <p align="center">
-  <img src="../Images/UI_Theme_window.jpg" alt="UI Theme tab" width="820"><br>
+  <img src="../Images/kagevi_UI_theme.png" alt="UI Theme tab" width="820"><br>
   <em><strong>UI Theme</strong> — dark/light mode and accent palette</em>
 </p>
 
 Affects **dashboard chrome only**. OBS overlay uses subtitle-style config, not the UI theme.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## OBS
 
 <p align="center">
-  <img src="../Images/OBS_window.jpg" alt="OBS tab" width="820"><br>
+  <img src="../Images/kagevi_obs.png" alt="OBS tab" width="820"><br>
   <em><strong>OBS</strong> — overlay URL and Closed Captions</em>
 </p>
 
@@ -421,14 +425,14 @@ Copied from the **OBS** tab (`GET /api/obs/url`). Default: `http://127.0.0.1:876
 - Timing: partial throttle, min delta, clear after ms, dedupe.
 - Debug mirror — text source for CC debugging.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Word replacement
 
 <p align="center">
-  <img src="../Images/Word_replacement_window.jpg" alt="Word Replace tab" width="820"><br>
+  <img src="../Images/kagevi_wordReplace.png" alt="Word Replace tab" width="820"><br>
   <em><strong>Word Replace</strong> — find/replace before translation and display</em>
 </p>
 
@@ -437,15 +441,20 @@ Copied from the **OBS** tab (`GET /api/obs/url`). Default: `http://127.0.0.1:876
 - Case-insensitive / whole words (CJK uses substring match, not `\b`).
 - Twitch chat TTS uses its own `include_builtin_profanity` flag (not dashboard custom pairs).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## TTS module
 
 <p align="center">
-  <img src="../Images/TTS_window.jpg" alt="TTS module" width="820"><br>
-  <em><strong>TTS</strong> — Speech and Twitch tabs in a sidecar window</em>
+  <img src="../Images/kagevi_tts_1.png" alt="TTS module" width="820"><br>
+  <em><strong>TTS</strong> — subtitle speech and playback</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_tts_twitch.png" alt="Twitch TTS" width="820"><br>
+  <em><strong>Twitch TTS</strong> — up to five channels, OAuth, chat audio routing</em>
 </p>
 
 Open from **Modules** or Tauri IPC `tts_open_window`. Config: `user-data/modules/tts/config.toml`.
@@ -475,14 +484,14 @@ Open from **Modules** or Tauri IPC `tts_open_window`. Config: `user-data/modules
 
 `bin/modules/tts/runtime/` — embedded fetcher for Google TTS proxy. Probe: `/api/tts/python/status`.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Tools and data
 
 <p align="center">
-  <img src="../Images/Tools%26Data_window.jpg" alt="Tools and Data tab" width="820"><br>
+  <img src="../Images/kagevi_tools%26data.png" alt="Tools and Data tab" width="820"><br>
   <em><strong>Tools & Data</strong> — profiles, runtime diagnostics, ZIP export</em>
 </p>
 
@@ -501,43 +510,39 @@ Open from **Modules** or Tauri IPC `tts_open_window`. Config: `user-data/modules
 
 </details>
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Settings
 
 <p align="center">
-  <img src="../Images/Settings_window.jpg" alt="Settings tab" width="820"><br>
-  <em><strong>Settings</strong> — language, layout, SST import, Web Speech advanced</em>
+  <img src="../Images/kagevi_settings.png" alt="Settings tab" width="820"><br>
+  <em><strong>Settings</strong> — language, layout, Web Speech advanced</em>
 </p>
 
 ### UI language (EN / RU / JA / KO / ZH)
 
 Saved in `ui.language` → Save config. Worker gets `locale` on launch. Overlay i18n: regenerate with `npm run i18n:bundle`. Details: [Architecture §24](./TECHNICAL_ARCHITECTURE.en.md).
 
-### SST `config.json` import
-
-Migrates to `config.toml`, `config_version` → 8. Legacy `local` / experimental → `browser_google`. `local_parakeet` is **preserved** (Live still requires module `ready`).
-
 ### Layout
 
 `standard` vs `compact` — Tauri window size.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
 ## Help
 
 <p align="center">
-  <img src="../Images/Help_window.jpg" alt="Help tab" width="820"><br>
-  <em><strong>Help</strong> — built-in topics inside the app</em>
+  <img src="../Images/kagevi_more.png" alt="More hub" width="820"><br>
+  <em><strong>More</strong> — Theme, Word Replace, Settings, Tools & Data, Help</em>
 </p>
 
 Topics: overview, recognition, translation, subtitles/style, OBS, tools.
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
@@ -548,7 +553,7 @@ Topics: overview, recognition, translation, subtitles/style, OBS, tools.
 - Diagnostics export redacts secrets.
 - Chrome worker uses an isolated profile (no sync).
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
 
@@ -558,32 +563,21 @@ Topics: overview, recognition, translation, subtitles/style, OBS, tools.
 | --- | --- |
 | **partial** | In-progress recognized text |
 | **final** | Finalized phrase segment |
-| **translation slot** | Line `translation_1`…`translation_5` |
+| **translation slot** | Line `translation_1`…`translation_4` |
 | **overlay** | Vanilla `/overlay` page for OBS |
 | **browser worker** | Chrome window running Web Speech |
 | **completed block** | Final subtitle until next phrase finalizes |
 | **TTS module** | Sidecar `/tts` + Rust service |
 | **Local ASR** | Sidecar `/local-asr` + Parakeet ONNX (`local_parakeet`) |
 
-<p align="right"><a href="#jump-bar">↑ Jump bar</a> · <a href="#table-of-contents">↑ Contents</a></p>
+<p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
 ---
-
-## Archived features
-
-| SST feature | VoiceSub status |
-| --- | --- |
-| Legacy local ASR (`asr.mode: local`) | Removed from core; SST import → `browser_google`. Successor: Local ASR module |
-| Experimental browser | Routes removed (`legacy/experimental-browser/`) |
-| PyInstaller bootstrap | Replaced by Tauri NSIS installer |
-| Splash startup profiles | None — single `VoiceSub.exe` |
-
-For browser/translation/subtitle parity, see golden tests in `tests/golden/`.
 
 ---
 
 <p align="center">
-  <a href="#jump-bar">↑ Top</a> ·
+  <a href="#quick-links">↑ Top</a> ·
   <a href="../README.md">README</a> ·
   <a href="./WIKI.ru.md">Русский</a> ·
   <a href="./TECHNICAL_ARCHITECTURE.en.md">Architecture</a>

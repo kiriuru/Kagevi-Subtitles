@@ -10,17 +10,39 @@
   <a href="./CHANGELOG.md">Русский</a>
 </p>
 
-Файл охватывает desktop-линию: **VoiceSub** (с `0.5.0`) и более ранние релизы **SST Desktop** (до `0.4.4`).
+Файл охватывает desktop-линию: **Kagevi Subtitles** (ранее VoiceSub, с `0.5.0`).
 
 ## [Unreleased]
 
-### Fixed
+## [0.6.1] - 2026-07-30
 
-- TTS: исходный текст снова озвучивается в режиме Local ASR — ingest больше не оставляет `source_lang=auto` (Google TTS `tl=auto` молчал); берётся `asr.browser.recognition_language` или `en`. Web Speech не затрагивался (worker уже слал конкретный язык).
+### Added
+
+- Local ASR VAD: `speech_pad_ms` теперь реально применяется (удлиняет finalize + trailing pad); **text-aware silence hold** (`text_hold_enabled` / `text_hold_extra_ms`) не рвёт реплику на короткой паузе, если draft выглядит незавершённым (EN/RU/JA).
+- Local ASR: опциональный backend **Silero VAD** (`vad.backend = silero`, порог `silero_threshold`); модель ~2 MB качается через `deps/download` `silero_vad`. Без модели — fallback на WebRTC.
+- Опциональный **live-partial** перевод для классических MT (Google/DeepL/Azure и т.п.): перевод растущих ASR-partials без ожидания финала. LLM-линии всегда на final. По умолчанию выкл. (`translation.live_partial`).
+- Провайдер перевода **`microsoft_edge`** (Microsoft Edge Translate) — без API key. Берёт анонимный JWT из `edge.microsoft.com/translate/auth` (кэш 7 мин в процессе, один refresh на `401`/`403`) и обращается к `api-edge.cognitive.microsofttranslator.com`, поэтому качество — настоящий Azure Translator.
 
 ### Changed
 
+- Репозиторий на GitHub переименован в [`kiriuru/Kagevi-Subtitles`](https://github.com/kiriuru/Kagevi-Subtitles). Проверка обновлений и ссылки на релизы используют новый slug (`DEFAULT_GITHUB_REPO`); конфиги с `kiriuru/VoiceSub` мигрируют при загрузке.
+- `free_web_translate` переведён на `clients5.google.com/translate_a/t?client=dict-chrome-ex`. Раньше он был копией `google_web` с тем же URL `translate.googleapis.com`, то есть делил одну квоту и не мог служить fallback при throttle со стороны Google. Теперь три провайдера без ключа живут на трёх независимых хостах.
+- Схема строк overlay: пункт «Компактный стек» убран из селекта пресетов (это был алиас → `stacked` + флаг compact, из‑за нормализации селект сразу откатывался). Компактность — отдельный чекбокс.
+- Порядок строк субтитров: стрелки ↑/↓ у каждой строки вместо общей панели «Выше/Ниже».
+- Число видимых строк перевода задаётся включёнными линиями в модуле Перевод; отдельная настройка «Максимум строк перевода на экране» убрана (`subtitle_output.max_translation_languages` выводится при normalize).
+- Линии перевода ограничены **4** (`translation_1`…`translation_4`).
+- Product rebrand to **Kagevi Subtitles** (Kagevi = main brand, Subtitles = sub-brand): UI, installer/`productName`, bundle id `com.kagevi.subtitles`, npm `kagevi-subtitles`, cargo bin `kagevi-subtitles`, loopback header `x-kagevi-subtitles-token` (previous `x-kagevi-voice-token` and legacy `x-voicesub-token` still accepted). Internal crates remain `voicesub-*`.
 - Clippy: в workspace включён `clippy::pedantic = warn` (точечные allow на шумный docs/API/cast/style, чтобы CI `-D warnings` оставался зелёным); deny для async hygiene + `redundant_clone` сохранён.
+- Единый источник версии: `voicesub-types::PROJECT_VERSION`; `scripts/sync-version.mjs` синхронизирует Cargo / package.json / tauri.conf.json / `src/lib/project-version.ts` (`npm run version:sync` / `version:check`).
+
+### Fixed
+
+- Overlay layout: пресеты `single` / `dual-line` снова кладут несколько элементов в один физический ряд (горизонтально). CSS раньше всегда ставил `flex-direction: column`, поэтому «одна строка», «две строки» и «стек» выглядели одинаково. Смена пресета больше не застревает в fast-path без перестройки DOM.
+- TTS: исходный текст снова озвучивается в режиме Local ASR — ingest больше не оставляет `source_lang=auto` (Google TTS `tl=auto` молчал); берётся `asr.browser.recognition_language` или `en`. Web Speech не затрагивался (worker уже слал конкретный язык).
+
+### Removed
+
+- Провайдер перевода `public_libretranslate_mirror`. Все публичные инстансы LibreTranslate без ключа сейчас офлайн или отклоняют API-трафик — поставляемый по умолчанию `translate.fedilab.app` отвечает `403 Request forbidden by administrative rules` на уровне edge, независимо от заголовков. Существующие конфиги миграционно переводятся на `microsoft_edge` (тоже без ключа, поэтому API key внезапно не требуется) и при save, и при legacy import.
 
 ## [0.6.0] - 2026-07-18
 
@@ -347,14 +369,15 @@
 
 Более ранняя история `0.2.9.*` SST Desktop остаётся в архивных GitHub release notes и здесь не развёрнута.
 
-[unreleased]: https://github.com/kiriuru/VoiceSub/compare/v0.6.0...HEAD
-[0.6.0]: https://github.com/kiriuru/VoiceSub/compare/v0.5.5...v0.6.0
-[0.5.5]: https://github.com/kiriuru/VoiceSub/compare/v0.5.4...v0.5.5
-[0.5.4]: https://github.com/kiriuru/VoiceSub/compare/v0.5.3...v0.5.4
-[0.5.3]: https://github.com/kiriuru/VoiceSub/compare/v0.5.2...v0.5.3
-[0.5.2]: https://github.com/kiriuru/VoiceSub/compare/v0.5.1...v0.5.2
-[0.5.1]: https://github.com/kiriuru/VoiceSub/compare/v0.5.0...v0.5.1
-[0.5.0]: https://github.com/kiriuru/VoiceSub/releases/tag/v0.5.0
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0
+[0.5.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.4...v0.5.5
+[0.5.4]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.5.0
 [0.4.4]: https://github.com/kiriuru/stream_sub_translator/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/kiriuru/stream_sub_translator/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/kiriuru/stream_sub_translator/compare/v0.4.1...v0.4.2

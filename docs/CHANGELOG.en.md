@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -6,21 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <p align="center">
-  <a href="./CHANGELOG.en.md">English</a> •
+  <a href="./CHANGELOG.en.md">English</a> ·
   <a href="./CHANGELOG.md">Русский</a>
 </p>
 
-This file covers the desktop line: **VoiceSub** (from `0.5.0`) and earlier **SST Desktop** releases (through `0.4.4`).
+This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from `0.5.0`).
 
 ## [Unreleased]
 
-### Fixed
+## [0.6.1] - 2026-07-30
 
-- TTS: source speech works again with Local ASR — ingest no longer leaves `source_lang=auto` (Google TTS `tl=auto` failed silently); falls back to `asr.browser.recognition_language` or `en`. Web Speech was unaffected (worker already sent a concrete language).
+### Added
+
+- Local ASR VAD: `speech_pad_ms` is applied (extends finalize + trailing pad); **text-aware silence hold** (`text_hold_enabled` / `text_hold_extra_ms`) avoids cutting mid-phrase pauses when the draft looks incomplete (EN/RU/JA heuristics).
+- Local ASR: optional **Silero VAD** backend (`vad.backend = silero`, `silero_threshold`); ~2 MB model via `deps/download` `silero_vad`. Missing model falls back to WebRTC.
+- Optional **live-partial** translation for classic MT providers (Google/DeepL/Azure, etc.): translate growing ASR partials without waiting for the final. LLM lines always wait for final. Off by default (`translation.live_partial`).
+- Translation provider **`microsoft_edge`** (Microsoft Edge Translate) — no API key. Fetches the anonymous JWT from `edge.microsoft.com/translate/auth` (cached 7 min in-process, refreshed once on `401`/`403`) and calls `api-edge.cognitive.microsofttranslator.com`, so quality is real Azure Translator.
 
 ### Changed
 
+- GitHub repository renamed to [`kiriuru/Kagevi-Subtitles`](https://github.com/kiriuru/Kagevi-Subtitles). Update checks and release links use the new slug (`DEFAULT_GITHUB_REPO`); existing configs with `kiriuru/VoiceSub` migrate on load.
+- `free_web_translate` now uses `clients5.google.com/translate_a/t?client=dict-chrome-ex`. It was previously a duplicate of `google_web` hitting the identical `translate.googleapis.com` URL, so it shared one quota and could not act as a fallback when Google throttled. The three keyless providers now sit on three independent hosts.
+- Overlay row layout: removed “Compact stacked” from the preset select (it was an alias → `stacked` + compact flag that normalize immediately rewrote, so the select snapped back). Compact spacing remains a separate checkbox.
+- Subtitles line order: per-row ↑/↓ controls instead of a shared Move Up/Down toolbar.
+- Visible translation line count follows enabled Translation lines; removed the separate “Maximum translated lines on screen” control (`subtitle_output.max_translation_languages` is derived on normalize).
+- Translation lines capped at **4** (`translation_1`…`translation_4`).
+- Product rebrand to **Kagevi Subtitles** (Kagevi = main brand, Subtitles = sub-brand): UI, installer/`productName`, bundle id `com.kagevi.subtitles`, npm `kagevi-subtitles`, cargo bin `kagevi-subtitles`, loopback header `x-kagevi-subtitles-token` (previous `x-kagevi-voice-token` and legacy `x-voicesub-token` still accepted). Internal crates remain `voicesub-*`.
 - Clippy: enable workspace `clippy::pedantic = warn` (with curated allows for high-churn docs/API/cast/style noise so CI `-D warnings` stays green); keep deny for async hygiene + `redundant_clone`.
+- Single version source: `voicesub-types::PROJECT_VERSION`; `scripts/sync-version.mjs` syncs Cargo / package.json / tauri.conf.json / `src/lib/project-version.ts` (`npm run version:sync` / `version:check`).
+
+### Fixed
+
+- Overlay layout: `single` / `dual-line` again place multiple items on one physical row (horizontal). CSS always used `flex-direction: column`, so single, dual-line, and stacked looked identical. Preset switches no longer stick on the finalize fast-path without rebuilding the DOM.
+- TTS: source speech works again with Local ASR — ingest no longer leaves `source_lang=auto` (Google TTS `tl=auto` failed silently); falls back to `asr.browser.recognition_language` or `en`. Web Speech was unaffected (worker already sent a concrete language).
+
+### Removed
+
+- Translation provider `public_libretranslate_mirror`. Every keyless public LibreTranslate instance is now offline or refuses API traffic — the shipped default `translate.fedilab.app` answers `403 Request forbidden by administrative rules` at the edge, regardless of headers. Existing configs migrate to `microsoft_edge` (also keyless, so no API key suddenly becomes required) on both save and legacy import.
 
 ## [0.6.0] - 2026-07-18
 
@@ -31,27 +53,27 @@ This file covers the desktop line: **VoiceSub** (from `0.5.0`) and earlier **SST
 - UI Theme: interface font picker (`ui.font_family`) applied to dashboard, Web ASR, TTS, and Local ASR via `ui_config_sync`.
 - About VoiceSub credits dialog from the nav-rail avatar.
 - Built-in **Help**: quick-start checklist and topic cards (recognition, translation, subtitles, style, OBS, tools) instead of a single prose block.
-- **Local ASR** module (`/local-asr`) — offline Parakeet TDT via ONNX Runtime (CPU / optional CUDA), setup wizard, Modules card with ready / CPU / CUDA badges.
+- **Local ASR** module (`/local-asr`) вЂ” offline Parakeet TDT via ONNX Runtime (CPU / optional CUDA), setup wizard, Modules card with ready / CPU / CUDA badges.
 - Live ASR mode `local_parakeet` when the module is `ready` (in-process mic + VAD + decode; no Chrome Web Speech worker).
 - Protected HTTP API `/api/asr/local/*` for status, config, deps, model download/load, EP probe, mic list, and test bench.
 - Module settings under `user-data/modules/local-asr/`; project `asr.mode` stays in `user-data/config.toml`.
 - `voicesub-partial-emit` crate (`word_growth` partial policy) wired into the existing subtitle / translation / overlay path.
-- Latency presets `low` / `balanced` / `quality`, hallucination filter, emit telemetry, and setup checklist (deps → model → mic test → final).
+- Latency presets `low` / `balanced` / `quality`, hallucination filter, emit telemetry, and setup checklist (deps в†’ model в†’ mic test в†’ final).
 - China-market translation providers with free-tier quotas: `baidu_translate`, `youdao_translate`, `tencent_tmt`, and `caiyun_translator` (zh/en/ja); **17** providers total, grouped as **China / Free-tier** (i18n hints/status).
-- “Open provider setup / API keys” button for cloud providers (Google, Azure, DeepL, OpenAI, OpenRouter, LibreTranslate, Baidu, Youdao, Tencent, Caiyun, etc.; local LLMs excluded).
+- вЂњOpen provider setup / API keysвЂќ button for cloud providers (Google, Azure, DeepL, OpenAI, OpenRouter, LibreTranslate, Baidu, Youdao, Tencent, Caiyun, etc.; local LLMs excluded).
 - LLM: **Override default subtitle prompt** checkbox (hideable custom prompt) for OpenAI / OpenRouter / LM Studio / Ollama.
-- OpenAI: **Show models** loads a live list via `POST /api/openai/models` (official `/v1/models`, chat-model filter); curated list updated from the 2026 OpenAI catalog (`gpt-5.6-*`, `gpt-5.4-*`, …); **Show all chat models** toggle.
+- OpenAI: **Show models** loads a live list via `POST /api/openai/models` (official `/v1/models`, chat-model filter); curated list updated from the 2026 OpenAI catalog (`gpt-5.6-*`, `gpt-5.4-*`, вЂ¦); **Show all chat models** toggle.
 - LM Studio: **Test connection** probes `base_url` and loads available models.
 - Installer artifact `VoiceSub_0.6.0_x64-setup.exe`.
 
 ### Fixed
 
-- TTS (and Local ASR) module window open: restore `async` Tauri commands for `WebviewWindowBuilder::build` — sync IPC deadlocked the whole app on Windows (WebView2).
-- Local ASR: restore `max_segment_ms` to **5500** (UI / SST parity). The **120000** preset/default disabled force-final — partials could grow for minutes without a Final when WebRTC VAD stayed sticky; loading a config with exactly `120000` heals it back to `5500`.
-- Local ASR / runtime idle CPU: heartbeat no longer runs a full `env_check` (CUDA/DLL scan) every tick — `diagnostics()` and `GET /api/asr/local/status` use the status cache; DLL lookup indexes each directory once; mic enumeration runs in `spawn_blocking`; Local ASR window defers mic list until after first paint; dialog open/close avoids re-entrancy spin.
-- Local ASR: WebView2 memory/CPU blow-up on module open — `setLocale` is idempotent (stops `sst:locale-changed` + BroadcastChannel feedback loops); module no longer connects to `/ws/events` for UI sync (Tauri IPC is enough).
-- TTS: same — disable `/ws/events` for UI sync (IPC already delivers `ui_config_sync`); locale sync uses `applyDashboardLocale` / idempotent `setLocale` (no Local-ASR-style leak thanks to the existing guard, but WS was still receiving overlay/runtime frames).
-- Main dashboard: not affected by that leak (UI sync publisher only — no subscribe / `sst:locale-changed` loop; `ui_config_sync` ignored in the store); `applyUiFromConfig` skips re-applying theme/locale/sync when the presentation signature is unchanged.
+- TTS (and Local ASR) module window open: restore `async` Tauri commands for `WebviewWindowBuilder::build` вЂ” sync IPC deadlocked the whole app on Windows (WebView2).
+- Local ASR: restore `max_segment_ms` to **5500** (UI / SST parity). The **120000** preset/default disabled force-final вЂ” partials could grow for minutes without a Final when WebRTC VAD stayed sticky; loading a config with exactly `120000` heals it back to `5500`.
+- Local ASR / runtime idle CPU: heartbeat no longer runs a full `env_check` (CUDA/DLL scan) every tick вЂ” `diagnostics()` and `GET /api/asr/local/status` use the status cache; DLL lookup indexes each directory once; mic enumeration runs in `spawn_blocking`; Local ASR window defers mic list until after first paint; dialog open/close avoids re-entrancy spin.
+- Local ASR: WebView2 memory/CPU blow-up on module open вЂ” `setLocale` is idempotent (stops `sst:locale-changed` + BroadcastChannel feedback loops); module no longer connects to `/ws/events` for UI sync (Tauri IPC is enough).
+- TTS: same вЂ” disable `/ws/events` for UI sync (IPC already delivers `ui_config_sync`); locale sync uses `applyDashboardLocale` / idempotent `setLocale` (no Local-ASR-style leak thanks to the existing guard, but WS was still receiving overlay/runtime frames).
+- Main dashboard: not affected by that leak (UI sync publisher only вЂ” no subscribe / `sst:locale-changed` loop; `ui_config_sync` ignored in the store); `applyUiFromConfig` skips re-applying theme/locale/sync when the presentation signature is unchanged.
 - Startup/shutdown: Local ASR `env_check` no longer blocks service construction (CUDA Toolkit bin scans); DLL lookup checks direct paths first again; dashboard applies settings/theme before waiting on runtime status; last-known theme restored from localStorage before HTTP.
 - Tools & Data: clear success/error feedback correctly; confirm before load/overwrite profiles; block deleting `default`; validate profile names; warn on importing redacted config; disable import while busy; show Local ASR readiness; drop duplicate stale-dropped metric; full logging applied live after Save (no false restart hint); save/delete no longer report success if profile list refresh fails; `diagnostics_update` keeps `local_module` / `active_mode`; success/error modal explains where files were saved (Downloads / `user-data/exports` / `user-data/profiles`).
 - Profiles: seed/upgrade sparse `default.json` from full factory defaults; reject Windows reserved names.
@@ -65,8 +87,8 @@ This file covers the desktop line: **VoiceSub** (from `0.5.0`) and earlier **SST
 - Section scroll-spy uses the shell scroll container; Subtitles nav opens the panel with top tabs Subtitles/Style directly (no intermediate hub).
 - Primary tab icons (nav rail / bottom nav) enlarged ~15%.
 - TTS / Local ASR / Web Speech worker scroll: `overflow: hidden` scoped to the dashboard standard shell only (not global `html/body`).
-- Local ASR: setup Close and “Re-check” buttons match the rest of the UI.
-- Dark-theme dialogs readable again (runtime Details, credits, Local ASR status/alert/setup) — `color-scheme` plus explicit text color instead of UA `CanvasText`.
+- Local ASR: setup Close and вЂњRe-checkвЂќ buttons match the rest of the UI.
+- Dark-theme dialogs readable again (runtime Details, credits, Local ASR status/alert/setup) вЂ” `color-scheme` plus explicit text color instead of UA `CanvasText`.
 - UI theme hot-applies to Local ASR and TTS without Save (IPC + WS fallback); i18n for `style.ui_theme.font` / `font.default`.
 - Browser Google ASR lifecycle:
   - failed Chrome launch clears `runtime_running` and stops browser speech ingest (same as Local ASR failure path);
@@ -75,18 +97,18 @@ This file covers the desktop line: **VoiceSub** (from `0.5.0`) and earlier **SST
   - Local ASR start reaps leftover Chrome first;
   - `generationId` bumps on every controlled start; pending restart cancel uses `stopEpoch` (user/control stop);
   - WS transport replace drops the previous outbound **without** sending `stop` (avoids killing recognition on reconnect).
-- **Word replace (pre-translation):** cached Aho-Corasick/regex; CJK with default whole-words; stems; mask form `fuck`→`f*ck` (not `***`); already-masked `f*ck` is left alone. Subtitle lifecycle unchanged.
+- **Word replace (pre-translation):** cached Aho-Corasick/regex; CJK with default whole-words; stems; mask form `fuck`в†’`f*ck` (not `***`); already-masked `f*ck` is left alone. Subtitle lifecycle unchanged.
 - IPC ACL: `get_loopback_api_token` allowlisted again (fallback when HTML injection is missing).
-- `runtime-event`: `listen` → buffer → snapshot → drain (live frames are not overwritten by a stale snapshot); dashboard snapshot prefers `overlay_update`; TTS snapshot is `runtime_update` + `twitch_connection_update` only.
+- `runtime-event`: `listen` в†’ buffer в†’ snapshot в†’ drain (live frames are not overwritten by a stale snapshot); dashboard snapshot prefers `overlay_update`; TTS snapshot is `runtime_update` + `twitch_connection_update` only.
 - `tts-speech-activity` / `playback-finished` use `emit_to(tts)` only (not a global emit into main/local-asr).
-- Twitch chat → `RuntimeEventBus` only (no OBS `/ws/events` flood); connection updates still hit the hub for replay.
+- Twitch chat в†’ `RuntimeEventBus` only (no OBS `/ws/events` flood); connection updates still hit the hub for replay.
 - Lag-resync: pending queue (last needed sync is never dropped); discard coalesced overlay on `Lagged` so a timer cannot regress UI after snapshot.
 - `Jet Brains Mono` name matches the font catalog; `JetBrains Mono` alias on normalize.
 - OBS overlay keeps `style_slot` / `slot_id`; dashboard preview calls `disposeRenderContainer` on `render().empty`.
 - Renderer: `colorToRgba` (named/`rgb()`/`#rrggbbaa`); emoji on code-point boundaries; whitespace-only filtered; `inferStyleSlot` + `slot_id`; fast path skips disconnected surfaces.
-- LM Studio / Ollama: JIT model load is no longer aborted by the default 10s timeout (`Engine protocol startup was aborted` / `Model is unloaded`); local providers get a **≥120s** timeout floor; LM Studio requests include `ttl`.
+- LM Studio / Ollama: JIT model load is no longer aborted by the default 10s timeout (`Engine protocol startup was aborted` / `Model is unloaded`); local providers get a **в‰Ґ120s** timeout floor; LM Studio requests include `ttl`.
 - Provider setup buttons open the system browser (`open_external_https_url` allowlist includes provider console hosts).
-- Baidu Translate: POST form-urlencoded instead of GET; `sv` → `swe` language map; Youdao parses numeric `errorCode`.
+- Baidu Translate: POST form-urlencoded instead of GET; `sv` в†’ `swe` language map; Youdao parses numeric `errorCode`.
 - Translation persistent cache no longer wiped on every runtime start; disk cache survives restart when settings are unchanged.
 - Translation dispatcher no longer leaks `active_jobs` when the same sequence is submitted twice; queue overflow no longer holds the dispatcher lock across relevance checks.
 - Live settings apply for translation awaits the engine lock (API keys / lines are not silently skipped) and refreshes provider concurrency limits.
@@ -96,26 +118,26 @@ This file covers the desktop line: **VoiceSub** (from `0.5.0`) and earlier **SST
 
 ### Changed
 
-- Rust: workspace lints + `clippy.toml` (MSRV 1.85) — deny `unused_async` / `await_holding_lock` / `await_holding_refcell_ref` / `redundant_clone` (pedantic-light); CI `clippy -D warnings` green again.
+- Rust: workspace lints + `clippy.toml` (MSRV 1.85) вЂ” deny `unused_async` / `await_holding_lock` / `await_holding_refcell_ref` / `redundant_clone` (pedantic-light); CI `clippy -D warnings` green again.
 - Async hot paths: runtime start/stop moves Chrome kill/launch and Local ASR start/stop to `spawn_blocking`; config-save error path drops the write lock before status/broadcast; translation finals release the controller mutex before enqueue; Local ASR ORT unload/init and zip extract run off the Tokio worker.
 - Style panel: compact numeric field grid; text align and effect on one row.
-- Built-in style catalog rebuilt (**20** presets): themed dual-script stacks (Film Noir, Retro Terminal, Fallout, Anime Stream, and others); near-identical dark plates collapsed to **4 materials** — Max Contrast, Podcast Subtle (parchment), Glass Frost (milky ice ~44%), Twitch Lower-Third (`#9146FF` + Oswald). Removed `sakura_soft`, `minimal_mono`, `editorial_news` (migrate → `meeting_soft` / `glass_frost` / `dark_cinema`).
+- Built-in style catalog rebuilt (**20** presets): themed dual-script stacks (Film Noir, Retro Terminal, Fallout, Anime Stream, and others); near-identical dark plates collapsed to **4 materials** вЂ” Max Contrast, Podcast Subtle (parchment), Glass Frost (milky ice ~44%), Twitch Lower-Third (`#9146FF` + Oswald). Removed `sakura_soft`, `minimal_mono`, `editorial_news` (migrate в†’ `meeting_soft` / `glass_frost` / `dark_cinema`).
 - **Retro Terminal**: Cyrillic via **IBM Plex Serif Regular**.
-- Latin-only faces in `/project-fonts.css` declare `unicode-range` so Cyrillic falls through to the next stack face (Plex / Ubuntu / Noto / Comfortaa…).
-- Outline width: **ASS/Aegisub 0–4 px** scale (step 0.1).
+- Latin-only faces in `/project-fonts.css` declare `unicode-range` so Cyrillic falls through to the next stack face (Plex / Ubuntu / Noto / ComfortaaвЂ¦).
+- Outline width: **ASS/Aegisub 0вЂ“4 px** scale (step 0.1).
 - Effects: `fade` is opacity-only; `glow` follows fill color; OBS partials cheapen heavy `blur_in`/`glow` to `fade`; `prefers-reduced-motion` honored.
 - Tauri IPC capabilities split per window: **main** (full shell), **tts** (playback/Twitch/snapshot), **local-asr** (token + allowlisted URLs).
 - TTS: HTTP `/api/runtime/status` poll only when `runtime-event` is down; speech-context poll slower while IPC is healthy (focus still refreshes immediately).
-- Browser Speech worker is **Google Chrome only** (`/google-asr`): removed `/google-asr-edge`; import `browser_google_edge` → `browser_google`; orphan reap only for `chrome.exe`.
+- Browser Speech worker is **Google Chrome only** (`/google-asr`): removed `/google-asr-edge`; import `browser_google_edge` в†’ `browser_google`; orphan reap only for `chrome.exe`.
 - Browser worker CPU affinity is **opt-in** (`VOICESUB_BROWSER_AFFINITY` / `VOICESUB_BROWSER_AFFINITY_MASK`); off by default.
 - `runtime-event` routing: **local-asr** window receives `ui_config_sync` (live theme/locale/font); `/ws/events` replays the last `ui_config_sync` on connect.
 - Help copy updated for Local ASR / Modules / word replace; HelpPanel i18n reacts to locale changes.
-- Documentation and wiki mark Local ASR as shipped; Technical Architecture §18 documents the module.
+- Documentation and wiki mark Local ASR as shipped; Technical Architecture В§18 documents the module.
 - SST JSON import preserves `local_parakeet`; legacy `local` / experimental modes still map to `browser_google`.
 - Translation `timeout_ms` / HTTP client ceiling: **300s** (was 60s); Settings UI and config normalize aligned.
 - Persistent translation cache path is `user-data/translation-cache/` (legacy `user-data/cache/translation_cache.json` is copied once on upgrade).
 - Translation cache keys hash source text; cache flushes on engine drop; LLM `used_default_prompt` / `override_prompt` settings.
-- DeepL maps UI language codes (`en`/`zh-cn`/`pt`, …) to API targets and auto-selects Free vs Pro URL from the API key (`:fx` → free).
+- DeepL maps UI language codes (`en`/`zh-cn`/`pt`, вЂ¦) to API targets and auto-selects Free vs Pro URL from the API key (`:fx` в†’ free).
 - Google Cloud Translation v3 expands short model ids to full resource names; Google v3 settings labels i18n added.
 - Azure / LibreTranslate map Chinese UI codes (`zh-Hans`/`zh-Hant`, `zh`/`zt`); readiness surfaces soft warnings for empty Azure region and public LibreTranslate.
 
@@ -216,7 +238,7 @@ This file covers the desktop line: **VoiceSub** (from `0.5.0`) and earlier **SST
 ### Changed
 
 - TTS `playback_mode: "browser"` migrates to `sonic` on load; HTMLAudio playback path removed.
-- Twitch legacy `channel` → `channels[0]`; digit preservation in chat TTS.
+- Twitch legacy `channel` в†’ `channels[0]`; digit preservation in chat TTS.
 - Compact client logging by default (TTS UI traces require full logging).
 
 ### Fixed
@@ -347,14 +369,15 @@ First VoiceSub release (successor to SST Desktop `0.4.4`). Stack and delivery ar
 
 Earlier `0.2.9.*` SST Desktop history lives in archived GitHub release notes and is not expanded here.
 
-[unreleased]: https://github.com/kiriuru/VoiceSub/compare/v0.6.0...HEAD
-[0.6.0]: https://github.com/kiriuru/VoiceSub/compare/v0.5.5...v0.6.0
-[0.5.5]: https://github.com/kiriuru/VoiceSub/compare/v0.5.4...v0.5.5
-[0.5.4]: https://github.com/kiriuru/VoiceSub/compare/v0.5.3...v0.5.4
-[0.5.3]: https://github.com/kiriuru/VoiceSub/compare/v0.5.2...v0.5.3
-[0.5.2]: https://github.com/kiriuru/VoiceSub/compare/v0.5.1...v0.5.2
-[0.5.1]: https://github.com/kiriuru/VoiceSub/compare/v0.5.0...v0.5.1
-[0.5.0]: https://github.com/kiriuru/VoiceSub/releases/tag/v0.5.0
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0
+[0.5.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.4...v0.5.5
+[0.5.4]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.5.0
 [0.4.4]: https://github.com/kiriuru/stream_sub_translator/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/kiriuru/stream_sub_translator/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/kiriuru/stream_sub_translator/compare/v0.4.1...v0.4.2
