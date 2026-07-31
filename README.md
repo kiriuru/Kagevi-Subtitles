@@ -2,19 +2,19 @@
 
 **Live translated subtitles for streamers — local-first, privacy-first, OBS-ready.**
 
-[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](./docs/CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#system-requirements)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
-[![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](./docs/CHANGELOG.en.md)
+[![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Support](https://img.shields.io/badge/Support-DonationAlerts-ff4747.svg)](https://www.donationalerts.com/r/kiriuru)
 
 <p align="center">
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/">Website</a> ·
   <a href="./README.md">English</a> ·
   <a href="./README.ru.md">Русский</a> ·
-  <a href="./docs/WIKI.en.md">Wiki</a> ·
+  <a href="https://kiriuru.github.io/Kagevi-Subtitles/wiki.html">Wiki</a> ·
   <a href="./docs/TECHNICAL_ARCHITECTURE.en.md">Architecture</a> ·
-  <a href="./docs/CHANGELOG.en.md">Changelog</a>
+  <a href="https://kiriuru.github.io/Kagevi-Subtitles/changelog.html">Changelog</a>
 </p>
 
 Kagevi Subtitles is a Windows desktop app that turns speech into real-time subtitles with optional translation. Recognition runs through **Google Chrome Web Speech** or optional offline **Local ASR** (Parakeet / ONNX). Everything stays on your machine — default bind `127.0.0.1:8765`, no cloud backend, no accounts.
@@ -131,7 +131,7 @@ Compact phone-style layout is available for secondary monitors.
   </tr>
 </table>
 
-More UI walkthroughs (Word Replace, Tools & Data, More/Help, Local ASR test bench): [Wiki](./docs/WIKI.en.md).
+More UI walkthroughs (Word Replace, Tools & Data, More/Help, Local ASR test bench): [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html).
 
 ## System requirements
 
@@ -153,7 +153,7 @@ No Python, Node.js, or CUDA in the core installer. CUDA is an optional Local ASR
    - **Web Speech** — don't minimize the Chrome worker (it can sit behind other apps; mic permission is granted there).
    - **Local ASR** — **Modules → Local ASR**, finish setup until ready, select Local ASR on Live, then Start.
 
-Step-by-step UI guide: [Wiki (EN)](./docs/WIKI.en.md) · [Wiki (RU)](./docs/WIKI.ru.md)
+Step-by-step UI guide: [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html)
 
 ## Local URLs
 
@@ -190,13 +190,14 @@ Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default`
 | Port in use | Free `8765` or change bind (dev builds) |
 | Local ASR missing on Live | Modules → Local ASR: finish wizard until `ready` |
 
-Full guide: [Wiki → Troubleshooting](./docs/WIKI.en.md).
+Full guide: [Wiki → Troubleshooting](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html).
 
 ## Documentation
 
-- [Wiki (EN)](./docs/WIKI.en.md) / [Wiki (RU)](./docs/WIKI.ru.md) — user guide
+- [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html) — user guide (EN/RU on the site)
+- [Changelog](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html) — release notes (EN/RU on the site)
 - [Technical Architecture (EN)](./docs/TECHNICAL_ARCHITECTURE.en.md) / [(RU)](./docs/TECHNICAL_ARCHITECTURE.md)
-- [Changelog (EN)](./docs/CHANGELOG.en.md) / [(RU)](./docs/CHANGELOG.md) — [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+- Source markdown in-repo: [`docs/WIKI.*.md`](./docs/WIKI.en.md), [`docs/CHANGELOG*.md`](./docs/CHANGELOG.en.md)
 
 ## Contributing
 
