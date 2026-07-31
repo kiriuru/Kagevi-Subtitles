@@ -122,6 +122,7 @@ impl TestBench {
         self.inner.lock().snapshot.clone()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn start(
         &self,
         inference: Arc<InferenceEngine>,

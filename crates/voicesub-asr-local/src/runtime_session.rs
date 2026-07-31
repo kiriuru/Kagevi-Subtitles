@@ -201,6 +201,7 @@ fn forward_emits(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_runtime_capture_loop(
     shared: Arc<Mutex<RuntimeSessionInner>>,
     inference: Arc<InferenceEngine>,
