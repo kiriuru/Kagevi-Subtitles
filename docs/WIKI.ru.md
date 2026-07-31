@@ -227,6 +227,11 @@ Kagevi Subtitles — активная линия `0.6.1` (Rust + Tauri + Svelte)
 ## Browser Speech (Web Speech)
 
 <p align="center">
+  <img src="../Images/kagevi_webWorker.png" alt="Web Speech worker" width="820"><br>
+  <em><strong>Web Speech worker</strong> — окно Chrome на <code>/google-asr</code> (держите видимым во время распознавания)</em>
+</p>
+
+<p align="center">
   <img src="../Images/kagevi_settings.png" alt="Settings — Advanced Web Speech" width="820"><br>
   <em><strong>Settings</strong> — Advanced Web Speech / опции lifecycle worker</em>
 </p>

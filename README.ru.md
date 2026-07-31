@@ -129,6 +129,13 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
       <sub>Компоненты ORT / CUDA и модели Parakeet</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="./Images/kagevi_webWorker.png" alt="Web Speech worker" width="640"><br>
+      <strong>Web Speech worker</strong><br>
+      <sub>Окно Chrome <code>/google-asr</code> — держите видимым во время распознавания</sub>
+    </td>
+  </tr>
 </table>
 
 Остальные экраны (Word Replace, Tools & Data, More/Help, Local ASR test bench): [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html).

@@ -129,6 +129,13 @@ Compact phone-style layout is available for secondary monitors.
       <sub>ORT / CUDA components and Parakeet models</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="./Images/kagevi_webWorker.png" alt="Web Speech worker" width="640"><br>
+      <strong>Web Speech worker</strong><br>
+      <sub>Chrome <code>/google-asr</code> window — keep visible while listening</sub>
+    </td>
+  </tr>
 </table>
 
 More UI walkthroughs (Word Replace, Tools & Data, More/Help, Local ASR test bench): [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html).

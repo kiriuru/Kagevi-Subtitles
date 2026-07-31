@@ -229,6 +229,11 @@ Switches the Tauri window (~390×844) with a **Live** pane + settings tabs. Togg
 ## Browser Speech (Web Speech)
 
 <p align="center">
+  <img src="../Images/kagevi_webWorker.png" alt="Web Speech worker" width="820"><br>
+  <em><strong>Web Speech worker</strong> — Chrome window at <code>/google-asr</code> (keep visible while listening)</em>
+</p>
+
+<p align="center">
   <img src="../Images/kagevi_settings.png" alt="Settings — Advanced Web Speech" width="820"><br>
   <em><strong>Settings</strong> — Advanced Web Speech / worker lifecycle options</em>
 </p>

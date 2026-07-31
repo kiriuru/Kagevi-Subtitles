@@ -169,10 +169,14 @@
             </article>
 
             <article class="guide-panel" data-panel="speech" role="tabpanel" hidden>
-              <figure class="guide-panel__media guide-carousel" data-carousel>
+              <figure class="guide-panel__media guide-carousel" data-carousel data-multi>
                 <div class="guide-carousel__frame">
-                  <img class="is-active" data-slide src="images/kagevi_settings.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Settings — Web Speech options" data-caption-ru="Настройки — опции Web Speech" />
+                  <img class="is-active" data-slide src="images/kagevi_webWorker.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Web Speech — Chrome worker" data-caption-ru="Web Speech — Chrome worker" />
+                  <img data-slide src="images/kagevi_settings.png" alt="" loading="lazy" width="860" height="540" data-caption-en="Settings — Web Speech options" data-caption-ru="Настройки — опции Web Speech" />
                 </div>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--prev" data-carousel-prev data-i18n-aria="carouselPrev" aria-label="Previous">‹</button>
+                <button type="button" class="guide-carousel__nav guide-carousel__nav--next" data-carousel-next data-i18n-aria="carouselNext" aria-label="Next">›</button>
+                <div class="guide-carousel__dots" data-carousel-dots></div>
               </figure>
               <div class="guide-panel__body">
                 <h3 data-i18n="gSpeechTitle">Web Speech — Chrome worker</h3>
