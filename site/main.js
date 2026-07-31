@@ -23,6 +23,7 @@
       ctaDownload: "Download for Windows",
       ctaGuide: "Feature guide",
       heroMeta: "Windows 10/11 · MIT · v0.6.1",
+      heroScroll: "Explore",
       guideTitle: "How the product works",
       guideLede:
         "Wiki-style walkthrough of each major surface — recognition, translation, overlay, modules, and style.",
@@ -156,6 +157,7 @@
       ctaDownload: "Скачать для Windows",
       ctaGuide: "Обзор функций",
       heroMeta: "Windows 10/11 · MIT · v0.6.1",
+      heroScroll: "Смотреть",
       guideTitle: "Как устроен продукт",
       guideLede:
         "Обзор в стиле Wiki по главным экранам — распознавание, перевод, overlay, модули и стиль.",
@@ -288,6 +290,7 @@
       ctaDownload: "Windows 用をダウンロード",
       ctaGuide: "機能ガイド",
       heroMeta: "Windows 10/11 · MIT · v0.6.1",
+      heroScroll: "Explore",
       guideTitle: "製品の仕組み",
       guideLede:
         "認識・翻訳・オーバーレイ・モジュール・スタイルなど、主な画面を Wiki 風に案内します。",
@@ -421,6 +424,7 @@
       ctaDownload: "下载 Windows 版",
       ctaGuide: "功能指南",
       heroMeta: "Windows 10/11 · MIT · v0.6.1",
+      heroScroll: "探索",
       guideTitle: "产品如何工作",
       guideLede:
         "以 Wiki 风格介绍识别、翻译、叠加层、模块与样式等主要界面。",
@@ -553,6 +557,7 @@
       ctaDownload: "Windows용 다운로드",
       ctaGuide: "기능 가이드",
       heroMeta: "Windows 10/11 · MIT · v0.6.1",
+      heroScroll: "둘러보기",
       guideTitle: "제품 동작 방식",
       guideLede:
         "인식·번역·오버레이·모듈·스타일 등 주요 화면을 Wiki 스타일로 안내합니다.",
