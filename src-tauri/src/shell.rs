@@ -36,9 +36,10 @@ const ALLOWED_EXTERNAL_HTTPS_HOSTS: &[&str] = &[
     "developer.nvidia.com",
     "www.nvidia.com",
     "nvidia.com",
-    // Credits / tips
+    // Credits / tips / product site
     "www.donationalerts.com",
     "donationalerts.com",
+    "kiriuru.github.io",
     // Translation provider consoles / API key pages
     "console.cloud.google.com",
     "script.google.com",
@@ -114,6 +115,14 @@ mod tests {
             validate_external_https_url("https://www.donationalerts.com/r/kiriuru").is_ok()
         );
         assert!(validate_external_https_url("https://donationalerts.com/r/kiriuru").is_ok());
+    }
+
+    #[test]
+    fn allows_product_site_urls() {
+        assert!(
+            validate_external_https_url("https://kiriuru.github.io/Kagevi-Subtitles/").is_ok()
+        );
+        assert!(validate_external_https_url("https://kiriuru.github.io/Kagevi-Subtitles").is_ok());
     }
 
     #[test]

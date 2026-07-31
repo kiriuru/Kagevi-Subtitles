@@ -504,7 +504,7 @@ export const voicesubNewKeysEn = {
   "credits.third_party.runtimes":
     "Also: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0), and others.",
   "credits.support": "Support",
-  "credits.github": "Open GitHub",
+  "credits.website": "Open website",
 };
 
 const voicesubExtrasLocalized = {
@@ -1047,7 +1047,7 @@ const voicesubExtrasLocalized = {
     "credits.third_party.runtimes":
       "Также: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0) и др.",
     "credits.support": "Поддержать",
-    "credits.github": "Открыть GitHub",
+    "credits.website": "Открыть сайт",
   },
   ja: {
     "save.status.default": "「保存」を押すと設定がディスクに書き込まれます。",
@@ -1440,7 +1440,7 @@ const voicesubExtrasLocalized = {
     "credits.third_party.runtimes":
       "ほか: ONNX Runtime（MIT）、Silero VAD（MIT）、Sonic/libsonic（Apache-2.0）など。",
     "credits.support": "支援する",
-    "credits.github": "GitHub を開く",
+    "credits.website": "ウェブサイトを開く",
   },
   ko: {
     "save.status.default": "저장을 누르면 설정이 디스크에 기록됩니다.",
@@ -1832,7 +1832,7 @@ const voicesubExtrasLocalized = {
     "credits.third_party.runtimes":
       "또한: ONNX Runtime(MIT), Silero VAD(MIT), Sonic/libsonic(Apache-2.0) 등.",
     "credits.support": "후원하기",
-    "credits.github": "GitHub 열기",
+    "credits.website": "웹사이트 열기",
   },
   zh: {
     "save.status.default": "按“保存”后，设置会写入磁盘。",
@@ -2217,7 +2217,7 @@ const voicesubExtrasLocalized = {
     "credits.third_party.runtimes":
       "另有：ONNX Runtime（MIT）、Silero VAD（MIT）、Sonic/libsonic（Apache-2.0）等。",
     "credits.support": "支持开发",
-    "credits.github": "打开 GitHub",
+    "credits.website": "打开网站",
   },
 };
 

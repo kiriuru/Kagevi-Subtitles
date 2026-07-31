@@ -15,14 +15,14 @@ export const PRODUCT_NAME_HYPHEN = PRODUCT_SLUG;
 export const BUNDLE_IDENTIFIER = "com.kagevi.subtitles";
 
 /**
- * GitHub repo (`owner/name`) for update checks and Credits link.
+ * GitHub repo (`owner/name`) for update checks.
  * Synced from `voicesub-types::DEFAULT_GITHUB_REPO` via `npm run version:sync`.
  */
 export const GITHUB_REPO = "kiriuru/Kagevi-Subtitles";
 
 export const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
 
-/** GitHub Pages site derived from {@link GITHUB_REPO}. */
+/** Product site (Credits dialog). Derived from {@link GITHUB_REPO}. */
 export const SITE_URL = (() => {
   const [owner, name] = GITHUB_REPO.split("/");
   return `https://${owner}.github.io/${name}/`;

@@ -1035,5 +1035,5 @@
   "credits.third_party.parakeet": "Модели NVIDIA Parakeet ASR (NeMo / Suno.ai) — CC-BY-4.0, через ONNX-экспорты.",
   "credits.third_party.runtimes": "Также: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0) и др.",
   "credits.support": "Поддержать",
-  "credits.github": "Открыть GitHub"
+  "credits.website": "Открыть сайт"
 }

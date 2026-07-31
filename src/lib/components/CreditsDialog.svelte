@@ -6,7 +6,7 @@
   import { PROJECT_VERSION } from "../project-version";
   import {
     PRODUCT_NAME,
-    GITHUB_URL as GITHUB_PRODUCT_URL,
+    SITE_URL as SITE_PRODUCT_URL,
     DONATE_URL as DONATE_PRODUCT_URL,
   } from "../brand";
   import appIcon from "../../assets/app-icon.png";
@@ -14,7 +14,7 @@
   export let open = false;
   export let version = PROJECT_VERSION;
 
-  const GITHUB_URL = GITHUB_PRODUCT_URL;
+  const SITE_URL = SITE_PRODUCT_URL;
   const DONATE_URL = DONATE_PRODUCT_URL;
 
   let dialogEl: HTMLDialogElement | null = null;
@@ -38,9 +38,9 @@
     open = false;
   }
 
-  async function openGithub() {
+  async function openSite() {
     try {
-      await openExternalUrl(GITHUB_URL);
+      await openExternalUrl(SITE_URL);
     } catch {
       // ignore
     }
@@ -115,8 +115,8 @@
         <button type="button" class="btn btn-primary" on:click={() => void openDonate()}>
           {tr("credits.support")}
         </button>
-        <button type="button" class="btn" on:click={() => void openGithub()}>
-          {tr("credits.github")}
+        <button type="button" class="btn" on:click={() => void openSite()}>
+          {tr("credits.website")}
         </button>
         <button type="button" class="btn btn-ghost" on:click={close}>
           {tr("common.close")}

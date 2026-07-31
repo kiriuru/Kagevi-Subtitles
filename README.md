@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./Images/Kagevi_icon.png" alt="Kagevi Subtitles" width="160">
+</p>
+
 # Kagevi Subtitles
 
 **Live translated subtitles for streamers — local-first, privacy-first, OBS-ready.**
