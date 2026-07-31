@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="./Images/Kagevi_icon.png" alt="Kagevi Subtitles" width="160">
-</p>
-
-# Kagevi Subtitles
+# <img src="./Images/Kagevi_icon.png" alt="" width="72" height="72" valign="middle"> Kagevi Subtitles
 
 **Живые переводимые субтитры для стримеров — локально, privacy-first, готово для OBS.**
 
