@@ -448,7 +448,8 @@ impl ChannelOrchestrator {
                     break;
                 }
                 let wait = self.completion_waiter.wait(&self.channel, &chunk_item_id);
-                if let Ok(true) = wait.await {} else {
+                if let Ok(true) = wait.await {
+                } else {
                     playback_ok = false;
                     break;
                 }

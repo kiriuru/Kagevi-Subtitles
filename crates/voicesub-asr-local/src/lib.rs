@@ -26,10 +26,10 @@ pub mod segment_enqueue;
 pub mod segment_state;
 mod service;
 mod setup;
+pub mod silero_vad;
 mod status;
 mod test_session;
 mod transfer;
-pub mod silero_vad;
 pub mod utterance_complete;
 pub mod vad_engine;
 pub mod vad_tuning;
@@ -47,7 +47,6 @@ pub use deps::{
     CUDA_TOOLKIT_URL, DepDownloadKind, LocalAsrEnvCheck, delete_dependency, download_dependency,
     env_check, is_silero_vad_ready, ort_dll_path_for_provider, prepare_ort_runtime, runtime_layout,
 };
-pub use silero_vad::{SILERO_VAD_URL, is_silero_vad_installed, silero_vad_model_path};
 pub use diagnostics::{
     LocalAsrDiagnosticsInput, assemble_local_asr_diagnostics, partial_emit_from_config,
 };
@@ -66,6 +65,7 @@ pub use model_manager::{
 pub use pipeline::PipelineEmit;
 pub use runtime_session::{LocalAsrRuntimeSession, RuntimeEmitCallback, RuntimeSessionError};
 pub use service::LocalAsrModuleService;
+pub use silero_vad::{SILERO_VAD_URL, is_silero_vad_installed, silero_vad_model_path};
 pub use status::{LocalAsrModulePhase, LocalAsrModuleStatus, LocalAsrSetupChecklist};
 pub use test_session::{TestBenchError, TestBenchPhase, TestBenchSnapshot};
 pub use transfer::{TransferCancelled, TransferPhase, TransferProgress, TransferTracker};

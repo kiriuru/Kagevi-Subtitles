@@ -286,7 +286,9 @@ impl BrowserAsrGateway {
 
     #[doc(hidden)]
     pub fn set_last_heartbeat_ago_for_test(&mut self, ago_ms: u64) {
-        self.last_status_heartbeat = Instant::now().checked_sub(Duration::from_millis(ago_ms)).unwrap();
+        self.last_status_heartbeat = Instant::now()
+            .checked_sub(Duration::from_millis(ago_ms))
+            .unwrap();
     }
 
     #[doc(hidden)]
@@ -715,8 +717,7 @@ fn should_log_status_snapshot(
     }
     if matches!(
         reason,
-        Some("socket-open" | "user-stop" | "terminal-error" |
-"microphone-permission-failed")
+        Some("socket-open" | "user-stop" | "terminal-error" | "microphone-permission-failed")
     ) {
         return true;
     }

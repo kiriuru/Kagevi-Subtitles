@@ -455,16 +455,19 @@
 
               </div>
 
-              <label class="checkbox-row translation-line-enabled" on:click|stopPropagation>
-                <input
-                  type="checkbox"
-                  checked={lineEnabled}
-                  on:click|stopPropagation
-                  on:change|stopPropagation={(e) =>
-                    toggleLineEnabled(slotId, (e.currentTarget as HTMLInputElement).checked)}
-                />
-                <span>{tr("translation.line.enabled")}</span>
-              </label>
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div on:click|stopPropagation>
+                <label class="checkbox-row translation-line-enabled">
+                  <input
+                    type="checkbox"
+                    checked={lineEnabled}
+                    on:click|stopPropagation
+                    on:change|stopPropagation={(e) =>
+                      toggleLineEnabled(slotId, (e.currentTarget as HTMLInputElement).checked)}
+                  />
+                  <span>{tr("translation.line.enabled")}</span>
+                </label>
+              </div>
 
               <div class="translation-line-fields">
                 <label class="stack-field">

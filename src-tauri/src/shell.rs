@@ -102,26 +102,19 @@ mod tests {
 
     #[test]
     fn allows_github_release_urls() {
-        let url = voicesub_types::release_url_for(
-            voicesub_types::DEFAULT_GITHUB_REPO,
-            "0.5.2",
-        );
+        let url = voicesub_types::release_url_for(voicesub_types::DEFAULT_GITHUB_REPO, "0.5.2");
         assert!(validate_external_https_url(&url).is_ok());
     }
 
     #[test]
     fn allows_donationalerts_tip_urls() {
-        assert!(
-            validate_external_https_url("https://www.donationalerts.com/r/kiriuru").is_ok()
-        );
+        assert!(validate_external_https_url("https://www.donationalerts.com/r/kiriuru").is_ok());
         assert!(validate_external_https_url("https://donationalerts.com/r/kiriuru").is_ok());
     }
 
     #[test]
     fn allows_product_site_urls() {
-        assert!(
-            validate_external_https_url("https://kiriuru.github.io/Kagevi-Subtitles/").is_ok()
-        );
+        assert!(validate_external_https_url("https://kiriuru.github.io/Kagevi-Subtitles/").is_ok());
         assert!(validate_external_https_url("https://kiriuru.github.io/Kagevi-Subtitles").is_ok());
     }
 

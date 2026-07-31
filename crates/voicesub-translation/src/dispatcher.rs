@@ -446,8 +446,7 @@ impl TranslationDispatcher {
             self.cancel_superseded_partials(key, job.preview_generation)
                 .await;
         }
-        self.live_partial_submitted
-            .fetch_add(1, Ordering::Relaxed);
+        self.live_partial_submitted.fetch_add(1, Ordering::Relaxed);
         self.enqueue_job(job, &translation).await;
         let mut inner = self.inner.lock().await;
         self.ensure_worker_locked(&mut inner);
@@ -556,8 +555,7 @@ impl TranslationDispatcher {
                         Some(dropped_job)
                     } else if job.kind == JobKind::Partial {
                         inner.jobs_cancelled += 1;
-                        inner.last_runtime_reason =
-                            Some("cancelled:partial_queue_overflow".into());
+                        inner.last_runtime_reason = Some("cancelled:partial_queue_overflow".into());
                         self.emit_metrics_locked(&mut inner);
                         dropped_incoming = true;
                         None
@@ -825,8 +823,7 @@ impl TranslationDispatcher {
         if self.is_preview_superseded(job).await {
             self.stale_dropped.fetch_add(1, Ordering::Relaxed);
             if matches!(job.kind, JobKind::Partial) {
-                self.live_partial_superseded
-                    .fetch_add(1, Ordering::Relaxed);
+                self.live_partial_superseded.fetch_add(1, Ordering::Relaxed);
             }
             let current_generation = {
                 let inner = self.inner.lock().await;
@@ -1047,8 +1044,7 @@ impl TranslationDispatcher {
             if job_cancelled.load(Ordering::Acquire) {
                 self.stale_dropped.fetch_add(1, Ordering::Relaxed);
                 if matches!(job.kind, JobKind::Partial) {
-                    self.live_partial_superseded
-                        .fetch_add(1, Ordering::Relaxed);
+                    self.live_partial_superseded.fetch_add(1, Ordering::Relaxed);
                 }
                 let mut inner = self.inner.lock().await;
                 inner.last_runtime_reason = Some("cancelled:job_cancelled".into());
@@ -1081,8 +1077,7 @@ impl TranslationDispatcher {
             if matches!(job.kind, JobKind::Final) && self.is_preview_superseded(job).await {
                 self.stale_dropped.fetch_add(1, Ordering::Relaxed);
                 if matches!(job.kind, JobKind::Partial) {
-                    self.live_partial_superseded
-                        .fetch_add(1, Ordering::Relaxed);
+                    self.live_partial_superseded.fetch_add(1, Ordering::Relaxed);
                 }
                 let mut inner = self.inner.lock().await;
                 inner.last_runtime_reason = Some("stale:preview_superseded".into());
@@ -1180,8 +1175,7 @@ impl TranslationDispatcher {
 
         if self.is_preview_superseded(job).await {
             if matches!(job.kind, JobKind::Partial) {
-                self.live_partial_superseded
-                    .fetch_add(1, Ordering::Relaxed);
+                self.live_partial_superseded.fetch_add(1, Ordering::Relaxed);
             }
             self.log_event(
                 "translation_preview_superseded",

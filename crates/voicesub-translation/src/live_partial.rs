@@ -174,13 +174,11 @@ impl LivePartialGate {
         match self.previous_emit {
             None => Some(0),
             Some(prev) => Some(
-                settings
-                    .min_interval_ms
-                    .saturating_sub(
-                        now.checked_duration_since(prev)
-                            .unwrap_or_default()
-                            .as_millis() as u64,
-                    ),
+                settings.min_interval_ms.saturating_sub(
+                    now.checked_duration_since(prev)
+                        .unwrap_or_default()
+                        .as_millis() as u64,
+                ),
             ),
         }
     }
@@ -561,15 +559,7 @@ mod tests {
             word_growth: false,
         };
         let t0 = Instant::now();
-        assert!(gate.should_submit(input(
-            "s1",
-            "hello wrong ending",
-            1,
-            1,
-            "en",
-            &settings,
-            t0
-        )));
+        assert!(gate.should_submit(input("s1", "hello wrong ending", 1, 1, "en", &settings, t0)));
         let corrected = gate.decide(input(
             "s1",
             "hello world",

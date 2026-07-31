@@ -239,7 +239,9 @@ impl EventsHub {
     /// we do not re-parse the serialized JSON once per connected client (review §5).
     fn enqueue_to_client(&self, client: &ClientState, message: Message, message_type: &str) {
         let dropped = {
-            let mut guard = if let Ok(guard) = client.queue.try_lock() { guard } else {
+            let mut guard = if let Ok(guard) = client.queue.try_lock() {
+                guard
+            } else {
                 self.inner.send_failures.fetch_add(1, Ordering::Relaxed);
                 return;
             };

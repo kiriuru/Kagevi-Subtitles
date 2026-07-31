@@ -63,7 +63,9 @@ impl CacheState {
             Ok(text) => text,
             Err(_) => return,
         };
-        let payload: HashMap<String, String> = if let Ok(map) = serde_json::from_str(&raw) { map } else {
+        let payload: HashMap<String, String> = if let Ok(map) = serde_json::from_str(&raw) {
+            map
+        } else {
             let _ = fs::write(&path, "{}");
             return;
         };
@@ -418,10 +420,7 @@ mod tests {
         {
             let cache = TranslationCache::with_dir(Some(dir.clone()), DEFAULT_MAX_ENTRIES);
             cache.insert_ephemeral(key.clone(), "bonjour".into());
-            assert_eq!(
-                cache.get_promoting_ephemeral(&key),
-                Some("bonjour".into())
-            );
+            assert_eq!(cache.get_promoting_ephemeral(&key), Some("bonjour".into()));
             cache.flush_now();
         }
         let reloaded = TranslationCache::with_dir(Some(dir.clone()), DEFAULT_MAX_ENTRIES);

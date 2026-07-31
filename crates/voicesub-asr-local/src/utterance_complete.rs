@@ -7,10 +7,7 @@ pub fn utterance_looks_incomplete(text: &str) -> bool {
         return false;
     }
 
-    let last = trimmed
-        .chars()
-        .next_back()
-        .unwrap_or('\0');
+    let last = trimmed.chars().next_back().unwrap_or('\0');
     if matches!(
         last,
         '.' | '?' | '!' | '。' | '？' | '！' | '…' | ';' | '；'
@@ -45,34 +42,108 @@ pub fn utterance_looks_incomplete(text: &str) -> bool {
 
 fn last_token(lower: &str) -> &str {
     lower
-        .rsplit(|c: char| c.is_whitespace() || matches!(c, ',' | '.' | ';' | ':' | '!' | '?' | '、' | '。'))
+        .rsplit(|c: char| {
+            c.is_whitespace() || matches!(c, ',' | '.' | ';' | ':' | '!' | '?' | '、' | '。')
+        })
         .find(|part| !part.is_empty())
         .unwrap_or("")
 }
 
 fn ends_with_ja_incomplete_particle(text: &str) -> bool {
     const PARTICLES: &[&str] = &[
-        "は", "が", "を", "に", "で", "と", "も", "の", "へ", "や", "か", "て", "から", "けど",
-        "けれど", "し", "たり", "って", "という", "ので", "のに",
+        "は",
+        "が",
+        "を",
+        "に",
+        "で",
+        "と",
+        "も",
+        "の",
+        "へ",
+        "や",
+        "か",
+        "て",
+        "から",
+        "けど",
+        "けれど",
+        "し",
+        "たり",
+        "って",
+        "という",
+        "ので",
+        "のに",
     ];
     PARTICLES.iter().any(|p| text.ends_with(p))
 }
 
 const INCOMPLETE_EN_TOKENS: &[&str] = &[
-    "a", "an", "the", "and", "or", "but", "if", "so", "to", "of", "in", "on", "at", "for",
-    "with", "from", "by", "as", "into", "about", "like", "than", "that", "this", "these",
-    "those", "my", "your", "our", "their", "his", "her", "its", "i", "we", "you", "they",
-    "he", "she", "it", "am", "is", "are", "was", "were", "be", "been", "being", "have",
-    "has", "had", "do", "does", "did", "will", "would", "can", "could", "should", "may",
-    "might", "must", "gonna", "wanna", "because", "when", "while", "until", "unless",
+    "a", "an", "the", "and", "or", "but", "if", "so", "to", "of", "in", "on", "at", "for", "with",
+    "from", "by", "as", "into", "about", "like", "than", "that", "this", "these", "those", "my",
+    "your", "our", "their", "his", "her", "its", "i", "we", "you", "they", "he", "she", "it", "am",
+    "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did",
+    "will", "would", "can", "could", "should", "may", "might", "must", "gonna", "wanna", "because",
+    "when", "while", "until", "unless",
 ];
 
 const INCOMPLETE_RU_TOKENS: &[&str] = &[
-    "и", "а", "но", "или", "что", "как", "если", "когда", "пока", "чтобы", "потому",
-    "на", "в", "во", "с", "со", "к", "ко", "у", "о", "об", "от", "до", "за", "из", "по",
-    "для", "без", "при", "про", "над", "под", "между", "через", "это", "этот", "эта",
-    "эти", "мой", "моя", "мое", "наш", "ваш", "их", "его", "ее", "я", "мы", "ты", "вы",
-    "он", "она", "они", "не", "ни", "бы", "ли", "же",
+    "и",
+    "а",
+    "но",
+    "или",
+    "что",
+    "как",
+    "если",
+    "когда",
+    "пока",
+    "чтобы",
+    "потому",
+    "на",
+    "в",
+    "во",
+    "с",
+    "со",
+    "к",
+    "ко",
+    "у",
+    "о",
+    "об",
+    "от",
+    "до",
+    "за",
+    "из",
+    "по",
+    "для",
+    "без",
+    "при",
+    "про",
+    "над",
+    "под",
+    "между",
+    "через",
+    "это",
+    "этот",
+    "эта",
+    "эти",
+    "мой",
+    "моя",
+    "мое",
+    "наш",
+    "ваш",
+    "их",
+    "его",
+    "ее",
+    "я",
+    "мы",
+    "ты",
+    "вы",
+    "он",
+    "она",
+    "они",
+    "не",
+    "ни",
+    "бы",
+    "ли",
+    "же",
 ];
 
 #[cfg(test)]

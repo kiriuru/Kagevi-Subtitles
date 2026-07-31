@@ -186,8 +186,7 @@ impl FreeWebTranslateProvider {
                 },
                 endpoint: GoogleWebEndpoint::DictChromeEx,
                 error_prefix: "Free Web Translate request failed",
-                status_message:
-                    "Experimental free web provider on a separate Google host from Google Web. \
+                status_message: "Experimental free web provider on a separate Google host from Google Web. \
                      Best-effort only.",
             },
         }

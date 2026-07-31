@@ -110,11 +110,7 @@ async fn live_partial_draft_appears_on_partial_only_overlay() {
 
     let last = recorder.last();
     assert_eq!(last.lifecycle_state, LifecycleState::PartialOnly);
-    let texts: Vec<_> = last
-        .visible_items
-        .iter()
-        .map(|i| i.text.as_str())
-        .collect();
+    let texts: Vec<_> = last.visible_items.iter().map(|i| i.text.as_str()).collect();
     assert!(texts.contains(&"привет"));
     assert!(texts.contains(&"hello"));
 }
@@ -265,11 +261,7 @@ async fn final_keeps_live_draft_until_final_translation() {
     router.flush_overlay_publish().await;
 
     let last = recorder.last();
-    let texts: Vec<_> = last
-        .visible_items
-        .iter()
-        .map(|i| i.text.as_str())
-        .collect();
+    let texts: Vec<_> = last.visible_items.iter().map(|i| i.text.as_str()).collect();
     assert!(
         texts.iter().any(|t| t.contains("hello")),
         "expected carried live draft after final, got {texts:?}"

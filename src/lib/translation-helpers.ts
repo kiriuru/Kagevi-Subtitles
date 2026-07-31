@@ -293,8 +293,9 @@ export function setTranslationLineEnabled(
     : [];
 
   const index = lines.findIndex((line) => normalizeTranslationSlotId(line.slot_id) === normalizedSlot);
-  if (index >= 0) {
-    lines[index] = { ...lines[index], slot_id: normalizedSlot, enabled };
+  const existing = index >= 0 ? lines[index] : undefined;
+  if (existing) {
+    lines[index] = { ...existing, slot_id: normalizedSlot, enabled };
   } else {
     const targetLang = "en";
     lines.push({

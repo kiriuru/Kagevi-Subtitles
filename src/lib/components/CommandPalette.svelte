@@ -23,7 +23,10 @@
   $: allItems = buildCommandPaletteItems(handlers);
   $: filtered = filterCommandItems(allItems, query, tr);
   $: selectedIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
-  $: activeOptionId = filtered[selectedIndex] ? `command-palette-option-${filtered[selectedIndex].id}` : undefined;
+  $: activeOptionId = (() => {
+    const item = filtered[selectedIndex];
+    return item ? `command-palette-option-${item.id}` : undefined;
+  })();
 
   function close() {
     open = false;

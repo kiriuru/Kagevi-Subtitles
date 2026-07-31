@@ -108,10 +108,7 @@ impl VadEngine {
     }
 
     /// Prefer Silero when provided; otherwise WebRTC.
-    pub fn new_with_classifier(
-        config: VadEngineConfig,
-        silero: Option<SileroVadEngine>,
-    ) -> Self {
+    pub fn new_with_classifier(config: VadEngineConfig, silero: Option<SileroVadEngine>) -> Self {
         let sample_rate = match config.sample_rate {
             8_000 => SampleRate::Rate8kHz,
             32_000 => SampleRate::Rate32kHz,
@@ -315,10 +312,8 @@ impl VadEngine {
             .max(self.config.silence_hold_ms);
         self.finalization_hold_frames =
             ceil_frames(finalize_ms, self.config.frame_duration_ms).max(1);
-        self.speech_pad_frames = ceil_frames(
-            self.config.speech_pad_ms,
-            self.config.frame_duration_ms,
-        );
+        self.speech_pad_frames =
+            ceil_frames(self.config.speech_pad_ms, self.config.frame_duration_ms);
         self.text_hold_extra_frames = if self.config.text_hold_enabled {
             ceil_frames(
                 self.config.text_hold_extra_ms,

@@ -452,8 +452,7 @@ impl SubtitleLifecycleCore {
                            require_exact_source: Option<&str>,
                            final_aligned: bool| {
             if let Some(expected) = require_exact_source {
-                if event.source_text.trim() != expected.trim()
-                    && event.sequence == active_sequence
+                if event.source_text.trim() != expected.trim() && event.sequence == active_sequence
                 {
                     return 0usize;
                 }
@@ -525,10 +524,8 @@ impl SubtitleLifecycleCore {
         if let Some(partial) = self.active_partial.as_mut() {
             if let Some(obj) = partial.as_object_mut() {
                 let active_sequence = obj.get("sequence").and_then(|v| v.as_u64()).unwrap_or(0);
-                let active_segment_id = obj
-                    .get("segment_id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let active_segment_id =
+                    obj.get("segment_id").and_then(|v| v.as_str()).unwrap_or("");
                 if event.preview_lineage_key.as_deref() == Some(active_segment_id)
                     && event.sequence <= active_sequence
                 {
@@ -557,10 +554,7 @@ impl SubtitleLifecycleCore {
 
         // After ASR final, the overlay reads the completed *record*. Keep carried
         // live-draft slots fresh when a slightly older in-flight MT finally returns.
-        if let Some(seq) = self
-            .pending_final_sequence
-            .or(self.completed_sequence)
-        {
+        if let Some(seq) = self.pending_final_sequence.or(self.completed_sequence) {
             let segment_ok = self
                 .active_partial
                 .as_ref()
@@ -1160,7 +1154,9 @@ impl SubtitleLifecycleCore {
     }
 
     fn promote_or_defer(&mut self, sequence: u64, presentation: &SubtitlePresentation) {
-        let payload = if let Some(p) = self.promotion_payload(sequence, presentation) { p } else {
+        let payload = if let Some(p) = self.promotion_payload(sequence, presentation) {
+            p
+        } else {
             self.pending_final_sequence = Some(sequence);
             self.log.promote_or_defer(
                 sequence,

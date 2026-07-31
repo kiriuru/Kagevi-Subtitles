@@ -79,18 +79,19 @@ pub fn vad_engine_from_config_with_module_dir(
 ) -> VadEngine {
     let engine_cfg = vad_engine_config_from_settings(config, settings);
     let silero = match (config.vad.backend, module_dir) {
-        (LocalAsrVadBackend::Silero, Some(dir)) => match SileroVadEngine::try_open(dir, config.vad.silero_threshold)
-        {
-            Ok(engine) => Some(engine),
-            Err(err) => {
-                warn!(
-                    target: "voicesub.asr_local.vad",
-                    error = %err,
-                    "Silero VAD unavailable — falling back to WebRTC"
-                );
-                None
+        (LocalAsrVadBackend::Silero, Some(dir)) => {
+            match SileroVadEngine::try_open(dir, config.vad.silero_threshold) {
+                Ok(engine) => Some(engine),
+                Err(err) => {
+                    warn!(
+                        target: "voicesub.asr_local.vad",
+                        error = %err,
+                        "Silero VAD unavailable — falling back to WebRTC"
+                    );
+                    None
+                }
             }
-        },
+        }
         (LocalAsrVadBackend::Silero, None) => {
             warn!(
                 target: "voicesub.asr_local.vad",

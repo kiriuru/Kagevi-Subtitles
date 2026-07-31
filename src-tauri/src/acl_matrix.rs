@@ -128,8 +128,9 @@ mod tests {
     fn frontend_invokes_are_allowlisted_per_window() {
         let main = allowed_commands(include_str!("../permissions/allow-voicesub-ipc.toml"));
         let tts = allowed_commands(include_str!("../permissions/allow-voicesub-tts-ipc.toml"));
-        let local_asr =
-            allowed_commands(include_str!("../permissions/allow-voicesub-local-asr-ipc.toml"));
+        let local_asr = allowed_commands(include_str!(
+            "../permissions/allow-voicesub-local-asr-ipc.toml"
+        ));
 
         // Dashboard (`main`): module windows, layout, URLs, snapshot, token fallback.
         for cmd in [
@@ -141,7 +142,10 @@ mod tests {
             "open_external_https_url",
             "open_local_http_url",
         ] {
-            assert!(main.contains(&cmd), "main ACL missing dashboard invoke {cmd}");
+            assert!(
+                main.contains(&cmd),
+                "main ACL missing dashboard invoke {cmd}"
+            );
         }
 
         // TTS window: domain IPC + shared snapshot/token (runtime-events + loopback-api).

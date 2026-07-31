@@ -11,8 +11,7 @@ use voicesub_obs::ObsCaptionService;
 use voicesub_subtitle::{SubtitleRouter, TranscriptEvent, TranscriptKind, TranscriptSegment};
 use voicesub_translation::{
     LivePartialDecideInput, LivePartialGate, LivePartialGateReason, LivePartialSettings,
-    TranslationPreviewLineage,
-    TranslationRuntimeController,
+    TranslationPreviewLineage, TranslationRuntimeController,
 };
 use voicesub_twitch::{
     SourceTextReplacementSettings, apply_source_text_replacement, settings_from_section_value,

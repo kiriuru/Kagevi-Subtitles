@@ -356,7 +356,9 @@ impl InferenceEngine {
         }
         let result = {
             let mut guard = self.inner.lock();
-            if let Some(model) = guard.as_mut() { f(model) } else {
+            if let Some(model) = guard.as_mut() {
+                f(model)
+            } else {
                 if self.snapshot.lock().ort_profiling_stopped_budget {
                     return Err(InferenceError::ProfilingBudgetReached);
                 }

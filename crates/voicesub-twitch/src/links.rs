@@ -140,7 +140,9 @@ mod tests {
     #[test]
     fn detects_github_paths() {
         assert!(looks_like_url_token("github.com/kiriuru/Kagevi-Subtitles"));
-        assert!(looks_like_url_token("https://github.com/kiriuru/Kagevi-Subtitles"));
+        assert!(looks_like_url_token(
+            "https://github.com/kiriuru/Kagevi-Subtitles"
+        ));
     }
 
     #[test]

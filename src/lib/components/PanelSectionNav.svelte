@@ -88,7 +88,9 @@
     observer = null;
     if (navMode !== "scroll" || !nodeSections.length) return;
 
-    const scrollRoot = findScrollRoot(nodeSections[0].id);
+    const firstSection = nodeSections[0];
+    if (!firstSection) return;
+    const scrollRoot = findScrollRoot(firstSection.id);
 
     observer = new IntersectionObserver(
       (entries) => {

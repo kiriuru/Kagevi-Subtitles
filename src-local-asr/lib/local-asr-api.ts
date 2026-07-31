@@ -745,21 +745,21 @@ export function defaultVariantForFamily(_family: ModelFamily = "parakeet_tdt"): 
 
 function readModelCatalog(raw: Record<string, unknown>): ModelCatalogEntry[] {
   const list = Array.isArray(raw.models) ? raw.models : [];
-  return list
-    .map((entry) => {
-      const item = (entry ?? {}) as Record<string, unknown>;
-      const variant = String(item.variant ?? "").trim();
-      if (!variant) return null;
-      return {
-        family: parseModelFamily(String(item.family ?? "")),
-        variant,
-        installed: Boolean(item.installed),
-        sizeMb: Number(item.sizeMb ?? item.size_mb ?? 0),
-        active: Boolean(item.active),
-        sourceAuthor: String(item.sourceAuthor ?? item.source_author ?? ""),
-      } satisfies ModelCatalogEntry;
-    })
-    .filter((entry): entry is ModelCatalogEntry => entry !== null);
+  const catalog: ModelCatalogEntry[] = [];
+  for (const entry of list) {
+    const item = (entry ?? {}) as Record<string, unknown>;
+    const variant = String(item.variant ?? "").trim();
+    if (!variant) continue;
+    catalog.push({
+      family: parseModelFamily(String(item.family ?? "")),
+      variant,
+      installed: Boolean(item.installed),
+      sizeMb: Number(item.sizeMb ?? item.size_mb ?? 0),
+      active: Boolean(item.active),
+      sourceAuthor: String(item.sourceAuthor ?? item.source_author ?? ""),
+    });
+  }
+  return catalog;
 }
 
 export function defaultModelCatalog(_family: ModelFamily = "parakeet_tdt"): ModelCatalogEntry[] {

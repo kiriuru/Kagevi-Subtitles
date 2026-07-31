@@ -407,7 +407,9 @@ fn normalize_subtitle_output(root: &mut Map<String, Value>) {
     {
         output.insert("show_translations".into(), json!(true));
     }
-    let max_langs = enabled_slot_ids(&translation_lines).len().min(CANONICAL_SLOT_IDS.len()) as i64;
+    let max_langs = enabled_slot_ids(&translation_lines)
+        .len()
+        .min(CANONICAL_SLOT_IDS.len()) as i64;
     output.insert("max_translation_languages".into(), json!(max_langs));
 
     let display_order = output
@@ -477,8 +479,7 @@ fn normalize_updates_config(root: &mut Map<String, Value>) {
                     .trim();
                 if current.is_empty() {
                     updates.insert("github_repo".into(), default_value.clone());
-                } else if current == LEGACY_GITHUB_REPO || current == LEGACY_VOICESUB_GITHUB_REPO
-                {
+                } else if current == LEGACY_GITHUB_REPO || current == LEGACY_VOICESUB_GITHUB_REPO {
                     updates.insert(
                         "github_repo".into(),
                         Value::String(DEFAULT_GITHUB_REPO.to_string()),

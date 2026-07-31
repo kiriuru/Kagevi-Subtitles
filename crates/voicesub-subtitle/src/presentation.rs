@@ -378,7 +378,9 @@ impl SubtitlePresentation {
             .unwrap_or(0)
             .min(4) as u32;
         let translation_slots = Self::translation_slot_map(translation_config);
-        let translations = active_partial.get("translations").and_then(|v| v.as_object());
+        let translations = active_partial
+            .get("translations")
+            .and_then(|v| v.as_object());
         let mut items = Vec::new();
         let mut visible_count = 0usize;
         for code in display_order {
@@ -400,8 +402,7 @@ impl SubtitlePresentation {
             if text.is_empty() || !success {
                 continue;
             }
-            let can_show =
-                show_translations && visible_count < max_translation_languages as usize;
+            let can_show = show_translations && visible_count < max_translation_languages as usize;
             let target_lang = translation
                 .and_then(|t| t.get("target_lang"))
                 .and_then(|v| v.as_str())

@@ -376,7 +376,9 @@ impl TranslationEngine {
             .or_else(|| Some(line.slot_id.clone()));
         let item_label = options.label.clone().or_else(|| Some(line.label.clone()));
 
-        let provider = if let Some(provider) = self.providers.get(&line.provider_name) { provider.clone() } else {
+        let provider = if let Some(provider) = self.providers.get(&line.provider_name) {
+            provider.clone()
+        } else {
             let message = format!("Unsupported translation provider: {}", line.provider_name);
             return LineTranslatePlan::Done(
                 Self::failed_item(FailedTranslationItem {

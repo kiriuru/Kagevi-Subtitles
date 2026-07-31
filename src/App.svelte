@@ -98,7 +98,9 @@
       }
       updateConfig({ ...snapshot.config, ui: { ...ui, layout: nextLayout } });
     },
-    exportDiagnostics: () => downloadDiagnostics(),
+    exportDiagnostics: async () => {
+      await downloadDiagnostics();
+    },
     onError: (message) => patchApp({ saveStatus: { tone: "error", message } }),
   };
 

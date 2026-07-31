@@ -284,7 +284,10 @@ async fn settings_save_migrates_removed_public_mirror_to_microsoft_edge() {
         save.text().await.ok()
     );
     let saved: serde_json::Value = save.json().await.expect("json");
-    assert_eq!(saved["payload"]["translation"]["provider"], "microsoft_edge");
+    assert_eq!(
+        saved["payload"]["translation"]["provider"],
+        "microsoft_edge"
+    );
     assert_eq!(
         saved["payload"]["translation"]["lines"][0]["provider"],
         "microsoft_edge"

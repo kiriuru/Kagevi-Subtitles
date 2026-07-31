@@ -118,8 +118,9 @@ impl SileroVadEngine {
         input_samples.extend_from_slice(&self.context);
         input_samples.extend_from_slice(chunk);
 
-        let input = TensorRef::from_array_view(([1_usize, SILERO_INPUT_SAMPLES], input_samples.as_slice()))
-            .map_err(|err| SileroVadError::Infer(err.to_string()))?;
+        let input =
+            TensorRef::from_array_view(([1_usize, SILERO_INPUT_SAMPLES], input_samples.as_slice()))
+                .map_err(|err| SileroVadError::Infer(err.to_string()))?;
         let sr = Tensor::from_array(((), vec![16_000_i64]))
             .map_err(|err| SileroVadError::Infer(err.to_string()))?;
         let state = TensorRef::from_array_view(([2_usize, 1, 128], self.state.as_slice()))
@@ -158,10 +159,12 @@ mod tests {
     #[test]
     fn model_path_layout() {
         let dir = Path::new("user-data/modules/local-asr");
-        assert!(silero_vad_model_path(dir)
-            .to_string_lossy()
-            .replace('\\', "/")
-            .ends_with("runtime/silero_vad_v6/silero_vad.onnx"));
+        assert!(
+            silero_vad_model_path(dir)
+                .to_string_lossy()
+                .replace('\\', "/")
+                .ends_with("runtime/silero_vad_v6/silero_vad.onnx")
+        );
         assert!(!is_silero_vad_installed(dir));
     }
 }

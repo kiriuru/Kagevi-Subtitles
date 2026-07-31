@@ -370,7 +370,9 @@ impl RuntimeOrchestrator {
         // after a failed taskkill (so the next start / orphan reap can retry).
         let user_data_dir = state.paths.user_data_dir.clone();
         let worker_terminated = tokio::task::spawn_blocking(move || {
-            if let Some(pid) = worker_pid.or_else(|| voicesub_browser::read_persisted_pid(&user_data_dir)) {
+            if let Some(pid) =
+                worker_pid.or_else(|| voicesub_browser::read_persisted_pid(&user_data_dir))
+            {
                 let killed = BrowserWorkerLauncher::terminate_worker(pid);
                 let still_live = voicesub_browser::is_live_worker_pid(pid);
                 if killed {

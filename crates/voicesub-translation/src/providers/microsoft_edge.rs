@@ -31,7 +31,8 @@ fn extract_edge_translation_text(payload: &Value) -> String {
     let mut parts = Vec::new();
     if let Some(items) = payload.as_array() {
         for item in items {
-            if let Some(translations) = item.get("translations").and_then(|value| value.as_array()) {
+            if let Some(translations) = item.get("translations").and_then(|value| value.as_array())
+            {
                 for translation in translations {
                     if let Some(text) = translation.get("text").and_then(|value| value.as_str()) {
                         parts.push(text);
@@ -180,13 +181,7 @@ impl TranslationProvider for MicrosoftEdgeProvider {
         };
 
         let mut attempt = self
-            .post_translate(
-                &token,
-                &body,
-                from.as_deref(),
-                &to,
-                request.timeout_secs,
-            )
+            .post_translate(&token, &body, from.as_deref(), &to, request.timeout_secs)
             .await?;
 
         // A cached token can be revoked before its TTL elapses; refresh once, then give up.
@@ -195,13 +190,7 @@ impl TranslationProvider for MicrosoftEdgeProvider {
             token = self.fetch_token(request.timeout_secs).await?;
             self.store_token(&token);
             attempt = self
-                .post_translate(
-                    &token,
-                    &body,
-                    from.as_deref(),
-                    &to,
-                    request.timeout_secs,
-                )
+                .post_translate(&token, &body, from.as_deref(), &to, request.timeout_secs)
                 .await?;
         }
 
@@ -273,8 +262,7 @@ mod tests {
 
     #[test]
     fn token_cache_round_trips_and_clears() {
-        let provider =
-            MicrosoftEdgeProvider::new(SharedHttpClient::new(reqwest::Client::new()));
+        let provider = MicrosoftEdgeProvider::new(SharedHttpClient::new(reqwest::Client::new()));
         assert_eq!(provider.cached_token(), None);
         provider.store_token("jwt-value");
         assert_eq!(provider.cached_token().as_deref(), Some("jwt-value"));
@@ -284,8 +272,7 @@ mod tests {
 
     #[test]
     fn expired_token_is_not_reused() {
-        let provider =
-            MicrosoftEdgeProvider::new(SharedHttpClient::new(reqwest::Client::new()));
+        let provider = MicrosoftEdgeProvider::new(SharedHttpClient::new(reqwest::Client::new()));
         if let Ok(mut guard) = provider.token.write() {
             *guard = Some(CachedToken {
                 token: "stale".into(),

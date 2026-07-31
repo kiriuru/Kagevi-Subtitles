@@ -285,7 +285,10 @@ fn golden_vad_tuning_speech_pad_delays_finalize() {
             }
         }
     }
-    assert!(finalized, "fixture expects finalize after pad + min silence");
+    assert!(
+        finalized,
+        "fixture expects finalize after pad + min silence"
+    );
 }
 
 #[test]

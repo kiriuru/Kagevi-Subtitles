@@ -49,7 +49,7 @@ impl TranslationProvider for FakeProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
-        supports_live_partial: true,
+            supports_live_partial: true,
         }
     }
 
@@ -89,7 +89,7 @@ impl TranslationProvider for FlakyProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
-        supports_live_partial: true,
+            supports_live_partial: true,
         }
     }
 
@@ -119,7 +119,7 @@ impl TranslationProvider for UnreliableProvider {
             group: "stable",
             experimental: false,
             local_provider: false,
-        supports_live_partial: true,
+            supports_live_partial: true,
         }
     }
 

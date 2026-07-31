@@ -20,9 +20,7 @@ pub const LEGACY_GITHUB_REPO: &str = "kiriuru/stream_sub_translator";
 /// True when `repo` is the current or a known legacy product GitHub slug.
 pub fn is_product_github_repo(repo: &str) -> bool {
     let repo = repo.trim();
-    repo == DEFAULT_GITHUB_REPO
-        || repo == LEGACY_VOICESUB_GITHUB_REPO
-        || repo == LEGACY_GITHUB_REPO
+    repo == DEFAULT_GITHUB_REPO || repo == LEGACY_VOICESUB_GITHUB_REPO || repo == LEGACY_GITHUB_REPO
 }
 
 /// `https://github.com/{owner}/{name}` for a repo slug.

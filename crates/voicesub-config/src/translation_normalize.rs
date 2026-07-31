@@ -32,8 +32,10 @@ pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 17] = [
 /// `public_libretranslate_mirror` was dropped because every keyless public LibreTranslate
 /// instance went offline or began refusing API traffic; `microsoft_edge` keeps those configs
 /// on a provider that still needs no API key.
-const REMOVED_TRANSLATION_PROVIDERS: [(&str, Option<&str>); 2] =
-    [("mymemory", None), ("public_libretranslate_mirror", Some("microsoft_edge"))];
+const REMOVED_TRANSLATION_PROVIDERS: [(&str, Option<&str>); 2] = [
+    ("mymemory", None),
+    ("public_libretranslate_mirror", Some("microsoft_edge")),
+];
 
 /// Resolves a stored provider name against the supported set, mapping removed providers to
 /// their replacement and anything else unrecognized to `fallback`.
@@ -739,7 +741,8 @@ mod tests {
                 "word_growth": false
             }
         });
-        let out = normalize_translation_config(&json!({ "enabled": true }), &defaults, &json!(["en"]));
+        let out =
+            normalize_translation_config(&json!({ "enabled": true }), &defaults, &json!(["en"]));
         assert_eq!(out["live_partial"]["enabled"], false);
         assert_eq!(out["live_partial"]["min_interval_ms"], 400);
         assert_eq!(out["live_partial"]["min_delta_chars"], 6);
