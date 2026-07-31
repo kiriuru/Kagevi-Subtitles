@@ -15,11 +15,9 @@ const outDir = path.join(root, "src", "lib", "i18n", "locales");
 
 const RETRYABLE_WRITE_CODES = new Set(["EBUSY", "EPERM", "EACCES", "UNKNOWN"]);
 
+/** Yield the thread for `ms` without busy-spinning the CPU (Node CLI). */
 function sleepMs(ms) {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-    /* spin */
-  }
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.max(0, ms));
 }
 
 /** Atomic write with retries — avoids transient Windows locks on locale JSON. */
