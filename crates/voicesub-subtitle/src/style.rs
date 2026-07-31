@@ -538,13 +538,8 @@ pub(crate) fn resolve_effective_subtitle_style(subtitle_style: &Value) -> Value 
         // our minimal TS style editor stores `source`/`translation_1` without
         // an explicit `enabled` flag. Treat such objects as "not set" so
         // built-in preset line_slot overrides (dual_tone/dark_cinema) still apply.
-        let use_candidate = candidate.and_then(|v| {
-            if !v.is_object() || v.get("enabled").is_none() {
-                None
-            } else {
-                Some(v)
-            }
-        });
+        let use_candidate =
+            candidate.filter(|v| v.is_object() && v.get("enabled").is_some());
 
         let override_style = if let Some(v) = use_candidate {
             v.clone()
