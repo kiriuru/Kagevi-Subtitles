@@ -98,13 +98,10 @@ function prepareForSite(md, kind) {
     // Site has EN/RU toggle — drop in-doc locale sibling (keeps README · Arch · Changelog)
     out = out.replace(/\s*·\s*<a href="wiki\.html">(?:English|Русский)<\/a>/g, "");
 
-    // Section footers: one ↑ Top (sticky TOC replaces Contents / Quick links)
+    // Section footers (always followed by --- before the next ##) — match one <p> only
     out = out.replace(
-      /<p align="right">[\s\S]*?<\/p>(?=\s*(?:## |$))/gi,
-      (block) =>
-        /#(?:jump-bar|quick-links|быстрые-ссылки|table-of-contents|содержание)/i.test(block)
-          ? '<p align="right"><a href="#doc-main">↑ Top</a></p>\n\n'
-          : block
+      /<p align="right">\s*<a href="#(?:jump-bar|quick-links|быстрые-ссылки)"[\s\S]*?<\/p>\s*/gi,
+      '<p align="right"><a href="#doc-main">↑ Top</a></p>\n\n'
     );
     // Bottom bar: drop ↑ Top / ↑ Наверх (sticky TOC); keep README · Arch links
     out = out.replace(

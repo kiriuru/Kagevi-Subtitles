@@ -154,7 +154,565 @@ Overlay URL is <code>http://127.0.0.1:8765/overlay</code>. After app updates, re
 </tbody></table>
 <p align="right"><a href="#doc-main">↑ Top</a></p>
 
+<hr>
+<h2>Quick start</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_live.png" alt="Live tab" width="820"><br>
+  <em><strong>Live</strong> — Start/Stop, recognition status, transcript, subtitle preview</em>
+</p>
 
+<h3>First run</h3>
+<ol>
+<li>Launch <strong>Kagevi Subtitles.exe</strong>.</li>
+<li>Dashboard opens in the Tauri main window (<code>http://127.0.0.1:8765/</code>).</li>
+<li>Add OBS Browser Source: <code>http://127.0.0.1:8765/overlay</code>.</li>
+<li>Set UI language (<strong>Settings</strong>) and translation (<strong>Translation</strong>) if needed.</li>
+<li>Click <strong>Start</strong> — Chrome opens <code>/google-asr?autostart=1</code> (Web Speech) <strong>or</strong> Local ASR starts in-process when <code>local_parakeet</code> is selected and ready.</li>
+<li>Grant microphone permission in Chrome (Web Speech) <strong>or</strong> pick a mic in the Local ASR module, then speak.</li>
+</ol>
+<h3>Runtime bar (Start / Stop)</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Start</strong></td>
+<td><code>POST /api/runtime/start</code> — worker, translation, OBS CC, ASR ingest</td>
+</tr>
+<tr>
+<td><strong>Stop</strong></td>
+<td>Stops worker (kills Chrome tree), resets subtitle state</td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--note"><p><strong>NOTE</strong>
+Start sends the current config snapshot, including unsaved edits since the last Save.</p>
+</blockquote>
+<h3>Subtitle preview</h3>
+<p>Top <strong>Subtitle Output Preview</strong> shows placeholders before Start and the live payload after. Use it to calibrate style without ASR. An empty post-save <code>overlay_update</code> does not clear the preview. Details: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md">Architecture §21</a>.</p>
+<h3>Compact layout</h3>
+<p>Switches the Tauri window (~390×844) with a <strong>Live</strong> pane + settings tabs. Toggle via the layout button or command palette (<code>Ctrl+K</code>). IPC: <code>set_dashboard_layout</code>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Troubleshooting</h2>
+<blockquote class="doc-callout--tip"><p><strong>TIP</strong>
+Work top-down: runtime Start → recognition path → translation → overlay URL.</p>
+</blockquote>
+<h3>No text at all</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Runtime <strong>Start</strong>ed?</li>
+<li><input disabled="" type="checkbox"> <strong>Web Speech:</strong> Chrome <code>/google-asr</code> open and <strong>visible</strong>? Mic allowed in <strong>Chrome</strong>?</li>
+<li><input disabled="" type="checkbox"> <strong>Local ASR:</strong> mode <code>local_parakeet</code> selected and module <code>ready</code>? Mic selected in <code>/local-asr</code>?</li>
+<li><input disabled="" type="checkbox"> <strong>Tools &amp; Data</strong> → diagnostics: <code>browser_worker_connected</code> or Local ASR status</li>
+</ul>
+<h3>Source text but no translation</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Translation</strong> tab → translation enabled</li>
+<li><input disabled="" type="checkbox"> At least one <code>translation_N</code> line with <code>enabled</code></li>
+<li><input disabled="" type="checkbox"> Check translation results / diagnostics for provider errors</li>
+</ul>
+<h3>OBS shows nothing</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Browser Source URL is <code>/overlay</code> (not dashboard <code>/</code>)</li>
+<li><input disabled="" type="checkbox"> <strong>Subtitles</strong> → source/translation visibility enabled</li>
+<li><input disabled="" type="checkbox"> TTL not too aggressive (text may flash and vanish)</li>
+<li><input disabled="" type="checkbox"> After WS disconnect, overlay keeps last frame (stale-guard + 1–10 s backoff) — expected</li>
+<li><input disabled="" type="checkbox"> Text stuck after TTL/Stop → update the app and reload Browser Source</li>
+</ul>
+<details>
+<summary><strong>Worker keeps dying</strong></summary>
+
+<ul>
+<li>Check network (Web Speech uses Google endpoints).</li>
+<li>Enable <code>VOICESUB_TRACE_BROWSER=1</code> → <code>logs/browser-trace.jsonl</code>.</li>
+<li>Recovery: <strong>Stop</strong> → <strong>Start</strong>, or relaunch worker from Tools.</li>
+</ul>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Dashboard tabs</h2>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Purpose</th>
+<th>Section</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Translation</strong></td>
+<td>Providers, lines, cache, dispatcher limits</td>
+<td><a href="#translation">Translation</a></td>
+</tr>
+<tr>
+<td><strong>Subtitles</strong></td>
+<td>Overlay preset, visibility, order, TTL</td>
+<td><a href="#subtitles">Subtitles</a></td>
+</tr>
+<tr>
+<td><strong>Style</strong></td>
+<td>Fonts, colors, effects, slot styles</td>
+<td><a href="#subtitle-style">Subtitle style</a></td>
+</tr>
+<tr>
+<td><strong>UI Theme</strong></td>
+<td>Dark/light, accent palette</td>
+<td><a href="#ui-theme">UI theme</a></td>
+</tr>
+<tr>
+<td><strong>OBS</strong></td>
+<td>Overlay URL, Closed Captions</td>
+<td><a href="#obs">OBS</a></td>
+</tr>
+<tr>
+<td><strong>Word Replace</strong></td>
+<td>Text replacement before translation</td>
+<td><a href="#word-replacement">Word replacement</a></td>
+</tr>
+<tr>
+<td><strong>Tools &amp; Data</strong></td>
+<td>Profiles, diagnostics, ZIP export</td>
+<td><a href="#tools-and-data">Tools and data</a></td>
+</tr>
+<tr>
+<td><strong>Settings</strong></td>
+<td>Language, layout, Web Speech advanced</td>
+<td><a href="#settings">Settings</a></td>
+</tr>
+<tr>
+<td><strong>Help</strong></td>
+<td>Built-in topics</td>
+<td><a href="#help">Help</a></td>
+</tr>
+</tbody></table>
+<p><strong>Command palette</strong> (header search / <code>Ctrl+K</code>): quick navigation, Start/Stop, Save, export diagnostics.</p>
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_translation.png" alt="Translation" width="280"><br>
+      <sub><a href="#translation">Translation</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_subtitles.png" alt="Subtitles" width="280"><br>
+      <sub><a href="#subtitles">Subtitles</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_style.png" alt="Style" width="280"><br>
+      <sub><a href="#subtitle-style">Style</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_UI_theme.png" alt="UI Theme" width="280"><br>
+      <sub><a href="#ui-theme">UI Theme</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_obs.png" alt="OBS" width="280"><br>
+      <sub><a href="#obs">OBS</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_wordReplace.png" alt="Word Replace" width="280"><br>
+      <sub><a href="#word-replacement">Word Replace</a></sub>
+    </td>
+  </tr>
+</table>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Browser Speech (Web Speech)</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings.png" alt="Settings — Advanced Web Speech" width="820"><br>
+  <em><strong>Settings</strong> — Advanced Web Speech / worker lifecycle options</em>
+</p>
+
+<h3>Mode</h3>
+<ul>
+<li>Production mode: <strong><code>browser_google</code></strong> — Web Speech in a separate Chrome window.</li>
+<li>Microphone is selected <strong>in Chrome</strong> (<code>getUserMedia</code>), not in the dashboard.</li>
+<li><code>/api/devices/audio-inputs</code> returns empty — by design.</li>
+</ul>
+<h3>Browser worker window</h3>
+<ul>
+<li>Separate window with a <strong>visible address bar</strong> (no app mode, no hidden tab).</li>
+<li>URL: <code>http://127.0.0.1:8765/google-asr?autostart=1[&amp;locale=…]</code>.</li>
+<li>Isolated Chrome profile: <code>user-data/browser-worker-profile-classic-*</code>.</li>
+<li>Anti-throttle flags + EcoQoS opt-out on Windows.</li>
+</ul>
+<h3>Recognition language</h3>
+<p><strong>Settings</strong> → Web Speech / <code>asr.browser.recognition_language</code>. Worker UI shows live/final text and WS diagnostics. If the worker has text but the dashboard is empty — the issue is ingest/WS, not Chrome recognition.</p>
+<details>
+<summary><strong>Advanced Web Speech settings</strong></summary>
+
+<ul>
+<li>Location: <strong>Settings</strong> → “Advanced Web Speech settings” (<code>asr.browser.*</code>, <code>asr.realtime</code> partial filters).</li>
+<li>Groups: forced final, restart, network reconnect, session rotation, partial filtering.</li>
+<li>Each field has an <strong><code>!</code> help button</strong>.</li>
+<li><strong>Defaults (0.5.4+):</strong> faster restarts (150 ms), stricter forced-final threshold (8 chars), earlier session prepare (30 s before 3 min max age). See <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md">Architecture §12</a>.</li>
+<li><strong>Deprecated (ignore in manual config):</strong> <code>pause_to_finalize_ms</code> / <code>finalization_hold_ms</code>, <code>hard_max_phrase_ms</code> / <code>max_segment_ms</code> — use worker <strong><code>force_finalization_timeout_ms</code></strong> for idle forced-final timing.</li>
+<li>After changes: Save → <strong>Stop/Start</strong> and reopen the worker if needed.</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>Worker stability</strong></summary>
+
+<ul>
+<li>Screen Wake Lock while recognition runs.</li>
+<li>Session rotation <code>max_browser_session_age_ms</code> (default 180000 ms).</li>
+<li>Network preflight → terminal <code>recognition_network_unreachable</code> after repeated network errors.</li>
+<li>Force-finalization for stuck partials.</li>
+<li><strong>Long-segment flush (0.5.4+):</strong> after a committed final ≥200 characters, worker resets the Web Speech results buffer. See <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md">Architecture §12</a>.</li>
+</ul>
+</details>
+
+<blockquote class="doc-callout--important"><p><strong>WARNING</strong>
+Experimental <code>/google-asr-experimental</code> is <strong>not</strong> in core. For offline recognition use the <a href="#local-asr">Local ASR</a> module (<code>local_parakeet</code>).</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Local ASR</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_modules_main.png" alt="Modules" width="400">
+  &nbsp;
+  <img loading="lazy" src="images/kagevi_localASR_1.png" alt="Local ASR module" width="400"><br>
+  <em><strong>Modules</strong> / <strong>Local ASR</strong> — open sidecar and finish setup until ready</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_setup.png" alt="Local ASR setup" width="720"><br>
+  <em><strong>Setup</strong> — ORT, CUDA components, Parakeet model variants</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_2.png" alt="Local ASR inference and test bench" width="720"><br>
+  <em><strong>Inference / Test bench</strong> — warm load, mic test, partial emit</em>
+</p>
+
+<h3>Module window (<code>/local-asr</code>)</h3>
+<p>Separate UI (like TTS): deps check, model download, CPU/CUDA EP, realtime presets, mic test bench. Open from <strong>Modules</strong> or Tauri IPC <code>local_asr_open_window</code>. Settings: <code>user-data/modules/local-asr/config.toml</code> (window can be closed).</p>
+<h3>Readiness gate</h3>
+<ul>
+<li>Live shows <strong>Local ASR</strong> only when <code>asr.local_module.ready</code> (CPU path: ORT + model + warm load).</li>
+<li><code>cuda_ready</code> is an extra badge for NVIDIA CUDA EP; CPU is enough for Live.</li>
+<li>After changing realtime/VAD settings: <strong>Stop → Start</strong> the Live session.</li>
+</ul>
+<h3>Live with Local ASR</h3>
+<p>Select <code>local_parakeet</code> on Live → <strong>Start</strong> — no Chrome worker; mic capture is native (cpal). Text uses the same subtitle/translation/overlay path as Web Speech. Details: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md">Architecture §18</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Translation</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_translation.png" alt="Translation tab" width="820"><br>
+  <em><strong>Translation</strong> — enable pipeline, providers, and up to 4 lines</em>
+</p>
+
+<h3>Main toggles</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Enable translation</td>
+<td>Turns the translation pipeline on/off. ASR works without it (source-only).</td>
+</tr>
+<tr>
+<td>Cache (memory)</td>
+<td>Skip duplicate provider calls</td>
+</tr>
+<tr>
+<td>Cache (disk)</td>
+<td><code>user-data/translation-cache/</code> across sessions</td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--note"><p><strong>NOTE</strong>
+Old disk cache may conflict with changed LLM prompts.</p>
+</blockquote>
+<h3>Translation lines (<code>translation_1</code>…<code>translation_4</code>)</h3>
+<p>Up to <strong>4</strong> independent lines: <code>enabled</code>, <code>target_lang</code>, <code>provider</code>, <code>label</code>. Each enabled line adds dispatcher load. Display order is set on the <strong>Subtitles</strong> tab.</p>
+<h3>Providers (17)</h3>
+<p><code>google_translate_v2</code> (default), <code>google_cloud_translation_v3</code>, <code>google_gas_url</code>, <code>google_web</code>, <code>azure_translator</code>, <code>deepl</code>, <code>libretranslate</code>, <code>openai</code>, <code>openrouter</code>, <code>lm_studio</code>, <code>ollama</code>, <code>microsoft_edge</code>, <code>free_web_translate</code>, <code>baidu_translate</code>, <code>youdao_translate</code>, <code>tencent_tmt</code>, <code>caiyun_translator</code>.</p>
+<ul>
+<li>OpenAI-compatible helpers: <code>/api/openai/recommended-models</code>, <code>/api/openai/models</code>.</li>
+<li>Credentials in <code>translation.provider_settings</code> — local <code>config.toml</code> only.</li>
+</ul>
+<h3>Dispatcher and results</h3>
+<ul>
+<li>Timeout, queue size, max concurrent jobs; per-provider <code>provider_limits</code>.</li>
+<li><strong>Lifecycle:</strong> completed block stays until a new phrase finalizes; late translations allowed; stale drop only for superseded in-flight jobs.</li>
+<li>Results block shows latest translations and provider errors. Delay is not always failure (supersession / stale protection).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Subtitles</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_subtitles.png" alt="Subtitles tab" width="820"><br>
+  <em><strong>Subtitles</strong> — overlay preset, visibility, order, TTL</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Overlay preset</td>
+<td><code>single</code>, <code>dual-line</code>, <code>stacked</code>, <code>compact</code>; query override <code>?preset=…&amp;compact=1</code></td>
+</tr>
+<tr>
+<td>Visibility</td>
+<td>Source / translation toggles; max visible translation lines</td>
+</tr>
+<tr>
+<td>TTL / lifecycle</td>
+<td><code>completed_block_ttl_ms</code>, source/translation TTL; keep source while translation visible</td>
+</tr>
+<tr>
+<td>Line order</td>
+<td>Affects dashboard preview, OBS overlay, and OBS CC <code>first_visible_line</code></td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
+Completed translation stays visible while the next phrase is still partial; replacement happens after the new phrase finalizes.</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Subtitle style</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_style.png" alt="Subtitle Style tab" width="820"><br>
+  <em><strong>Subtitle Style</strong> — fonts, colors, effects, per-slot overrides</em>
+</p>
+
+<ul>
+<li>Built-in and custom presets.</li>
+<li>Base controls: font, size, weight, color, outline, shadow, background, alignment, spacing.</li>
+<li>Effects: <code>none</code>, <code>fade</code>, <code>subtle_pop</code>, <code>slide_up</code>, <code>zoom_in</code>, <code>blur_in</code>, <code>glow</code>.</li>
+<li>Per-slot overrides: <code>source</code>, <code>translation_1</code>…<code>translation_4</code>.</li>
+<li><strong>Shared payload</strong> for dashboard preview and OBS overlay — Save config/profile after edits.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>UI theme</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_UI_theme.png" alt="UI Theme tab" width="820"><br>
+  <em><strong>UI Theme</strong> — dark/light mode and accent palette</em>
+</p>
+
+<p>Affects <strong>dashboard chrome only</strong>. OBS overlay uses subtitle-style config, not the UI theme.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>OBS</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_obs.png" alt="OBS tab" width="820"><br>
+  <em><strong>OBS</strong> — overlay URL and Closed Captions</em>
+</p>
+
+<h3>Overlay URL</h3>
+<p>Copied from the <strong>OBS</strong> tab (<code>GET /api/obs/url</code>). Default: <code>http://127.0.0.1:8765/overlay</code>. Update OBS if bind changes (LAN mode).</p>
+<h3>Closed Captions</h3>
+<ul>
+<li>WebSocket host/port/password (OBS v5).</li>
+<li>Output mode: source live/final, translation slots, first visible line.</li>
+<li>Timing: partial throttle, min delta, clear after ms, dedupe.</li>
+<li>Debug mirror — text source for CC debugging.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Word replacement</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_wordReplace.png" alt="Word Replace tab" width="820"><br>
+  <em><strong>Word Replace</strong> — find/replace before translation and display</em>
+</p>
+
+<ul>
+<li>Applied <strong>before</strong> translation and display (<code>TranscriptController</code>).</li>
+<li>Built-in lists + <strong>stems</strong> (en/ru) and obfuscation normalization (leet, separators, letter repeats).</li>
+<li>Case-insensitive / whole words (CJK uses substring match, not <code>\b</code>).</li>
+<li>Twitch chat TTS uses its own <code>include_builtin_profanity</code> flag (not dashboard custom pairs).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>TTS module</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_1.png" alt="TTS module" width="820"><br>
+  <em><strong>TTS</strong> — subtitle speech and playback</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch.png" alt="Twitch TTS" width="820"><br>
+  <em><strong>Twitch TTS</strong> — up to five channels, OAuth, chat audio routing</em>
+</p>
+
+<p>Open from <strong>Modules</strong> or Tauri IPC <code>tts_open_window</code>. Config: <code>user-data/modules/tts/config.toml</code>.</p>
+<h3>Speech</h3>
+<ul>
+<li>Provider, voice, rate/pitch/volume.</li>
+<li><strong>Volume:</strong> 0–<strong>150%</strong> (native <code>amplify</code>); slider with live label (<code>85%</code>, <code>150%</code>).</li>
+<li><strong>Playback:</strong> <strong>Native</strong> (cpal @ 1.0×) or <strong>Sonic</strong> (libsonic tempo stretch); separate WASAPI devices for speech and Twitch.</li>
+<li>Subtitle-driven planner in Rust; sample test via <code>tts_speak_sample</code>; playback via in-process <code>PlaybackHub</code> (no browser HTMLAudio).</li>
+</ul>
+<details>
+<summary><strong>Twitch chat TTS</strong></summary>
+
+<ul>
+<li>OAuth via system browser; implicit grant + token poll.</li>
+<li><strong>Up to 5 channels</strong> per connection (logins without <code>#</code>); badge <code>IRC: connected #channel</code> or <code>3/5 channels</code>.</li>
+<li>IRC chat → speech queue; emote/link/symbol/lang filters apply <strong>live</strong> without reconnect.</li>
+<li><strong>Auto-reconnect</strong> on IRC/TLS drop — backoff 1→30 s; OAuth/auth errors do not retry; manual Disconnect stops the loop.</li>
+<li><strong>Symbols not spoken</strong> — comma-separated tokens removed from text.</li>
+<li><strong>Advanced:</strong> rate/volume overrides; <code>@mentions</code> spoken without <code>@</code>; <code>strip_links=false</code> keeps URLs.</li>
+<li>Digits preserved during emoji/emote stripping; invisible filler chars stripped before filters.</li>
+<li><strong>?</strong> on <strong>Bot nick</strong> — IRC login used for <code>JOIN</code> (not a viewer display name).</li>
+</ul>
+</details>
+
+<h3>Python sidecar</h3>
+<p><code>bin/modules/tts/runtime/</code> — embedded fetcher for Google TTS proxy. Probe: <code>/api/tts/python/status</code>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Tools and data</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tools%26data.png" alt="Tools and Data tab" width="820"><br>
+  <em><strong>Tools & Data</strong> — profiles, runtime diagnostics, ZIP export</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Runtime diagnostics</td>
+<td>Phase, worker connected, translation queue, OBS CC, metrics</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>logs/core.log</code>, <code>runtime-events.log</code>, <code>session-latest.jsonl</code></td>
+</tr>
+<tr>
+<td>Profiles</td>
+<td>CRUD → <code>user-data/profiles/{name}.toml</code></td>
+</tr>
+<tr>
+<td>Export diagnostics</td>
+<td>ZIP (redacted config + logs) via <code>GET /api/exports/diagnostics</code></td>
+</tr>
+</tbody></table>
+<details>
+<summary><strong>Deep diagnostics (env)</strong></summary>
+
+<ul>
+<li><code>VOICESUB_DEEP_DIAGNOSTICS=1</code> or <code>logging.full_enabled</code> in config.</li>
+<li>Per-channel: <code>VOICESUB_TRACE_SUBTITLE</code>, <code>_BROWSER</code>, <code>_WS</code>, <code>_TTS</code>, …</li>
+</ul>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Settings</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings.png" alt="Settings tab" width="820"><br>
+  <em><strong>Settings</strong> — language, layout, Web Speech advanced</em>
+</p>
+
+<h3>UI language (EN / RU / JA / KO / ZH)</h3>
+<p>Saved in <code>ui.language</code> → Save config. Worker gets <code>locale</code> on launch. Overlay i18n: regenerate with <code>npm run i18n:bundle</code>. Details: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md">Architecture §24</a>.</p>
+<h3>Layout</h3>
+<p><code>standard</code> vs <code>compact</code> — Tauri window size.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Help</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_more.png" alt="More hub" width="820"><br>
+  <em><strong>More</strong> — Theme, Word Replace, Settings, Tools & Data, Help</em>
+</p>
+
+<p>Topics: overview, recognition, translation, subtitles/style, OBS, tools.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Privacy and local-first</h2>
+<ul>
+<li>Default bind <code>127.0.0.1</code>; LAN only with <code>VOICESUB_ALLOW_LAN=1</code>.</li>
+<li>API keys and Twitch tokens stay on local disk.</li>
+<li>Diagnostics export redacts secrets.</li>
+<li>Chrome worker uses an isolated profile (no sync).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>partial</strong></td>
+<td>In-progress recognized text</td>
+</tr>
+<tr>
+<td><strong>final</strong></td>
+<td>Finalized phrase segment</td>
+</tr>
+<tr>
+<td><strong>translation slot</strong></td>
+<td>Line <code>translation_1</code>…<code>translation_4</code></td>
+</tr>
+<tr>
+<td><strong>overlay</strong></td>
+<td>Vanilla <code>/overlay</code> page for OBS</td>
+</tr>
+<tr>
+<td><strong>browser worker</strong></td>
+<td>Chrome window running Web Speech</td>
+</tr>
+<tr>
+<td><strong>completed block</strong></td>
+<td>Final subtitle until next phrase finalizes</td>
+</tr>
+<tr>
+<td><strong>TTS module</strong></td>
+<td>Sidecar <code>/tts</code> + Rust service</td>
+</tr>
+<tr>
+<td><strong>Local ASR</strong></td>
+<td>Sidecar <code>/local-asr</code> + Parakeet ONNX (<code>local_parakeet</code>)</td>
+</tr>
+</tbody></table>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<hr>
+<p align="center">
+  <a href="index.html">README</a> ·
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md" target="_blank" rel="noopener noreferrer">Architecture</a>
+</p>
 
 
           </article>
@@ -242,7 +800,565 @@ Overlay URL: <code>http://127.0.0.1:8765/overlay</code>. После обновл
 </tbody></table>
 <p align="right"><a href="#doc-main">↑ Top</a></p>
 
+<hr>
+<h2>Быстрый старт</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_live.png" alt="Вкладка Live" width="820"><br>
+  <em><strong>Live</strong> — Start/Stop, статус распознавания, транскрипт, превью субтитров</em>
+</p>
 
+<h3>Первый запуск</h3>
+<ol>
+<li>Запустите <strong>Kagevi Subtitles.exe</strong>.</li>
+<li>Dashboard откроется в главном окне Tauri (<code>http://127.0.0.1:8765/</code>).</li>
+<li>Добавьте в OBS Browser Source: <code>http://127.0.0.1:8765/overlay</code>.</li>
+<li>При необходимости настройте язык UI (<strong>Settings</strong>) и перевод (<strong>Translation</strong>).</li>
+<li>Нажмите <strong>Start</strong> — откроется Chrome с <code>/google-asr?autostart=1</code> (Web Speech) <strong>или</strong> стартует Local ASR in-process, если выбран <code>local_parakeet</code> и модуль ready.</li>
+<li>Разрешите микрофон в Chrome (Web Speech) <strong>или</strong> выберите mic в модуле Local ASR и говорите.</li>
+</ol>
+<h3>Панель runtime (Start / Stop)</h3>
+<table>
+<thead>
+<tr>
+<th>Действие</th>
+<th>Поведение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Start</strong></td>
+<td><code>POST /api/runtime/start</code> — worker, translation, OBS CC, ingest ASR</td>
+</tr>
+<tr>
+<td><strong>Stop</strong></td>
+<td>Останавливает worker (включая kill Chrome), сбрасывает subtitle state</td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--note"><p><strong>NOTE</strong>
+Start отправляет текущий config snapshot, включая несохранённые правки с момента последнего Save.</p>
+</blockquote>
+<h3>Предпросмотр субтитров</h3>
+<p>Верхняя область «Предпросмотр субтитров» показывает placeholder до Start и live payload после. Нужна для калибровки стиля без ASR. Пустой <code>overlay_update</code> после Save не затирает preview. Подробно: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md">Архитектура §21</a>.</p>
+<h3>Компактный макет</h3>
+<p>Переключает окно Tauri (~390×844) с pane <strong>Live</strong> + вкладками настроек. Кнопка layout или command palette (<code>Ctrl+K</code>). IPC: <code>set_dashboard_layout</code>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Диагностика</h2>
+<blockquote class="doc-callout--tip"><p><strong>TIP</strong>
+Идите сверху вниз: Start → путь распознавания → перевод → URL overlay.</p>
+</blockquote>
+<h3>Нет вообще никакого текста</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Runtime запущен (<strong>Start</strong>)?</li>
+<li><input disabled="" type="checkbox"> <strong>Web Speech:</strong> окно Chrome <code>/google-asr</code> открыто и <strong>видимо</strong>? Микрофон разрешён в <strong>Chrome</strong>?</li>
+<li><input disabled="" type="checkbox"> <strong>Local ASR:</strong> выбран <code>local_parakeet</code> и модуль <code>ready</code>? Mic выбран в <code>/local-asr</code>?</li>
+<li><input disabled="" type="checkbox"> <strong>Tools &amp; Data</strong> → diagnostics: <code>browser_worker_connected</code> или статус Local ASR</li>
+</ul>
+<h3>Исходный текст есть, перевода нет</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Translation</strong> → перевод включён</li>
+<li><input disabled="" type="checkbox"> Хотя бы одна линия <code>translation_N</code> с <code>enabled</code></li>
+<li><input disabled="" type="checkbox"> Блок результатов / diagnostics — ошибки ключа, endpoint, квоты</li>
+</ul>
+<h3>В OBS пусто</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Browser Source URL = <code>/overlay</code> (не dashboard <code>/</code>)</li>
+<li><input disabled="" type="checkbox"> <strong>Subtitles</strong> → видимость source/translation включена</li>
+<li><input disabled="" type="checkbox"> TTL не слишком короткий (текст может мелькать и исчезать)</li>
+<li><input disabled="" type="checkbox"> После reconnect overlay держит последний кадр (stale-guard + backoff 1–10 с) — это нормально</li>
+<li><input disabled="" type="checkbox"> Текст не исчезает после TTL/Stop → обновите приложение и перезагрузите Browser Source</li>
+</ul>
+<details>
+<summary><strong>Worker отваливается</strong></summary>
+
+<ul>
+<li>Проверьте сеть (Web Speech идёт через Google).</li>
+<li><code>VOICESUB_TRACE_BROWSER=1</code> → <code>logs/browser-trace.jsonl</code>.</li>
+<li>Перезапуск: <strong>Stop</strong> → <strong>Start</strong> или relaunch worker из Tools.</li>
+</ul>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Вкладки dashboard</h2>
+<table>
+<thead>
+<tr>
+<th>Вкладка</th>
+<th>Назначение</th>
+<th>Раздел</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Translation</strong></td>
+<td>Провайдеры, линии, кэш, лимиты диспетчера</td>
+<td><a href="#%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4">Перевод</a></td>
+</tr>
+<tr>
+<td><strong>Subtitles</strong></td>
+<td>Пресет overlay, видимость, порядок, TTL</td>
+<td><a href="#%D1%81%D1%83%D0%B1%D1%82%D0%B8%D1%82%D1%80%D1%8B">Субтитры</a></td>
+</tr>
+<tr>
+<td><strong>Style</strong></td>
+<td>Шрифты, цвета, эффекты, слот-стили</td>
+<td><a href="#%D1%81%D1%82%D0%B8%D0%BB%D1%8C-%D1%81%D1%83%D0%B1%D1%82%D0%B8%D1%82%D1%80%D0%BE%D0%B2">Стиль субтитров</a></td>
+</tr>
+<tr>
+<td><strong>UI Theme</strong></td>
+<td>Тёмная/светлая тема, accent palette</td>
+<td><a href="#%D1%82%D0%B5%D0%BC%D0%B0-ui">Тема UI</a></td>
+</tr>
+<tr>
+<td><strong>OBS</strong></td>
+<td>Overlay URL, Closed Captions</td>
+<td><a href="#obs">OBS</a></td>
+</tr>
+<tr>
+<td><strong>Word Replace</strong></td>
+<td>Замена текста до перевода</td>
+<td><a href="#%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D0%B0-%D1%81%D0%BB%D0%BE%D0%B2">Замена слов</a></td>
+</tr>
+<tr>
+<td><strong>Tools &amp; Data</strong></td>
+<td>Профили, диагностика, ZIP export</td>
+<td><a href="#%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-%D0%B8-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5">Инструменты и данные</a></td>
+</tr>
+<tr>
+<td><strong>Settings</strong></td>
+<td>Язык, layout, Web Speech advanced</td>
+<td><a href="#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B8">Настройки</a></td>
+</tr>
+<tr>
+<td><strong>Help</strong></td>
+<td>Встроенные темы справки</td>
+<td><a href="#%D1%81%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B0">Справка</a></td>
+</tr>
+</tbody></table>
+<p><strong>Command palette</strong> (<code>Ctrl+K</code> / поиск в header): быстрый переход, Start/Stop, Save, export diagnostics.</p>
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_translation.png" alt="Перевод" width="280"><br>
+      <sub><a href="#перевод">Перевод</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_subtitles.png" alt="Субтитры" width="280"><br>
+      <sub><a href="#субтитры">Субтитры</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_style.png" alt="Стиль" width="280"><br>
+      <sub><a href="#стиль-субтитров">Стиль</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_UI_theme.png" alt="Тема UI" width="280"><br>
+      <sub><a href="#тема-ui">Тема UI</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_obs.png" alt="OBS" width="280"><br>
+      <sub><a href="#obs">OBS</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_wordReplace.png" alt="Замена слов" width="280"><br>
+      <sub><a href="#замена-слов">Замена слов</a></sub>
+    </td>
+  </tr>
+</table>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Browser Speech (Web Speech)</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings.png" alt="Settings — Advanced Web Speech" width="820"><br>
+  <em><strong>Settings</strong> — Advanced Web Speech / опции lifecycle worker</em>
+</p>
+
+<h3>Режим</h3>
+<ul>
+<li>Production-режим: <strong><code>browser_google</code></strong> — Web Speech в отдельном окне Chrome.</li>
+<li>Микрофон выбирается <strong>в Chrome</strong> (<code>getUserMedia</code>), не в dashboard.</li>
+<li><code>/api/devices/audio-inputs</code> пустой — by design.</li>
+</ul>
+<h3>Окно browser worker</h3>
+<ul>
+<li>Отдельное окно с <strong>видимой адресной строкой</strong> (не app-mode, не скрытая вкладка).</li>
+<li>URL: <code>http://127.0.0.1:8765/google-asr?autostart=1[&amp;locale=…]</code>.</li>
+<li>Изолированный Chrome profile: <code>user-data/browser-worker-profile-classic-*</code>.</li>
+<li>Anti-throttle flags + EcoQoS opt-out (Windows).</li>
+</ul>
+<h3>Язык распознавания</h3>
+<p><strong>Settings</strong> → Web Speech / <code>asr.browser.recognition_language</code>. Worker показывает live/final и диагностику WS. Если worker показывает текст, а dashboard пуст — проблема на стороне ingest/WS, не Chrome.</p>
+<details>
+<summary><strong>Расширенные настройки Web Speech</strong></summary>
+
+<ul>
+<li><strong>Settings</strong> → «Расширенные настройки Web Speech» (<code>asr.browser.*</code>, partial-фильтры <code>asr.realtime</code>).</li>
+<li>Группы: forced final, restart, network reconnect, session rotation, partial filtering.</li>
+<li>У каждого поля — кнопка <strong><code>!</code></strong>.</li>
+<li><strong>Defaults (0.5.4+):</strong> рестарты 150 ms, порог forced final 8 символов, ранняя подготовка ротации (30 s до лимита 3 min). См. <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md">Архитектура §12</a>.</li>
+<li><strong>Deprecated:</strong> <code>pause_to_finalize_ms</code> / <code>finalization_hold_ms</code>, <code>hard_max_phrase_ms</code> / <code>max_segment_ms</code> — для idle forced final используйте <strong><code>force_finalization_timeout_ms</code></strong>.</li>
+<li>После изменений: Save → <strong>Stop/Start</strong> и переоткрытие worker при необходимости.</li>
+</ul>
+</details>
+
+<details>
+<summary><strong>Устойчивость worker</strong></summary>
+
+<ul>
+<li>Screen Wake Lock при активном распознавании.</li>
+<li>Session rotation <code>max_browser_session_age_ms</code> (default 180000 ms).</li>
+<li>Network preflight → terminal <code>recognition_network_unreachable</code> после серии network errors.</li>
+<li>Force-finalization при залипшем partial.</li>
+<li><strong>Long-segment flush (0.5.4+):</strong> после committed final ≥200 символов worker сбрасывает буфер Web Speech <code>results</code>. См. <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md">Архитектура §12</a>.</li>
+</ul>
+</details>
+
+<blockquote class="doc-callout--important"><p><strong>WARNING</strong>
+Experimental <code>/google-asr-experimental</code> <strong>нет</strong> в core. Для офлайн-распознавания используйте модуль <a href="#local-asr">Local ASR</a> (<code>local_parakeet</code>).</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Local ASR</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_modules_main.png" alt="Модули" width="400">
+  &nbsp;
+  <img loading="lazy" src="images/kagevi_localASR_1.png" alt="Модуль Local ASR" width="400"><br>
+  <em><strong>Модули</strong> / <strong>Local ASR</strong> — sidecar и setup до ready</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_setup.png" alt="Local ASR setup" width="720"><br>
+  <em><strong>Setup</strong> — ORT, CUDA, варианты моделей Parakeet</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_2.png" alt="Local ASR inference / test bench" width="720"><br>
+  <em><strong>Inference / Test bench</strong> — warm load, mic test, partial emit</em>
+</p>
+
+<h3>Окно модуля (<code>/local-asr</code>)</h3>
+<p>Отдельный UI (как TTS): deps, download модели, EP CPU/CUDA, realtime-пресеты, mic test bench. Открытие: <strong>Модули</strong> или Tauri IPC <code>local_asr_open_window</code>. Настройки: <code>user-data/modules/local-asr/config.toml</code> (окно можно закрыть).</p>
+<h3>Gate готовности</h3>
+<ul>
+<li>На Эфире <strong>Local ASR</strong> появляется только при <code>asr.local_module.ready</code> (CPU: ORT + model + warm load).</li>
+<li><code>cuda_ready</code> — badge для NVIDIA CUDA EP; для Live достаточно CPU.</li>
+<li>После смены realtime/VAD: <strong>Stop → Start</strong> Live-сессии.</li>
+</ul>
+<h3>Эфир с Local ASR</h3>
+<p>Выберите <code>local_parakeet</code> на Live → <strong>Start</strong> — без Chrome worker; захват mic нативный (cpal). Текст идёт в тот же путь subtitle/translation/overlay. Подробно: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md">Архитектура §18</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Перевод</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_translation.png" alt="Вкладка Перевод" width="820"><br>
+  <em><strong>Перевод</strong> — pipeline, провайдеры и до 4 линий</em>
+</p>
+
+<h3>Основные переключатели</h3>
+<table>
+<thead>
+<tr>
+<th>Контрол</th>
+<th>Поведение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Включение перевода</td>
+<td>Вкл/выкл translation pipeline. ASR работает и без перевода (source-only).</td>
+</tr>
+<tr>
+<td>Кэш (память)</td>
+<td>Не дублировать запросы к провайдеру</td>
+</tr>
+<tr>
+<td>Кэш (диск)</td>
+<td><code>user-data/translation-cache/</code> между сессиями</td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--note"><p><strong>NOTE</strong>
+Старый disk-кэш при смене промпта LLM может давать устаревший стиль.</p>
+</blockquote>
+<h3>Линии перевода (<code>translation_1</code>…<code>translation_4</code>)</h3>
+<p>До <strong>4</strong> независимых линий: <code>enabled</code>, <code>target_lang</code>, <code>provider</code>, <code>label</code>. Каждая активная линия — нагрузка на dispatcher. Порядок отображения — вкладка <strong>Subtitles</strong>.</p>
+<h3>Провайдеры (17)</h3>
+<p><code>google_translate_v2</code> (default), <code>google_cloud_translation_v3</code>, <code>google_gas_url</code>, <code>google_web</code>, <code>azure_translator</code>, <code>deepl</code>, <code>libretranslate</code>, <code>openai</code>, <code>openrouter</code>, <code>lm_studio</code>, <code>ollama</code>, <code>microsoft_edge</code>, <code>free_web_translate</code>, <code>baidu_translate</code>, <code>youdao_translate</code>, <code>tencent_tmt</code>, <code>caiyun_translator</code>.</p>
+<ul>
+<li>OpenAI-compatible helpers: <code>/api/openai/recommended-models</code>, <code>/api/openai/models</code>.</li>
+<li>Credentials в <code>translation.provider_settings</code> — только локальный <code>config.toml</code>.</li>
+</ul>
+<h3>Диспетчер и результаты</h3>
+<ul>
+<li>Таймаут, очередь, max concurrent; per-provider <code>provider_limits</code>.</li>
+<li><strong>Lifecycle:</strong> завершённый блок остаётся до финализации новой фразы; late translations разрешены; stale drop только для устаревших in-flight jobs.</li>
+<li>Блок результатов показывает переводы и ошибки. Задержка ≠ всегда ошибка (supersession / stale protection).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Субтитры</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_subtitles.png" alt="Вкладка Субтитры" width="820"><br>
+  <em><strong>Субтитры</strong> — пресет overlay, видимость, порядок, TTL</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Тема</th>
+<th>Детали</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Пресет overlay</td>
+<td><code>single</code>, <code>dual-line</code>, <code>stacked</code>, <code>compact</code>; query <code>?preset=…&amp;compact=1</code></td>
+</tr>
+<tr>
+<td>Видимость</td>
+<td>Source / translation toggles; max visible translation lines</td>
+</tr>
+<tr>
+<td>TTL / lifecycle</td>
+<td><code>completed_block_ttl_ms</code>, source/translation TTL; держать source пока виден перевод</td>
+</tr>
+<tr>
+<td>Порядок строк</td>
+<td>Влияет на preview, OBS overlay и OBS CC <code>first_visible_line</code></td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
+Завершённый перевод виден, пока новая фраза ещё partial; замена — после final новой фразы.</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Стиль субтитров</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_style.png" alt="Стиль субтитров" width="820"><br>
+  <em><strong>Стиль</strong> — шрифты, цвета, эффекты, overrides по слотам</em>
+</p>
+
+<ul>
+<li>Built-in и custom presets.</li>
+<li>Base controls: font, size, weight, color, outline, shadow, background, alignment, spacing.</li>
+<li>Effects: <code>none</code>, <code>fade</code>, <code>subtle_pop</code>, <code>slide_up</code>, <code>zoom_in</code>, <code>blur_in</code>, <code>glow</code>.</li>
+<li>Per-slot overrides: <code>source</code>, <code>translation_1</code>…<code>translation_4</code>.</li>
+<li><strong>Единый payload</strong> для dashboard preview и OBS overlay — сохраняйте config/profile после правок.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Тема UI</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_UI_theme.png" alt="Тема UI" width="820"><br>
+  <em><strong>Тема UI</strong> — dark/light и accent palette</em>
+</p>
+
+<p>Влияет только на <strong>dashboard chrome</strong>. OBS overlay использует subtitle-style config, не тему UI.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>OBS</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_obs.png" alt="Вкладка OBS" width="820"><br>
+  <em><strong>OBS</strong> — URL overlay и Closed Captions</em>
+</p>
+
+<h3>Overlay URL</h3>
+<p>Копируется из вкладки <strong>OBS</strong> (<code>GET /api/obs/url</code>). Default: <code>http://127.0.0.1:8765/overlay</code>. При смене bind (LAN) обновите URL в OBS.</p>
+<h3>Closed Captions</h3>
+<ul>
+<li>WebSocket host/port/password (OBS v5).</li>
+<li>Output mode: source live/final, translation slots, first visible line.</li>
+<li>Timing: partial throttle, min delta, clear after ms, dedupe.</li>
+<li>Debug mirror — текстовый источник для отладки CC.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Замена слов</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_wordReplace.png" alt="Замена слов" width="820"><br>
+  <em><strong>Word Replace</strong> — find/replace до перевода и вывода</em>
+</p>
+
+<ul>
+<li>Правила применяются <strong>до</strong> перевода и вывода (<code>TranscriptController</code>).</li>
+<li>Built-in списки + <strong>корни</strong> (en/ru) и нормализация обходов (leet, разделители, повтор букв).</li>
+<li>Case-insensitive / whole words (CJK — substring, без <code>\b</code>).</li>
+<li>Twitch chat TTS использует свой флаг <code>include_builtin_profanity</code> (не кастомные пары dashboard).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>TTS-модуль</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_1.png" alt="Модуль TTS" width="820"><br>
+  <em><strong>TTS</strong> — озвучка субтитров и playback</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch.png" alt="Twitch TTS" width="820"><br>
+  <em><strong>Twitch TTS</strong> — до пяти каналов, OAuth, маршрутизация chat audio</em>
+</p>
+
+<p>Открытие: <strong>Модули</strong> или Tauri IPC <code>tts_open_window</code>. Конфиг: <code>user-data/modules/tts/config.toml</code>.</p>
+<h3>Speech</h3>
+<ul>
+<li>Провайдер, голос, rate/pitch/volume.</li>
+<li><strong>Громкость:</strong> 0–<strong>150%</strong> (native <code>amplify</code>); слайдер с подписью (<code>85%</code>, <code>150%</code>).</li>
+<li><strong>Воспроизведение:</strong> <strong>Native</strong> (cpal @ 1.0×) или <strong>Sonic</strong> (libsonic); отдельные WASAPI-устройства для speech и Twitch.</li>
+<li>Планировщик речи в Rust; sample test — <code>tts_speak_sample</code>; playback через in-process <code>PlaybackHub</code> (без HTMLAudio в браузере).</li>
+</ul>
+<details>
+<summary><strong>Twitch chat TTS</strong></summary>
+
+<ul>
+<li>OAuth через system browser; implicit grant + poll token.</li>
+<li><strong>До 5 каналов</strong> на одно подключение (логины без <code>#</code>); бейдж <code>IRC: connected #channel</code> или <code>3/5 каналов</code>.</li>
+<li>IRC chat → очередь озвучки; фильтры emotes/links/symbols/lang — <strong>без переподключения</strong>.</li>
+<li><strong>Auto-reconnect</strong> при обрыве IRC/TLS — backoff 1→30 s; OAuth/auth без retry; ручной Disconnect останавливает цикл.</li>
+<li><strong>«Не озвучивать символы»</strong> — comma-separated токены.</li>
+<li><strong>Advanced:</strong> override скорости/громкости; <code>@mentions</code> без <code>@</code>; <code>strip_links=false</code> оставляет URL.</li>
+<li>Цифры сохраняются при strip emoji/emote; невидимые filler chars удаляются до фильтров.</li>
+<li><strong>?</strong> у «Ник бота» — IRC-логин для <code>JOIN</code> (не ник зрителя).</li>
+</ul>
+</details>
+
+<h3>Python sidecar</h3>
+<p><code>bin/modules/tts/runtime/</code> — embedded fetcher для Google TTS proxy. Probe: <code>/api/tts/python/status</code>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Инструменты и данные</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tools%26data.png" alt="Tools and Data" width="820"><br>
+  <em><strong>Tools & Data</strong> — профили, диагностика, ZIP export</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Функция</th>
+<th>Детали</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Runtime diagnostics</td>
+<td>Phase, worker, translation queue, OBS CC, metrics</td>
+</tr>
+<tr>
+<td>Логи</td>
+<td><code>logs/core.log</code>, <code>runtime-events.log</code>, <code>session-latest.jsonl</code></td>
+</tr>
+<tr>
+<td>Профили</td>
+<td>CRUD → <code>user-data/profiles/{name}.toml</code></td>
+</tr>
+<tr>
+<td>Export diagnostics</td>
+<td>ZIP (redacted config + logs) через <code>GET /api/exports/diagnostics</code></td>
+</tr>
+</tbody></table>
+<details>
+<summary><strong>Глубокая диагностика (env)</strong></summary>
+
+<ul>
+<li><code>VOICESUB_DEEP_DIAGNOSTICS=1</code> или <code>logging.full_enabled</code> в config.</li>
+<li>Per-channel: <code>VOICESUB_TRACE_SUBTITLE</code>, <code>_BROWSER</code>, <code>_WS</code>, <code>_TTS</code>, …</li>
+</ul>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Настройки</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings.png" alt="Settings" width="820"><br>
+  <em><strong>Settings</strong> — язык, layout, Web Speech advanced</em>
+</p>
+
+<h3>Язык интерфейса (EN / RU / JA / KO / ZH)</h3>
+<p>Сохраняется в <code>ui.language</code> → Save config. Worker получает <code>locale</code> при launch. Overlay i18n: <code>npm run i18n:bundle</code>. Подробно: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md">Архитектура §24</a>.</p>
+<h3>Layout</h3>
+<p><code>standard</code> vs <code>compact</code> — размер окна Tauri.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Справка</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_more.png" alt="More" width="820"><br>
+  <em><strong>More</strong> — Theme, Word Replace, Settings, Tools & Data, Help</em>
+</p>
+
+<p>Темы: обзор, распознавание, перевод, субтитры/стиль, OBS, инструменты.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Приватность и local-first</h2>
+<ul>
+<li>Bind по умолчанию <code>127.0.0.1</code>; LAN только с <code>VOICESUB_ALLOW_LAN=1</code>.</li>
+<li>API keys и Twitch tokens — только на локальном диске.</li>
+<li>Diagnostics export — redacted secrets.</li>
+<li>Chrome worker — isolated profile, без sync.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Глоссарий</h2>
+<table>
+<thead>
+<tr>
+<th>Термин</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>partial</strong></td>
+<td>Черновой распознанный текст</td>
+</tr>
+<tr>
+<td><strong>final</strong></td>
+<td>Зафиксированная фраза</td>
+</tr>
+<tr>
+<td><strong>translation slot</strong></td>
+<td>Линия <code>translation_1</code>…<code>translation_4</code></td>
+</tr>
+<tr>
+<td><strong>overlay</strong></td>
+<td>Vanilla страница <code>/overlay</code> для OBS</td>
+</tr>
+<tr>
+<td><strong>browser worker</strong></td>
+<td>Окно Chrome с Web Speech</td>
+</tr>
+<tr>
+<td><strong>completed block</strong></td>
+<td>Финальный субтитр до следующей финализации</td>
+</tr>
+<tr>
+<td><strong>TTS module</strong></td>
+<td>Sidecar <code>/tts</code> + Rust service</td>
+</tr>
+<tr>
+<td><strong>Local ASR</strong></td>
+<td>Sidecar <code>/local-asr</code> + Parakeet ONNX (<code>local_parakeet</code>)</td>
+</tr>
+</tbody></table>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<hr>
+<p align="center">
+  <a href="index.html">README</a> ·
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Архитектура</a>
+</p>
 
 
           </article>
