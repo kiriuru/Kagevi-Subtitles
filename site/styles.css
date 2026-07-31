@@ -1179,6 +1179,11 @@ main,
   }
 }
 
+@media (max-width: 380px) {
+  .brand-mark__sub {
+    display: none;
+  }
+
   .topbar__github {
     display: none;
   }
