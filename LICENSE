@@ -22,6 +22,25 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
+Trademarks
+
+The MIT License above grants copyright permissions in the Software only. It
+does not grant permission to use the trade names, trademarks, service marks,
+product names, logos, icons, or trade dress of the copyright holder, except
+for reasonable and customary use in describing the origin of the Software
+(for example, "derived from Kagevi Subtitles" or "compatible with Kagevi
+Subtitles") without implying endorsement, affiliation, or official status.
+
+"Kagevi", "Kagevi Subtitles", and the Kagevi Subtitles logos and icons are
+marks of Kiriuru (whether registered or unregistered). This notice states
+branding intent and does not itself create a registered trademark.
+
+Forks, redistributions, and derivative works that are not the official
+Kagevi Subtitles project must use different branding that is unlikely to
+cause confusion with the official project or its distributor.
+
+--------------------------------------------------------------------------------
+
 Third-party components
 
 Kagevi Subtitles may download or bundle third-party software and model weights

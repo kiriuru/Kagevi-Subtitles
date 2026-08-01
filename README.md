@@ -260,6 +260,8 @@ Full reference: [Technical Architecture](./docs/TECHNICAL_ARCHITECTURE.en.md).
 
 ## License
 
-[MIT](./LICENSE) © 2026 Kiriuru
+Copyright (c) 2026 Kiriuru. Source code is licensed under the [MIT License](./LICENSE).
+
+**Trademarks:** “Kagevi”, “Kagevi Subtitles”, and the project logos/icons are marks of Kiriuru. The MIT License covers the copyrighted software only — it does **not** grant rights to those names or branding. Forks and redistributions that are not the official project must use different branding. See the Trademarks section in [LICENSE](./LICENSE).
 
 Third-party model weights and runtimes (NVIDIA Parakeet under **CC-BY-4.0**, ONNX Runtime, Silero VAD, Sonic/libsonic, and others) keep their own licenses — see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).

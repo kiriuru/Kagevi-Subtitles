@@ -97,8 +97,10 @@ Tauri dev: embedded HTTP on `http://127.0.0.1:8765`; main webview opens the dash
 
 | Channel | Purpose |
 | --- | --- |
-| `/ws/events` | Dashboard, overlay, runtime/subtitle events |
+| `/ws/events` | OBS overlay (+ optional external / legacy `src/lib/ws.ts`); live `overlay_update` + runtime events |
 | `/ws/asr_worker` | Browser Speech worker transport |
+
+Production Tauri dashboard and module windows use in-process `runtime-event` IPC (`src/lib/runtime-events.ts`), not `/ws/events`.
 
 ### Key files
 
@@ -117,7 +119,7 @@ Tauri dev: embedded HTTP on `http://127.0.0.1:8765`; main webview opens the dash
 **Kagevi Subtitles** is a local Windows-first desktop app for real-time subtitles:
 
 - speech capture via **Browser Speech worker** (separate Chrome window with visible address bar, Web Speech API) **or** optional **Local ASR** (Parakeet ONNX, in-process mic);
-- optional translation to 0..5 target languages with independent provider per slot;
+- optional translation to **0..4 lines** (`translation_1`…`translation_4`) with independent provider per slot;
 - unified subtitle payload routing to Svelte dashboard, vanilla OBS overlay, and OBS Closed Captions;
 - optional **TTS module** (subtitle speech, Twitch chat TTS);
 - optional **Local ASR module** (`/local-asr`, mode `local_parakeet` when `local_module.ready`);
@@ -185,19 +187,18 @@ flowchart LR
   end
 
   TA <-->|Tauri IPC| RT
-  TA --> DASH
+  TA -->|runtime-event| DASH
   CHR -->|/ws/asr_worker| HTTP
   RT --> CHR
   RT --> LASR
   LASR -->|IngestedAsrUpdate| SUB
-  HTTP -->|/ws/events| DASH
   HTTP -->|/ws/events| OVL
   RT --> SUB --> TR
   SUB --> OBS
   RT --> TTS
 ```
 
-**Hot path (browser):** `external_asr_update` (WS) → transcript controller → subtitle lifecycle → translation dispatcher → `overlay_update` (WS live) → dashboard + OBS overlay. **Hot path (local ASR):** mic → VAD/decode → `PartialEmitCoordinator` → same ingest as browser. `subtitle_payload_update` is **Tauri IPC snapshot only** (not live on `/ws/events`; WS connect replay = `runtime_update` + `overlay_update`).
+**Hot path (browser):** `external_asr_update` (WS) → transcript controller → subtitle lifecycle → translation dispatcher → `overlay_update` (WS live + Tauri `runtime-event`) → OBS overlay + dashboard. **Hot path (local ASR):** mic → VAD/decode → `PartialEmitCoordinator` (`should_emit`) → same ingest as browser. `subtitle_payload_update` is **Tauri IPC snapshot only** (not live on `/ws/events`). WS connect replay = `runtime_update` + `overlay_update` + `ui_config_sync`. Partial `transcript_update` is coalesced (default 90 ms); subtitle lifecycle and `overlay_update` still see every partial.
 
 ## 4. Repository Layout
 
@@ -280,11 +281,11 @@ src-tauri (Layer 4: IPC, window, bundle only)
 | `voicesub-logging` | `tracing` backbone, rotation, session JSONL, deep trace flags |
 | `voicesub-export` | Diagnostics ZIP, config redaction |
 | `voicesub-obs` | OBS WebSocket closed captions client |
-| `voicesub-audio` | WinAPI audio routing helpers (TTS) |
+| `voicesub-audio` | WASAPI device enum, native/Sonic `PlaybackHub`, legacy WinAPI per-process routing (TTS) |
 | `voicesub-tts` | TTS service, queue, Twitch IRC, OAuth bridge |
 | `voicesub-twitch` | Twitch IRC (up to 5 channels), emotes, link/symbol filters, Lingua lang detect, `apply_settings` hot-apply |
 | `voicesub-asr-local` | Local ASR module: deps, model, Parakeet ONNX, VAD/pipeline, test bench, status |
-| `voicesub-partial-emit` | Shared partial emit policy (`word_growth`, coalesce) for Local ASR |
+| `voicesub-partial-emit` | Shared partial emit policy (`word_growth` / `char_delta`, coalesce) — **applied on Local ASR path**; browser Web Speech does not run `should_emit` |
 | `voicesub-runtime` | `RuntimeService`, HTTP router, transcript controller, session wiring |
 
 **Rule:** business logic does not live in `src-tauri/`; Tauri is IPC + lifecycle hooks only.
@@ -333,17 +334,18 @@ Embedded HTTP server: dedicated Tokio runtime in Tauri process; bind from `AppCo
 | --- | --- |
 | `config_version` | Schema version (migrate on load) |
 | `profile` | Active profile name |
-| `ui` | `language`, `layout`, `theme`, `palette`, `show_translation_results` |
+| `ui` | `language`, `layout`, `theme`, `palette`, `font_family`, `show_translation_results` |
 | `source_lang` | ASR source (`auto` default) |
 | `targets` | Deprecated; normalized into `translation.lines` on load |
-| `asr` | `mode` + `browser` tuning |
+| `asr` | `mode` + `browser` tuning (+ legacy `realtime` keys for normalize/diagnostics; see §12) |
 | `overlay` | `preset`, `compact` |
 | `obs_closed_captions` | OBS WebSocket CC settings |
-| `translation` | Provider, lines (up to 4), cache, limits, `provider_settings` |
+| `translation` | Provider, lines (up to 4), cache, limits, `live_partial`, `provider_settings` |
 | `subtitle_output` | Source/translation display order |
 | `subtitle_lifecycle` | TTL, sync flags; deprecated timing keys normalized only |
 | `source_text_replacement` | Find/replace for ASR text (custom pairs + builtin stems/obfuscation normalize; applied in `TranscriptController` before subtitle/translation) |
 | `logging` | `full_enabled` — master switch for deep diagnostics |
+| `updates` | GitHub Releases check (`enabled`, `github_repo`, `check_interval_hours`, `latest_known_version`, …) |
 
 ### ASR mode (Kagevi Subtitles 0.6.0)
 
@@ -373,7 +375,7 @@ Any other unrecognized provider name falls back to the caller's default provider
 **Default bind:** `127.0.0.1:8765` (`voicesub-config::paths`)  
 **LAN:** `VOICESUB_ALLOW_LAN=1` → bind `0.0.0.0`
 
-**LAN security (OWASP ASVS V7):** with `VOICESUB_ALLOW_LAN=1`, HTTP `/api/*` still requires the per-session `x-kagevi-subtitles-token` (legacy `x-voicesub-token` accepted), but **WebSocket endpoints remain unauthenticated** — any host on the same network can connect to `/ws/events` (read subtitles/runtime) and `/ws/asr_worker` (send ASR/control). Use LAN bind only on trusted networks; for production streaming prefer default `127.0.0.1` + OBS Browser Source on localhost.
+**LAN security (OWASP ASVS V7):** with `VOICESUB_ALLOW_LAN=1`, HTTP `/api/*` still requires the per-session `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`), but **WebSocket endpoints remain unauthenticated** — any host on the same network can connect to `/ws/events` (read subtitles/runtime) and `/ws/asr_worker` (send ASR/control). Use LAN bind only on trusted networks; for production streaming prefer default `127.0.0.1` + OBS Browser Source on localhost.
 
 Global middleware: CSP header, `Cache-Control: no-store`.
 
@@ -385,7 +387,7 @@ Global middleware: CSP header, `Cache-Control: no-store`.
 | GET | `/api/health` | loopback token | Liveness + WS connections + worker connected |
 | GET | `/api/version` | loopback token | Product metadata + `sync` (updates config, `update_available`, `latest_known_version`) |
 
-**Loopback API auth:** trusted UI pages (dashboard, worker, TTS) receive a per-session token via HTML injection (`window.__KAGEVI_SUBTITLES_API_TOKEN__`, legacy `__VOICESUB_API_TOKEN__`); clients send `x-kagevi-subtitles-token` (legacy `x-voicesub-token` accepted). Tauri IPC `get_loopback_api_token`. OBS overlay does **not** call protected `/api/*` (only `/live` + WebSocket).
+**Loopback API auth:** trusted UI pages (`/`, `/google-asr`, `/tts`, `/local-asr`) receive a per-session token via HTML injection (`window.__KAGEVI_SUBTITLES_API_TOKEN__`, also `__KAGEVI_VOICE_API_TOKEN__` and legacy `__VOICESUB_API_TOKEN__`); clients send `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`). Tauri IPC `get_loopback_api_token`. OBS overlay does **not** call protected `/api/*` (only `/live` + WebSocket).
 
 ### Devices / OpenAI helpers
 
@@ -479,26 +481,26 @@ Protected like other `/api/*`. Full table in [§18 Local ASR Module](#18-local-a
 
 - Client receive-only (inbound text ignored)
 - On connect: `hello` (`type: "hello"`, `message: "connected"`)
-- Replay last: `runtime_update`, `overlay_update`
+- Replay last: `runtime_update`, `overlay_update`, `ui_config_sync`
 - Bounded per-socket queue (default 128), dedupe by `type`
 
 **Envelope:** `{ "type": "<channel>", "payload": {…} }`  
 Payload enrichment: `event_sequence`, `created_at_ms`, `event_type` (`WsEventPublisher`).
 
-| `type` | Purpose |
-| --- | --- |
-| `hello` | Handshake |
-| `runtime_update` | Phase, ASR/worker state, metrics |
-| `preflight_update` | `{ running: bool }` during start/stop |
-| `diagnostics_update` | ASR diagnostics snapshot |
-| `model_status_update` | Model/ASR readiness |
-| `transcript_update` | ASR partial/final events (единственный live ASR channel с 0.5.4) |
-| `subtitle_payload_update` | Subtitle presentation (**Tauri IPC snapshot only** — not published on `/ws/events`; live + WS replay use `overlay_update`) |
-| `overlay_update` | Overlay render body (live + **replay on connect**) |
-| `translation_update` | Per-sequence translation results |
-| `twitch_chat_message` | Twitch chat for TTS |
-| `twitch_connection_update` | Twitch connection state |
-| `ui_config_sync` | `{ ui: … }` theme/locale/`font_family` sync (Tauri IPC + optional WS when published via `/api/ui/sync`) |
+| `type` | Transport | Purpose |
+| --- | --- | --- |
+| `hello` | WS | Handshake |
+| `runtime_update` | WS + EventBus | Phase, ASR/worker state, metrics |
+| `preflight_update` | WS + EventBus | `{ running: bool }` during start/stop |
+| `diagnostics_update` | WS + EventBus | ASR diagnostics snapshot |
+| `model_status_update` | WS + EventBus | Model/ASR readiness |
+| `transcript_update` | WS + EventBus | ASR partial/final events (sole live ASR text channel since 0.5.4; partials coalesced) |
+| `overlay_update` | WS + EventBus | Overlay render body (live + **replay on connect**) |
+| `translation_update` | WS + EventBus | Per-sequence translation results |
+| `twitch_connection_update` | WS + EventBus | Twitch connection state (also snapshot replay) |
+| `ui_config_sync` | WS + EventBus | `{ ui: … }` theme/locale/`font_family` (via `/api/ui/sync`; **replay on connect**) |
+| `subtitle_payload_update` | **EventBus / Tauri snapshot only** | Subtitle presentation — **not** published on `/ws/events`; live + WS replay use `overlay_update` |
+| `twitch_chat_message` | **EventBus only** | Twitch chat for TTS — `publish_event_bus_only` (no `/ws/events` fanout) |
 
 **Stale guard:** overlay (`overlay.js` + `ws-stale-guard-logic.js`) drops stale events after stop/start (timestamp-first on sequence reset).
 
@@ -579,14 +581,15 @@ Webview ACL: `get_loopback_api_token` + `open_external_https_url` only. Window o
 | File | Role |
 | --- | --- |
 | `lib.rs` | Tauri setup, HTTP runtime bootstrap, IPC registration, EventBus pump |
-| `event_routing.rs` | Per-window `runtime-event` routing + lagged snapshot resync |
+| `shell.rs` | Allowlisted `open_external_https_url` / `open_local_http_url` |
+| `event_routing.rs` | Per-window `runtime-event` type filters + snapshot replay envelopes |
+| `ipc_pump.rs` | Bus→IPC pump: overlay coalescing (dashboard only), lag-resync debounce |
 | `webview_memory.rs` | WebView2 suspend/memory policy (`WebviewMemoryManager`) |
 | `dashboard_nav.rs` | Main webview URL helpers |
 | `webview2_gate.rs` | WebView2 runtime presence check before window create |
 | `tts.rs` | TTS IPC adapter → `voicesub-tts` |
 | `local_asr.rs` | Local ASR window open/focus only |
-| `event_routing.rs` | Per-window `runtime-event` type filters + snapshot replay envelopes |
-| `ipc_pump.rs` | Bus→IPC pump: overlay coalescing (dashboard only), lag-resync debounce |
+| `acl_matrix.rs` | Capability ACL matrix tests |
 
 **Tauri events (shell clients):** `runtime-event` (WS-shaped envelopes), `tts-speech-activity` / `playback-finished` — **`emit_to(tts)` only** (not global `emit`).
 
@@ -724,7 +727,7 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 | Restart & recovery | `asr.browser.*_restart_delay_ms`, `minimum_reconnect_interval_ms`, `stuck_stopping_timeout_ms` | Worker session manager |
 | Network reconnect | `asr.browser.network_reconnect_*` | Worker backoff |
 | Session rotation | `asr.browser.max_browser_session_age_ms`, `prepare_cycle_before_ms` | Worker session cycle |
-| Partial filtering | `asr.realtime.partial_min_delta_chars`, `partial_coalescing_ms` | Rust `partial_emit.rs` |
+| Partial filtering (UI) | `asr.realtime.partial_min_delta_chars`, `partial_coalescing_ms` | Stored + shown in browser ASR **diagnostics**; **not** applied on browser ingest (`browser_event_builder` skips `should_emit`). Live Local ASR uses module `realtime` in `user-data/modules/local-asr/config.toml` via `voicesub-partial-emit` |
 
 **Canonical defaults** (single source `src/lib/webspeech-advanced-defaults.ts`, mirrored in `defaults.rs`, `config-normalize.ts`, `worker-defaults.ts`):
 
@@ -868,7 +871,7 @@ Query param override: `?preset=…&compact=1&profile=…&debug=…`
 
 ### Shared renderer
 
-`bin/overlay/shared/js/subtitle-style.js` — fast/slow path invariants. Dashboard preview uses the same payload shape via WS (not necessarily the same JS file).
+`bin/overlay/shared/js/subtitle-style.js` — fast/slow path invariants. Dashboard preview uses the same payload **shape** via Tauri `runtime-event` / snapshot (not `/ws/events` in the production shell; not necessarily the same JS file).
 
 ### OBS overlay URL (Kagevi Subtitles 0.5.0)
 
@@ -895,7 +898,7 @@ Without cleanup the last subtitle frame can stick in OBS. Contract: `crates/voic
 **Config:** `obs_closed_captions` in config
 
 - OBS WebSocket v5 client (`host`, `port`, `password`)
-- `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1..5` | `first_visible_line`
+- `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1`…`translation_4` | `first_visible_line`
 - `debug_mirror` — optional OBS Text Source mirror (`SetInputSettings`)
 - `timing` — partial throttle, final replace delay, clear after ms, dedup
 - Two inputs: ASR **source events** (`source_live` / `source_final_only`) and **subtitle payload** (`translation_*`, `first_visible_line`, debug mirror)
@@ -1049,7 +1052,7 @@ When `asr.mode = local_parakeet`:
 
 Stop tears down the local pipeline (and browser path when that mode is active).
 
-### HTTP API (`x-kagevi-subtitles-token` / legacy `x-voicesub-token`)
+### HTTP API (`x-kagevi-subtitles-token` / also `x-kagevi-voice-token` / legacy `x-voicesub-token`)
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -1153,10 +1156,12 @@ Default `release_root`: `F:\AI\Kagevi Subtitles - release\v{version}\`
 | --- | --- |
 | `user-data/config.toml` | Main config |
 | `user-data/profiles/` | Named profiles |
+| `user-data/browser-worker.pid` | Last Chrome worker PID (orphan reap) |
 | `user-data/browser-worker-profile-classic-*/` | Chrome isolated profiles |
-| `user-data/modules/tts/` | TTS module config + runtime state |
-| `user-data/modules/local-asr/` | Local ASR config, models, ORT/CUDA runtime |
+| `user-data/modules/tts/` | TTS module config + runtime state (+ `webview2/`) |
+| `user-data/modules/local-asr/` | Local ASR config, models, ORT/CUDA runtime (+ `webview2-local-asr/`) |
 | `user-data/translation-cache/` | Persistent translation cache |
+| `user-data/exports/` | Diagnostics ZIP bundles (newest 12 kept) |
 | `logs/` | Runtime logs |
 | `bin/` | Shipped static (workspace or NSIS resources) |
 
@@ -1234,22 +1239,22 @@ Autostart: `?autostart=1` query param.
 
 **Locales:** `en`, `ru`, `ja`, `ko`, `zh`
 
-| Surface | Catalog location |
+| Surface | Catalog / source of truth |
 | --- | --- |
-| Dashboard | `src/lib/i18n/locales/{locale}.json` + `tts-{locale}.json` |
-| Overlay | `bin/overlay/shared/js/i18n/` |
-| Worker | via `locale` query param + worker i18n |
+| Dashboard / Local ASR / worker | **Edit** `scripts/voicesub-locale-overrides.mjs` (+ `scripts/local-asr-locale-supplement.mjs` for ja/ko/zh Local ASR). **Generated:** `src/lib/i18n/locales/{locale}.json` via `npm run i18n:export` |
+| TTS module | Edit `src/lib/i18n/locales/tts-{locale}.json` directly |
+| Overlay | **Edit** `scripts/i18n-source/locales/*.js` → `npm run i18n:bundle` → `bin/overlay/shared/js/i18n/` |
+| Worker locale | `locale` query param + worker i18n from dashboard catalogs |
 
-Merge: `src/lib/i18n/index.ts` — main + TTS catalogs per locale.  
-**Source of truth:** `scripts/i18n-source/locales/*.js` + `dynamic-locales.js`.  
-Export pipeline: `npm run i18n:export` → `scripts/export-i18n.mjs` → `src/lib/i18n/locales/*.json`.  
-Overlay bundle: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` → `scripts/i18n-source/locales-bundle.js` + `bin/overlay/shared/js/i18n/`.  
+Merge at runtime: `src/lib/i18n/index.ts` — main + TTS catalogs per locale.  
+Export: `npm run i18n:export` → `scripts/export-i18n.mjs` (SST `scripts/i18n-source/locales/*.js` + extras, then **overrides win**).  
+Overlay bundle: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs`.  
 Config key: `ui.language` (empty = browser default).
 
 ## 25. Versioning and Update Checks
 
 - **Single source of truth:** `voicesub-types::PROJECT_VERSION` and `DEFAULT_GITHUB_REPO` (`kiriuru/Kagevi-Subtitles`) in `crates/voicesub-types/src/version.rs`
-- Bump / rename only there, then `npm run version:sync` (also runs from `npm run build`) — updates workspace `Cargo.toml` `[workspace.package].version`, `package.json` / `package-lock.json`, `src-tauri/tauri.conf.json`, generated `src/lib/project-version.ts`, and `src/lib/brand.ts` `GITHUB_REPO`
+- Bump / rename only there, then `npm run version:sync` (also runs from `npm run build`) — updates workspace `Cargo.toml` `[workspace.package].version`, `package.json` / `package-lock.json`, `src-tauri/tauri.conf.json`, generated `src/lib/project-version.ts`, `src/lib/brand.ts` `GITHUB_REPO`, and `site/main.js`
 - Drift guards: `npm run version:check`; Rust test `project_version_matches_cargo_pkg` (`PROJECT_VERSION` == `CARGO_PKG_VERSION`)
 - `GET /api/version`, `POST /api/updates/check` — GitHub Releases poll (`update_service.rs`, `voicesub-types::version`); helpers `github_repo_url` / `release_url_for`
 - Config `updates.github_repo` — defaults to `DEFAULT_GITHUB_REPO`; `normalize_updates_config` migrates legacy `kiriuru/VoiceSub` and `kiriuru/stream_sub_translator`
@@ -1298,19 +1303,20 @@ Config key: `ui.language` (empty = browser default).
 
 ## 28. Known Limitations & Technical Debt
 
-### 27.1 Current limitations
+### 28.1 Current limitations
 
 - GitHub update **check + dashboard banner** implemented; installer auto-download not implemented (opens release page in system browser)
 - `POST /api/openai/models` — live OpenAI-compatible model list; official OpenAI host filters to chat models
 - Browser ASR: audio input enumeration empty in core devices API (mic lives in Chrome). Local ASR enumerates mics via `GET /api/asr/local/mics/list` (cpal).
 
-### 27.2 Technical debt
+### 28.2 Technical debt
 
 - _(none tracked)_
 
 ## 29. Security & Privacy Model
 
 - **Bind policy:** localhost default; LAN only via explicit `VOICESUB_ALLOW_LAN=1`
+- **Loopback API auth:** `/api/*` requires per-session `x-kagevi-subtitles-token` (also `x-kagevi-voice-token`, legacy `x-voicesub-token`); WS endpoints unauthenticated by design
 - **CSP** on all HTTP responses (restrictive `default-src 'self'`)
 - **Diagnostics export:** config redaction before ZIP
 - **No telemetry** to vendor servers by default

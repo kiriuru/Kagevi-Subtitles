@@ -260,6 +260,8 @@ Tauri `beforeBuildCommand`: `npm run build`. В bundle: `bin/dashboard`, `overla
 
 ## License
 
-[MIT](./LICENSE) © 2026 Kiriuru
+Copyright (c) 2026 Kiriuru. Исходный код лицензирован по [MIT License](./LICENSE).
+
+**Товарные знаки / бренд:** «Kagevi», «Kagevi Subtitles» и логотипы/иконки проекта — обозначения Kiriuru. MIT покрывает только авторские права на ПО и **не** даёт права на эти имена и брендинг. Форки и распространения, которые не являются официальным проектом, должны использовать другое оформление. См. раздел Trademarks в [LICENSE](./LICENSE).
 
 Сторонние модели и рантаймы (NVIDIA Parakeet — **CC-BY-4.0**, ONNX Runtime, Silero VAD, Sonic/libsonic и др.) остаются под своими лицензиями — см. [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
