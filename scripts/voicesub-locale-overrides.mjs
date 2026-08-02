@@ -361,7 +361,7 @@ export const voicesubNewKeysEn = {
   "style.preset.desc.clean_default":
     "Broadcast baseline: Inter + Noto Sans (Cyrillic) with Zen Maru / ZCOOL XiaoWei / Jua for JP·CN·KR — crisp white, light outline, OBS-safe transparent plate.",
   "style.preset.desc.streamer_bold":
-    "Gaming HUD: Oswald cyan with a restrained magenta halo; Montserrat covers Cyrillic, RocknRoll / ZCOOL / Black Han Sans cover JP·CN·KR.",
+    "Gaming neon HUD: Beon neon-stencil primary with Unbounded for Cyrillic — cyan fill, magenta bloom, no plate.",
   "style.preset.desc.dual_tone":
     "Slot-colored captions: Lato/Noto body with high-contrast fills per language so source and translations separate at a glance.",
   "style.preset.desc.compact_overlay":
@@ -398,6 +398,22 @@ export const voicesubNewKeysEn = {
     "Competitive HUD: Exo 2 / Oswald white with a thin cyan outline — sharp, no heavy neon bloom.",
   "style.preset.desc.dual_caption_modern":
     "Calm dual-language plate: warm gold source + soft sky translation on a shared dark bar for bilingual streams.",
+  "style.preset.desc.titan_gothic":
+    "Anime title energy: Dela Gothic One (Latin/Cyrillic/JP) with a light crimson outline and ivory fill — Attack-on-Titan adjacent impact captions.",
+  "style.preset.desc.dirt_grunge":
+    "Weathered Rubik Dirt texture with Cyrillic coverage — dusty parchment fill and light outline so the dirt grain stays readable (no plate).",
+  "style.preset.desc.spray_street":
+    "Street captions with Rubik Distressed (Cyrillic-readable graffiti energy) — acid yellow fill, slim outline, hard offset shadow.",
+  "style.preset.desc.glitch_neon":
+    "Rubik Glitch + Unbounded cyber captions — soft magenta fill with restrained cyan bloom (no plate) so glitch texture stays readable.",
+  "style.preset.desc.pixel_arcade":
+    "8-bit HUD: Press Start 2P primary (Latin+Cyrillic share one face/size), Pixel Operator + DotGothic16 fallbacks — phosphor green on CRT black.",
+  "style.preset.desc.brush_ink":
+    "Calligraphy ink: Yomogi / Zen Kurenaido (JP+Cyrillic) with Nanum Brush and Liu Jian Mao Cao — dark sumi on warm washi plate.",
+  "style.preset.desc.military_stencil":
+    "Field ops stencil: Black Ops One + Stardos Stencil with Russo One for Cyrillic — olive drab plate, left-aligned lower-third.",
+  "style.preset.desc.metal_horror":
+    "Horror captions: Rubik Wet Paint (Latin+Cyrillic dripping face) — blood-red fill, slim outline for Halloween and dark fantasy.",
   "updates.banner.message": "Kagevi Subtitles {latest} is available — you are on {current}.",
   "updates.banner.close": "Close",
   "updates.banner.download": "Download",
@@ -1041,7 +1057,7 @@ const voicesubExtrasLocalized = {
     "style.preset.desc.clean_default":
       "Эфирный базовый стиль: Inter + Noto Sans (кириллица) и Zen Maru / ZCOOL XiaoWei / Jua для JP·CN·KR — белый текст, лёгкая обводка, прозрачный фон для OBS.",
     "style.preset.desc.streamer_bold":
-      "Игровой HUD: Oswald cyan с умеренным magenta-glow; Montserrat — кириллица, RocknRoll / ZCOOL / Black Han Sans — JP·CN·KR.",
+      "Игровой neon HUD: Beon (neon-stencil) + Unbounded для кириллицы — cyan-заливка, magenta-bloom, без плашки.",
     "style.preset.desc.dual_tone":
       "Цвет по слотам: Lato/Noto и контрастные заливки, чтобы исходник и переводы читались сразу.",
     "style.preset.desc.compact_overlay":
@@ -1078,6 +1094,22 @@ const voicesubExtrasLocalized = {
       "Competitive HUD: Exo 2 / Oswald белым с тонкой cyan-обводкой без тяжёлого неона.",
     "style.preset.desc.dual_caption_modern":
       "Спокойный bilingual-бар: золотой source и sky translation на общей тёмной плашке.",
+    "style.preset.desc.titan_gothic":
+      "Энергия anime-тайтла: Dela Gothic One (латиница/кириллица/JP) со светлой алой обводкой и ivory-заливкой — ударные captions в духе Attack on Titan.",
+    "style.preset.desc.dirt_grunge":
+      "Выветренная текстура Rubik Dirt с кириллицей — пыльный parchment-fill и лёгкая обводка, чтобы зерно грязи оставалось читаемым (без плашки).",
+    "style.preset.desc.spray_street":
+      "Уличные captions на Rubik Distressed (читаемая «граффити»-энергия с кириллицей) — кислотно-жёлтая заливка, тонкая обводка, жёсткая offset-тень.",
+    "style.preset.desc.glitch_neon":
+      "Кибер-captions: Rubik Glitch + Unbounded — мягкая magenta-заливка и сдержанный cyan-bloom (без плашки), чтобы glitch-текстура оставалась читаемой.",
+    "style.preset.desc.pixel_arcade":
+      "8-bit HUD: Press Start 2P как primary (латиница и кириллица одним лицом/размером), Pixel Operator и DotGothic16 в запас — фосфорный зелёный на CRT-чёрном.",
+    "style.preset.desc.brush_ink":
+      "Каллиграфические чернила: Yomogi / Zen Kurenaido (JP+кириллица) с Nanum Brush и Liu Jian Mao Cao — тёмный sumi на тёплой washi-плашке.",
+    "style.preset.desc.military_stencil":
+      "Полевой трафарет: Black Ops One + Stardos Stencil и Russo One для кириллицы — оливковая плашка, lower-third слева.",
+    "style.preset.desc.metal_horror":
+      "Horror-captions: Rubik Wet Paint (латиница+кириллица, «капающий» гротеск) — кроваво-красная заливка и тонкая обводка для Halloween и dark fantasy.",
     "settings.fonts.summary":
       "Проект: {project} · Система: {system} · Запасные: {fallback} · Всего: {total}",
     "style.ui_theme.font": "Шрифт UI",
@@ -1460,7 +1492,7 @@ const voicesubExtrasLocalized = {
     "style.preset.desc.clean_default":
       "配信の基本スタイル: Inter + Noto Sans、白い文字、細い縁取りと柔らかい影 — OBS 向けの透明プレート。",
     "style.preset.desc.streamer_bold":
-      "ゲーム HUD: Oswald のシアンに控えめなマゼンタのハロー。キリルは Montserrat でネオン感を保ちます。",
+      "ゲーム向けネオン HUD: Beon（ネオンステンシル）、キリルは Unbounded — シアン塗りとマゼンタブルーム、プレートなし。",
     "style.preset.desc.dual_tone":
       "スロット色分け: Lato/Noto 本体と高コントラストの塗り分けで原文と翻訳が一目で区別できます。",
     "style.preset.desc.compact_overlay":
@@ -1497,6 +1529,22 @@ const voicesubExtrasLocalized = {
       "競技 HUD: Exo 2 / Oswald の白に細いシアン縁取り — シャープで重いネオンなし。",
     "style.preset.desc.dual_caption_modern":
       "落ち着いた二言語バー: 暖かいゴールドの原文とソフトなスカイの翻訳を共有の暗い帯に。",
+    "style.preset.desc.titan_gothic":
+      "アニメタイトルの迫力: Dela Gothic One（ラテン/キリル/日本語）に薄いクリムゾン縁とアイボリー塗り — Attack on Titan 系のインパクト字幕。",
+    "style.preset.desc.dirt_grunge":
+      "風化した Rubik Dirt テクスチャ（キリル対応）— ほこりっぽいパーチメント塗りと細い縁取りで、汚れの粒が読める（プレートなし）。",
+    "style.preset.desc.spray_street":
+      "Rubik Distressed のストリート字幕（キリルも読めるグラフィティ感）— アシッドイエロー塗り、細い縁、硬いオフセット影。",
+    "style.preset.desc.glitch_neon":
+      "Rubik Glitch + Unbounded のサイバー字幕 — 柔らかいマゼンタ塗りと控えめなシアンブルーム（プレートなし）でグリッチ質感を残しつつ読める。",
+    "style.preset.desc.pixel_arcade":
+      "8-bit HUD: Press Start 2P を主書体（ラテンとキリルが同一サイズ）、Pixel Operator / DotGothic16 フォールバック — CRT 黒地に蛍光緑。",
+    "style.preset.desc.brush_ink":
+      "墨のカリグラフィー: Yomogi / Zen Kurenaido（日本語+キリル）に Nanum Brush と Liu Jian Mao Cao — 暖かい和紙プレートに濃い墨。",
+    "style.preset.desc.military_stencil":
+      "戦場ステンシル: Black Ops One + Stardos Stencil、キリルは Russo One — オリーブドラブのプレート、左寄せロワーサード。",
+    "style.preset.desc.metal_horror":
+      "ホラー字幕: Rubik Wet Paint（ラテン+キリルの滴る書体）— 血のような赤塗りと細い縁取り。Halloween / ダークファンタジー向け。",
     "settings.fonts.summary":
       "プロジェクト: {project} · システム: {system} · フォールバック: {fallback} · 合計: {total}",
     "style.ui_theme.font": "UIフォント",
@@ -1878,7 +1926,7 @@ const voicesubExtrasLocalized = {
     "style.preset.desc.clean_default":
       "방송 기본 스타일: Inter + Noto Sans, 또렷한 흰색, 얇은 외곽선과 부드러운 그림자 — OBS용 투명 플레이트.",
     "style.preset.desc.streamer_bold":
-      "게임 HUD: Oswald 시안에 절제된 마젠타 후광. 키릴은 Montserrat로 네온감을 유지합니다.",
+      "게임 네온 HUD: Beon(네온 스텐실), 키릴은 Unbounded — 시안 채움과 마젠타 블룸, 플레이트 없음.",
     "style.preset.desc.dual_tone":
       "슬롯 색 구분: Lato/Noto 본문과 고대비 채우기로 원문과 번역이 한눈에 구분됩니다.",
     "style.preset.desc.compact_overlay":
@@ -1915,6 +1963,22 @@ const voicesubExtrasLocalized = {
       "경쟁 HUD: Exo 2 / Oswald 흰색에 얇은 시안 외곽선 — 날카롭고 무거운 네온 없음.",
     "style.preset.desc.dual_caption_modern":
       "차분한 이중 언어 바: 따뜻한 골드 원문과 소프트 스카이 번역을 공유 어두운 띠에.",
+    "style.preset.desc.titan_gothic":
+      "애니 타이틀 임팩트: Dela Gothic One(라틴/키릴/일본어)에 얇은 크림슨 외곽선과 아이보리 채움 — Attack on Titan 느낌의 강렬한 자막.",
+    "style.preset.desc.dirt_grunge":
+      "풍화된 Rubik Dirt 텍스처(키릴 지원) — 먼지 낀 양피지 채움과 얇은 외곽선으로 흙 알갱이가 읽히도록(플레이트 없음).",
+    "style.preset.desc.spray_street":
+      "Rubik Distressed 스트리트 자막(키릴도 읽히는 그래피티 감) — 산성 노랑 채움, 얇은 외곽선, 딱딱한 오프셋 그림자.",
+    "style.preset.desc.glitch_neon":
+      "Rubik Glitch + Unbounded 사이버 자막 — 부드러운 마젠타 채움과 절제된 시안 블룸(플레이트 없음)으로 글리치 질감을 살리며 가독성 유지.",
+    "style.preset.desc.pixel_arcade":
+      "8비트 HUD: Press Start 2P 주서체(라틴·키릴 동일 크기), Pixel Operator / DotGothic16 대체 — CRT 검정 위 형광 초록.",
+    "style.preset.desc.brush_ink":
+      "서예 먹: Yomogi / Zen Kurenaido(일본어+키릴)에 Nanum Brush와 Liu Jian Mao Cao — 따뜻한 화지 플레이트 위 짙은 먹.",
+    "style.preset.desc.military_stencil":
+      "야전 스텐실: Black Ops One + Stardos Stencil, 키릴은 Russo One — 올리브드랩 플레이트, 왼쪽 로어 서드.",
+    "style.preset.desc.metal_horror":
+      "호러 자막: Rubik Wet Paint(라틴+키릴 흘러내리는 서체) — 핏빛 빨강 채움과 얇은 외곽선. 할로윈·다크 판타지용.",
     "settings.fonts.summary":
       "프로젝트: {project} · 시스템: {system} · 대체: {fallback} · 전체: {total}",
     "style.ui_theme.font": "UI 글꼴",
@@ -2291,7 +2355,7 @@ const voicesubExtrasLocalized = {
     "style.preset.desc.clean_default":
       "直播基础样式：Inter + Noto Sans，清晰白字、轻描边与柔和阴影 — 适合 OBS 的透明底板。",
     "style.preset.desc.streamer_bold":
-      "游戏 HUD：Oswald 青色配克制品红光晕；西里尔文由 Montserrat 承接，不失霓虹感。",
+      "游戏霓虹 HUD：Beon（霓虹镂空字），西里尔用 Unbounded — 青色填充与品红光晕，无底板。",
     "style.preset.desc.dual_tone":
       "按槽位着色：Lato/Noto 正文与高对比填充，原文与译文一眼可分。",
     "style.preset.desc.compact_overlay":
@@ -2328,6 +2392,22 @@ const voicesubExtrasLocalized = {
       "电竞 HUD：Exo 2 / Oswald 白字配细青描边 — 锐利、无厚重霓虹。",
     "style.preset.desc.dual_caption_modern":
       "平静双语条：暖金原文 + 柔和天蓝译文，共用一条深色底带。",
+    "style.preset.desc.titan_gothic":
+      "动漫标题冲击力：Dela Gothic One（拉丁/西里尔/日文）配浅红描边与象牙填充 — 接近进击的巨人风格的冲击字幕。",
+    "style.preset.desc.dirt_grunge":
+      "风化 Rubik Dirt 纹理（含西里尔）— 尘土色羊皮纸填充与细描边，保留脏污颗粒可读性（无底板）。",
+    "style.preset.desc.spray_street":
+      "Rubik Distressed 街头字幕（西里尔也可读的涂鸦感）— 酸黄填充、细描边、硬偏移阴影。",
+    "style.preset.desc.glitch_neon":
+      "Rubik Glitch + Unbounded 赛博字幕 — 柔和品红填充与克制青光晕（无底板），保留故障纹理且可读。",
+    "style.preset.desc.pixel_arcade":
+      "8-bit HUD：主字体 Press Start 2P（拉丁与西里尔同面同尺寸），Pixel Operator / DotGothic16 回退 — CRT 黑底荧光绿。",
+    "style.preset.desc.brush_ink":
+      "书法墨迹：Yomogi / Zen Kurenaido（日文+西里尔）配合 Nanum Brush 与 Liu Jian Mao Cao — 暖色和纸底板上的浓墨。",
+    "style.preset.desc.military_stencil":
+      "战场模板字：Black Ops One + Stardos Stencil，西里尔用 Russo One — 橄榄绿底板，左对齐下三分栏。",
+    "style.preset.desc.metal_horror":
+      "恐怖字幕：Rubik Wet Paint（拉丁+西里尔滴落字形）— 血红填充与细描边，适合万圣节与暗黑奇幻。",
     "settings.fonts.summary":
       "项目: {project} · 系统: {system} · 回退: {fallback} · 总计: {total}",
     "style.ui_theme.font": "界面字体",

@@ -433,6 +433,7 @@ fn migrate_unknown_preset_name(name: &str, catalog: &Value) -> String {
         "sakura_soft" => "meeting_soft",
         "minimal_mono" => "glass_frost",
         "editorial_news" => "dark_cinema",
+        "beat_saber" => "streamer_bold",
         _ => return "clean_default".to_string()
     };
     if obj.contains_key(migrated) {
@@ -791,7 +792,7 @@ mod tests {
             assert!(catalog.get(key).is_some(), "missing preset {key}");
             assert_eq!(catalog[key]["built_in"], true);
         }
-        for removed in ["sakura_soft", "minimal_mono", "editorial_news"] {
+        for removed in ["sakura_soft", "minimal_mono", "editorial_news", "beat_saber"] {
             assert!(
                 catalog.get(removed).is_none(),
                 "collapsed plate preset {removed} should be removed"
@@ -804,7 +805,8 @@ mod tests {
         for (legacy, target) in [
             ("sakura_soft", "meeting_soft"),
             ("minimal_mono", "glass_frost"),
-            ("editorial_news", "dark_cinema")
+            ("editorial_news", "dark_cinema"),
+            ("beat_saber", "streamer_bold"),
         ] {
             let effective = resolve_effective_subtitle_style(&json!({ "preset": legacy }));
             assert_eq!(effective["preset"], target, "legacy {legacy}");
@@ -899,7 +901,7 @@ mod tests {
             ("dual_tone", "Noto Sans"),
             ("vlog_pastel", "Noto Sans"),
             ("clean_default", "Noto Sans"),
-            ("streamer_bold", "Montserrat"),
+            ("streamer_bold", "Unbounded"),
             ("compact_overlay", "Noto Sans"),
             ("meeting_soft", "Noto Sans"),
             ("glass_frost", "Noto Sans"),
@@ -957,7 +959,6 @@ mod tests {
 
         // Bold / HUD presets: RocknRoll (JP) + ZCOOL (CN) + Black Han Sans (KR).
         for preset in [
-            "streamer_bold",
             "retro_terminal",
             "fallout_pipboy",
             "comic_burst",
@@ -980,6 +981,16 @@ mod tests {
                 );
             }
         }
+
+        // Streamer Neon: Beon + Unbounded with JP/CN/KR display fallbacks.
+        let streamer = catalog["streamer_bold"]["base"]["font_family"]
+            .as_str()
+            .unwrap_or("");
+        assert!(streamer.contains("Beon Regular"), "{streamer}");
+        assert!(streamer.contains("Unbounded Regular"), "{streamer}");
+        assert!(streamer.contains("Reggae One Regular"), "{streamer}");
+        assert!(streamer.contains("ZCOOL Kuai Le Regular"), "{streamer}");
+        assert!(streamer.contains("Gugi Regular"), "{streamer}");
 
         // Anime already ships Mochiy (JP); add CN/KR after Cyrillic comic faces.
         let anime = catalog["anime_stream"]["base"]["font_family"]
@@ -1218,6 +1229,7 @@ mod tests {
             ("brush_ink", "Yomogi"),
             ("military_stencil", "Black Ops One"),
             ("metal_horror", "Metal Mania"),
+            ("streamer_bold", "Beon"),
         ] {
             let family = catalog[preset]["base"]["font_family"]
                 .as_str()

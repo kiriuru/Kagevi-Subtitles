@@ -97,6 +97,8 @@ fn unicode_range_for_font_filename(filename: &str) -> Option<&'static str> {
         | "BlackOpsOne-Regular"
         | "Bungee-Regular"
         | "BungeeShade-Regular"
+        | "Audiowide-Regular"
+        | "Beon-Regular"
         | "CinzelDecorative-Bold"
         | "Creepster-Regular"
         | "GermaniaOne-Regular"
@@ -104,6 +106,8 @@ fn unicode_range_for_font_filename(filename: &str) -> Option<&'static str> {
         | "Lobster-Regular"
         | "LondrinaSketch-Regular"
         | "MetalMania-Regular"
+        | "Monoton-Regular"
+        | "Neonderthaw-Regular"
         | "Nosifer-Regular"
         | "Orbitron-Black"
         | "Orbitron-Regular"
@@ -118,6 +122,7 @@ fn unicode_range_for_font_filename(filename: &str) -> Option<&'static str> {
         | "ShareTechMono-Regular"
         | "SpecialElite-Regular"
         | "StardosStencil-Bold"
+        | "TiltNeon-Regular"
         | "VT323-Regular" => Some(UNICODE_RANGE_LATIN),
         // Japanese (+ Latin), no Cyrillic cmap.
         "Chokokutai-Regular"
@@ -164,6 +169,8 @@ fn scripts_for_font_filename(filename: &str) -> Vec<&'static str> {
         | "BlackOpsOne-Regular"
         | "Bungee-Regular"
         | "BungeeShade-Regular"
+        | "Audiowide-Regular"
+        | "Beon-Regular"
         | "CinzelDecorative-Bold"
         | "Creepster-Regular"
         | "GermaniaOne-Regular"
@@ -171,6 +178,8 @@ fn scripts_for_font_filename(filename: &str) -> Vec<&'static str> {
         | "Lobster-Regular"
         | "LondrinaSketch-Regular"
         | "MetalMania-Regular"
+        | "Monoton-Regular"
+        | "Neonderthaw-Regular"
         | "Nosifer-Regular"
         | "Orbitron-Black"
         | "Orbitron-Regular"
@@ -185,6 +194,7 @@ fn scripts_for_font_filename(filename: &str) -> Vec<&'static str> {
         | "ShareTechMono-Regular"
         | "SpecialElite-Regular"
         | "StardosStencil-Bold"
+        | "TiltNeon-Regular"
         | "VT323-Regular" => vec!["latin"],
         // Pixel arcade faces with Cyrillic cmap (Press Start 2P ships full RU glyphs).
         "PressStart2P-Regular" => vec!["latin", "cyrillic"],
@@ -534,6 +544,11 @@ mod tests {
     fn creative_latin_only_faces_get_unicode_range() {
         for name in [
             "PixelOperator.ttf",
+            "TiltNeon-Regular.ttf",
+            "Audiowide-Regular.ttf",
+            "Beon-Regular.ttf",
+            "Monoton-Regular.ttf",
+            "Neonderthaw-Regular.ttf",
             "Lobster-Regular.ttf",
             "Bungee-Regular.ttf",
             "MetalMania-Regular.ttf",
