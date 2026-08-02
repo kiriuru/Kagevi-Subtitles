@@ -18,6 +18,11 @@ export interface BrowserLifecycleConfig {
   forceFinalMinStableMs: number;
   overlapBuddyGhostTimeoutMs: number;
   overlapBuddyGhostActiveMicMs: number;
+  overlapPrestartAfterStartMs: number;
+  overlapSafeRestartDelayMs?: number;
+  overlapSoftRearmDelayMs?: number;
+  overlapPrestartQuietMs?: number;
+  overlapSilenceRearmMs?: number;
 }
 
 export interface MicrophoneMonitor {
@@ -86,6 +91,22 @@ export interface BrowserAsrState {
   recognitionOverlapSlotListening: boolean[] | null;
   recognitionOverlapSlotListenSinceMs: [number | null, number | null] | null;
   recognitionOverlapSlotActivityAtMs: [number | null, number | null] | null;
+  overlapPrestartTimer: ReturnType<typeof setTimeout> | null;
+  overlapPrestartTimerArmed: boolean;
+  overlapBuddyArmAttempts: number;
+  /** Empty soft-rearms / safe-restarts since last ASR result; capped before generation restart. */
+  overlapSoftRearmEmptyCount: number;
+  /** Wall-clock of last soft-rearm / safe-restart arm — used to debounce thrash. */
+  lastOverlapSoftRearmAtMs: number;
+  /** In-generation safeRestart in flight (prevents overlapping restarts). */
+  overlapSafeRestartInProgress: boolean;
+  overlapBuddyPrestartOkCount: number;
+  overlapBuddyPrestartFailCount: number;
+  overlapBuddyOnstartCount: number;
+  overlapBuddyOnendCount: number;
+  overlapLastPrestartReason: string | null;
+  overlapLastPrestartError: string | null;
+  overlapLastBuddyError: string | null;
   webSpeechPhraseHintsSuppressed: boolean;
   webSpeechLanguageSoftFallbackUsed: boolean;
   recognitionGenerationId: number;
@@ -281,6 +302,8 @@ export interface AsrManagerHost {
   emitHeartbeat(reason: string): void;
   sendUpdateInternal(payload: Record<string, unknown>): boolean;
   scheduleForceFinalizeInternal(): void;
+  /** Commit currentPartial as forced final (timer / overlap onend). No minChars gate. */
+  commitForcedPartialInternal(reason: string): boolean;
   clearForceFinalizeTimerInternal(): void;
   clearRestartTimerInternal(): void;
   clearReconnectTimerInternal(): void;

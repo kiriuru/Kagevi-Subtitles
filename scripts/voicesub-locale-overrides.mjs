@@ -96,6 +96,7 @@ export const voicesubNewKeysEn = {
   "local_asr.model.active_badge": "Selected",
   "local_asr.model.installed_note": "This variant is already on disk and will not be downloaded again.",
   "local_asr.model.variant.int8": "Parakeet TDT int8",
+  "local_asr.model.variant.fp16": "Parakeet TDT fp16",
   "local_asr.model.variant.fp32": "Parakeet TDT fp32",
   "local_asr.model.variant.int8_smoothquant": "Parakeet TDT int8 SmoothQuant",
   "local_asr.model.author_label": "Author: {author}",
@@ -104,6 +105,8 @@ export const voicesubNewKeysEn = {
   "local_asr.ep.cuda": "NVIDIA CUDA",
   "local_asr.ep.save": "Save",
   "local_asr.ep.note": "After changing EP or GPU deps, unload the model and warm load again.",
+  "local_asr.ep.cuda_int8_warning":
+    "CUDA + int8/int8_smoothquant: ONNX Runtime has no CUDA kernels for MatMulInteger / ConvInteger / DynamicQuantizeLinear, so decode stays on CPU. Use fp16 (lighter) or fp32 for GPU acceleration.",
   "local_asr.inference.title": "Inference",
   "local_asr.inference.configured_ep": "Configured EP",
   "local_asr.inference.active_ep": "Active EP",
@@ -256,6 +259,11 @@ export const voicesubNewKeysEn = {
   "local_asr.alert.ok": "OK",
   "local_asr.alert.probe_failed": "Provider probe failed.",
   "local_asr.alert.load_failed": "Model warm load did not complete.",
+  "tools.runtime.runtime_metrics": "Enable detailed runtime metrics",
+  "tools.runtime.runtime_metrics.hint":
+    "Shows translation dispatcher stats and Local ASR decode counters. Off by default to avoid extra diagnostics traffic while recognition is active. Applied after Save — no restart required.",
+  "tools.runtime.runtime_metrics.off_hint":
+    "Detailed metrics are off. Enable above and Save to collect translation/Local ASR diagnostics.",
   "tools.runtime.full_logging": "Enable full diagnostic logging",
   "tools.runtime.full_logging.hint":
     "Compact logs are always written to logs/. Full logging adds verbose runtime events and JSONL traces (api, pipeline, ui, startup). Applied after Save — no app restart required.",
@@ -300,6 +308,8 @@ export const voicesubNewKeysEn = {
   "translation.live_partial.hint":
     "Sends throttled ASR partials to classic MT providers so translations appear while you speak. LLM lines still wait for the final. Uses more API quota; off by default.",
   "worker.advanced.title": "Advanced",
+  "worker.continuous.note":
+    "Turning this off can leave recognition unstable or dead in current Chrome. Prefer leaving it enabled.",
   "settings.fonts.eyebrow": "Resources",
   "settings.fonts.title": "Font catalog",
   "style.custom_preset.delete": "Delete preset",
@@ -342,11 +352,16 @@ export const voicesubNewKeysEn = {
     "Duplicate enabled target languages: {langs}. Each line must use a unique language.",
   "translation.validation.missing_provider_fields":
     "Required provider settings are missing: {fields}. Open provider settings and fill them in.",
+  "style.font.script.latin": "Latin",
+  "style.font.script.cyrillic": "Cyrillic",
+  "style.font.script.japanese": "Japanese",
+  "style.font.script.chinese": "Chinese",
+  "style.font.script.korean": "Korean",
   "style.preset.custom_description": "User-created local subtitle style.",
   "style.preset.desc.clean_default":
-    "Broadcast baseline: Inter + Noto Sans, crisp white, light outline and soft shadow — OBS-safe transparent plate.",
+    "Broadcast baseline: Inter + Noto Sans (Cyrillic) with Zen Maru / ZCOOL XiaoWei / Jua for JP·CN·KR — crisp white, light outline, OBS-safe transparent plate.",
   "style.preset.desc.streamer_bold":
-    "Gaming HUD: Oswald cyan with a restrained magenta halo; Montserrat covers Cyrillic without losing the neon punch.",
+    "Gaming HUD: Oswald cyan with a restrained magenta halo; Montserrat covers Cyrillic, RocknRoll / ZCOOL / Black Han Sans cover JP·CN·KR.",
   "style.preset.desc.dual_tone":
     "Slot-colored captions: Lato/Noto body with high-contrast fills per language so source and translations separate at a glance.",
   "style.preset.desc.compact_overlay":
@@ -354,7 +369,7 @@ export const voicesubNewKeysEn = {
   "style.preset.desc.soft_shadow":
     "Airy Comfortaa with a wide diffused shadow and no outline — soft presence that still reads on busy gameplay.",
   "style.preset.desc.anime_stream":
-    "Mochiy Pop One for Latin/Japanese + Comfortaa Bold for Cyrillic — classic anime fansub caption: white fill, crisp violet outline, soft dark drop shadow.",
+    "Mochiy Pop One for Latin/Japanese + Comfortaa Bold for Cyrillic + ZCOOL / Jua for CN·KR — classic anime fansub caption: white fill, crisp violet outline, soft dark drop shadow.",
   "style.preset.desc.accessibility_high_contrast":
     "WCAG AAA solid caption box: pure white Montserrat Bold on fully opaque black — the only solid ink plate in the set.",
   "style.preset.desc.dark_cinema":
@@ -469,6 +484,17 @@ export const voicesubNewKeysEn = {
   "runtime.chip.asr": "ASR",
   "runtime.chip.local_asr": "Local ASR",
   "runtime.chip.obs": "OBS CC",
+  "runtime.chip.obs_no_stream": "not streaming",
+  "obs.use_ssl": "Use SSL (wss://)",
+  "obs.use_ssl.help": "Enable when OBS WebSocket has SSL turned on. Self-signed certificates are accepted for local OBS.",
+  "obs.translation_live_partials": "Send live-partial translations in translation modes",
+  "obs.translation_live_partials.help": "Uses growing MT drafts when available. Final translations still send if the provider only returns finals (for example LLM).",
+  "obs.note.languages":
+    "Twitch native CC (via OBS SendStreamCaption) uses CEA-608/708. Latin-script languages are reliable (e.g. English, Spanish, French, German, Portuguese, Italian, Dutch). Cyrillic, CJK, Arabic, and other non-Latin scripts usually fail or garble — use the browser overlay (or debug mirror text) for those.",
+  "obs.output.translation_active": "Translation {number} · {lang}",
+  "obs.output.translation_inactive": "Translation {number} · {lang} (inactive)",
+  "obs.output.translations.help":
+    "Translation modes list only enabled Translation lines (active slots). Disable a line in Translation to hide it here.",
   "runtime.details.open": "Details",
   "runtime.details.title": "Runtime diagnostics",
   "runtime.details.state_machine": "State machine",
@@ -593,6 +619,8 @@ const voicesubExtrasLocalized = {
     "worker.force_finalization_timeout_ms.note":
       "Сколько ждать без обновлений partial перед отправкой текущего текста как final.",
     "worker.advanced.title": "Дополнительно",
+    "worker.continuous.note":
+      "Отключение может сделать распознавание нестабильным или полностью нерабочим в текущем Chrome. Лучше оставить включённым.",
     "translation.latest.show": "Показывать переведённый результат",
     "translation.latest.hidden":
       "Блок скрыт. Включите переключатель, чтобы видеть live-вывод перевода.",
@@ -680,6 +708,7 @@ const voicesubExtrasLocalized = {
     "local_asr.model.active_badge": "Выбрано",
     "local_asr.model.installed_note": "Этот вариант уже на диске — повторная загрузка не нужна.",
     "local_asr.model.variant.int8": "Parakeet TDT int8",
+    "local_asr.model.variant.fp16": "Parakeet TDT fp16",
     "local_asr.model.variant.fp32": "Parakeet TDT fp32",
     "local_asr.model.variant.int8_smoothquant": "Parakeet TDT int8 SmoothQuant",
     "local_asr.model.author_label": "Автор: {author}",
@@ -688,6 +717,8 @@ const voicesubExtrasLocalized = {
     "local_asr.ep.cuda": "NVIDIA CUDA",
     "local_asr.ep.save": "Сохранить",
     "local_asr.ep.note": "После смены EP или GPU deps выгрузите модель и выполните warm load снова.",
+    "local_asr.ep.cuda_int8_warning":
+      "CUDA + int8/int8_smoothquant: у ONNX Runtime нет CUDA-ядер для MatMulInteger / ConvInteger / DynamicQuantizeLinear — decode остаётся на CPU. Для GPU возьмите fp16 (легче) или fp32.",
     "local_asr.inference.title": "Inference",
     "local_asr.inference.active_ep": "Активный EP",
     "local_asr.inference.configured_ep": "Выбранный EP",
@@ -720,6 +751,8 @@ const voicesubExtrasLocalized = {
     "local_asr.ep.title": "Провайдер выполнения",
     "local_asr.ep.note":
       "После смены EP или GPU-зависимостей выгрузите модель и выполните прогрев снова.",
+    "local_asr.ep.cuda_int8_warning":
+      "CUDA + int8/int8_smoothquant: у ONNX Runtime нет CUDA-ядер для MatMulInteger / ConvInteger / DynamicQuantizeLinear — decode остаётся на CPU. Для GPU возьмите fp16 (легче) или fp32.",
     "local_asr.inference.title": "Инференс",
     "local_asr.inference.load_model": "Прогреть модель",
     "local_asr.inference.loading": "Загрузка модели в память…",
@@ -850,6 +883,11 @@ const voicesubExtrasLocalized = {
     "local_asr.alert.ok": "OK",
     "local_asr.alert.probe_failed": "Проба провайдера не удалась.",
     "local_asr.alert.load_failed": "Прогрев модели не завершился.",
+    "tools.runtime.runtime_metrics": "Включить подробные runtime-метрики",
+    "tools.runtime.runtime_metrics.hint":
+      "Показывает статистику диспетчера перевода и счётчики decode Local ASR. По умолчанию выкл., чтобы не создавать лишний diagnostics-трафик во время распознавания. Применяется после Save — перезапуск не нужен.",
+    "tools.runtime.runtime_metrics.off_hint":
+      "Подробные метрики выключены. Включите выше и нажмите Save, чтобы собирать диагностику перевода/Local ASR.",
     "tools.runtime.full_logging": "Включить полное диагностическое логирование",
     "tools.runtime.full_logging.hint":
       "Сокращённые логи всегда пишутся в logs/. Полное логирование добавляет подробные runtime-события и JSONL-трейсы (api, pipeline, ui, startup). Применяется после Save — перезапуск приложения не нужен.",
@@ -970,6 +1008,17 @@ const voicesubExtrasLocalized = {
     "runtime.chip.asr": "ASR",
     "runtime.chip.local_asr": "Local ASR",
     "runtime.chip.obs": "OBS CC",
+    "runtime.chip.obs_no_stream": "нет стрима",
+    "obs.use_ssl": "Использовать SSL (wss://)",
+    "obs.use_ssl.help": "Включите, если в OBS WebSocket включён SSL. Самоподписанные сертификаты локального OBS принимаются.",
+    "obs.translation_live_partials": "Отправлять live-partial переводы в режимах translation",
+    "obs.translation_live_partials.help": "Использует растущие MT-drafts, если они есть. Финальные переводы всё равно отправляются, если провайдер отдаёт только final (например LLM).",
+    "obs.note.languages":
+      "Нативные CC Twitch (через OBS SendStreamCaption) идут в CEA-608/708. Надёжны языки на латинице (например английский, испанский, французский, немецкий, португальский, итальянский, нидерландский). Кириллица, CJK, арабский и другие нелатинские скрипты обычно не отображаются или искажаются — для них используйте browser overlay (или debug-зеркало).",
+    "obs.output.translation_active": "Перевод {number} · {lang}",
+    "obs.output.translation_inactive": "Перевод {number} · {lang} (неактивен)",
+    "obs.output.translations.help":
+      "В режимах перевода показаны только включённые линии Translation (активные слоты). Выключите линию в разделе Перевод — и она исчезнет здесь.",
     "runtime.details.open": "Подробнее",
     "runtime.details.title": "Диагностика runtime",
     "runtime.details.state_machine": "Машина состояний",
@@ -983,11 +1032,16 @@ const voicesubExtrasLocalized = {
     "nav.obs.section.overlay": "Оверлей в браузере",
     "nav.obs.section.captions": "Закрытые субтитры",
     "nav.obs.section.status": "Статус подключения",
+    "style.font.script.latin": "Латиница",
+    "style.font.script.cyrillic": "Кириллица",
+    "style.font.script.japanese": "Японский",
+    "style.font.script.chinese": "Китайский",
+    "style.font.script.korean": "Корейский",
     "style.preset.custom_description": "Пользовательский локальный стиль субтитров.",
     "style.preset.desc.clean_default":
-      "Эфирный базовый стиль: Inter + Noto Sans, белый текст, лёгкая обводка и мягкая тень — прозрачный фон для OBS.",
+      "Эфирный базовый стиль: Inter + Noto Sans (кириллица) и Zen Maru / ZCOOL XiaoWei / Jua для JP·CN·KR — белый текст, лёгкая обводка, прозрачный фон для OBS.",
     "style.preset.desc.streamer_bold":
-      "Игровой HUD: Oswald cyan с умеренным magenta-glow; Montserrat закрывает кириллицу.",
+      "Игровой HUD: Oswald cyan с умеренным magenta-glow; Montserrat — кириллица, RocknRoll / ZCOOL / Black Han Sans — JP·CN·KR.",
     "style.preset.desc.dual_tone":
       "Цвет по слотам: Lato/Noto и контрастные заливки, чтобы исходник и переводы читались сразу.",
     "style.preset.desc.compact_overlay":
@@ -995,7 +1049,7 @@ const voicesubExtrasLocalized = {
     "style.preset.desc.soft_shadow":
       "Воздушный Comfortaa с широкой мягкой тенью без обводки — читается поверх геймплея.",
     "style.preset.desc.anime_stream":
-      "Mochiy Pop One для Latin/Japanese + Comfortaa Bold для кириллицы — классическая anime fansub-плашка: белая заливка, чёткая фиолетовая обводка, мягкая тёмная тень.",
+      "Mochiy Pop One для Latin/Japanese + Comfortaa Bold для кириллицы + ZCOOL / Jua для CN·KR — классическая anime fansub-плашка: белая заливка, чёткая фиолетовая обводка, мягкая тёмная тень.",
     "style.preset.desc.accessibility_high_contrast":
       "WCAG AAA: чисто белый Montserrat Bold на полностью непрозрачном чёрном — единственная сплошная ink-плашка в наборе.",
     "style.preset.desc.dark_cinema":
@@ -1050,6 +1104,11 @@ const voicesubExtrasLocalized = {
     "credits.website": "Открыть сайт",
   },
   ja: {
+    "style.font.script.latin": "ラテン",
+    "style.font.script.cyrillic": "キリル",
+    "style.font.script.japanese": "日本語",
+    "style.font.script.chinese": "中国語",
+    "style.font.script.korean": "韓国語",
     "save.status.default": "「保存」を押すと設定がディスクに書き込まれます。",
     "help.quick_start.5":
       "開始を押します。Web Speech の認識言語を変更した後は停止してから再開してください。",
@@ -1135,6 +1194,8 @@ const voicesubExtrasLocalized = {
     "translation.validation.missing_provider_fields":
       "必須のプロバイダー設定が未入力です: {fields}。プロバイダー設定を開いて入力してください。",
     "worker.advanced.title": "詳細設定",
+    "worker.continuous.note":
+      "オフにすると、現行の Chrome では認識が不安定になるか止まることがあります。可能な限りオンのままにしてください。",
     "translation.latest.show": "翻訳結果を表示",
     "translation.latest.hidden":
       "翻訳結果は非表示です。ライブ出力を監視するにはトグルをオンにしてください。",
@@ -1216,6 +1277,7 @@ const voicesubExtrasLocalized = {
     "local_asr.model.active_badge": "選択中",
     "local_asr.model.installed_note": "このバリアントは既にディスク上にあり、再ダウンロードされません。",
     "local_asr.model.variant.int8": "Parakeet TDT int8",
+    "local_asr.model.variant.fp16": "Parakeet TDT fp16",
     "local_asr.model.variant.fp32": "Parakeet TDT fp32",
     "local_asr.model.variant.int8_smoothquant": "Parakeet TDT int8 SmoothQuant",
     "local_asr.model.author_label": "作者: {author}",
@@ -1224,6 +1286,8 @@ const voicesubExtrasLocalized = {
     "local_asr.ep.cuda": "NVIDIA CUDA",
     "local_asr.ep.save": "保存",
     "local_asr.ep.note": "EP または GPU deps を変更したら、モデルを unload して warm load し直してください。",
+    "local_asr.ep.cuda_int8_warning":
+      "CUDA + int8/int8_smoothquant: ONNX Runtime has no CUDA kernels for MatMulInteger / ConvInteger / DynamicQuantizeLinear, so decode stays on CPU. Use fp16 (lighter) or fp32 for GPU.",
     "local_asr.inference.title": "Inference",
     "local_asr.inference.active_ep": "Active EP",
     "local_asr.inference.loaded": "モデル loaded",
@@ -1241,6 +1305,11 @@ const voicesubExtrasLocalized = {
     "local_asr.test.start": "マイクテスト開始",
     "local_asr.test.stop": "停止",
     "local_asr.test.note": "既定マイクから約 5 秒録音し、loaded モデルで文字起こしします。",
+    "tools.runtime.runtime_metrics": "詳細なランタイムメトリクスを有効にする",
+    "tools.runtime.runtime_metrics.hint":
+      "翻訳ディスパッチャ統計と Local ASR の decode カウンタを表示します。認識中の余分な diagnostics 通信を避けるため既定はオフです。Save 後に適用され、再起動は不要です。",
+    "tools.runtime.runtime_metrics.off_hint":
+      "詳細メトリクスはオフです。上で有効にして Save すると翻訳/Local ASR 診断を収集します。",
     "tools.runtime.full_logging": "フル診断ログを有効にする",
     "tools.runtime.full_logging.hint":
       "コンパクトログは常に logs/ に書き込まれます。フルログは詳細な runtime イベントと JSONL トレース（api、pipeline、ui、startup）を追加します。Save 後に適用され、アプリの再起動は不要です。",
@@ -1361,6 +1430,17 @@ const voicesubExtrasLocalized = {
     "runtime.chip.asr": "ASR",
     "runtime.chip.local_asr": "Local ASR",
     "runtime.chip.obs": "OBS CC",
+    "runtime.chip.obs_no_stream": "配信なし",
+    "obs.use_ssl": "SSL を使用 (wss://)",
+    "obs.use_ssl.help": "OBS WebSocket で SSL が有効なときにオンにします。ローカル OBS の自己署名証明書は受け入れます。",
+    "obs.translation_live_partials": "翻訳モードでライブ部分翻訳を送信",
+    "obs.translation_live_partials.help": "利用可能な場合は成長中の MT ドラフトを使います。プロバイダーが final のみ返す場合（LLM など）でも最終翻訳は送信されます。",
+    "obs.note.languages":
+      "Twitch のネイティブ CC（OBS SendStreamCaption 経由）は CEA-608/708 です。ラテン文字の言語は安定します（例: 英語・スペイン語・フランス語・ドイツ語・ポルトガル語・イタリア語・オランダ語）。キリル文字、CJK、アラビア文字など非ラテン文字は通常表示されないか化けます — その場合はブラウザオーバーレイ（またはデバッグミラー）を使ってください。",
+    "obs.output.translation_active": "翻訳 {number} · {lang}",
+    "obs.output.translation_inactive": "翻訳 {number} · {lang}（無効）",
+    "obs.output.translations.help":
+      "翻訳モードには有効な Translation ライン（アクティブなスロット）だけが表示されます。Translation でラインをオフにすると、ここからも消えます。",
     "runtime.details.open": "詳細",
     "runtime.details.title": "ランタイム診断",
     "runtime.details.state_machine": "状態マシン",
@@ -1443,6 +1523,11 @@ const voicesubExtrasLocalized = {
     "credits.website": "ウェブサイトを開く",
   },
   ko: {
+    "style.font.script.latin": "라틴",
+    "style.font.script.cyrillic": "키릴",
+    "style.font.script.japanese": "일본어",
+    "style.font.script.chinese": "중국어",
+    "style.font.script.korean": "한국어",
     "save.status.default": "저장을 누르면 설정이 디스크에 기록됩니다.",
     "help.quick_start.5":
       "시작을 누르세요. Web Speech 인식 언어를 변경한 뒤에는 중지 후 다시 시작하세요.",
@@ -1528,6 +1613,8 @@ const voicesubExtrasLocalized = {
     "translation.validation.missing_provider_fields":
       "필수 제공자 설정이 비어 있습니다: {fields}. 제공자 설정을 열고 입력하세요.",
     "worker.advanced.title": "고급",
+    "worker.continuous.note":
+      "끄면 현재 Chrome에서 인식이 불안정해지거나 멈출 수 있습니다. 가능하면 켠 상태로 두세요.",
     "translation.latest.show": "번역 결과 표시",
     "translation.latest.hidden":
       "번역 결과가 숨겨져 있습니다. 라이브 출력을 보려면 토글을 켜세요.",
@@ -1609,6 +1696,7 @@ const voicesubExtrasLocalized = {
     "local_asr.model.active_badge": "선택됨",
     "local_asr.model.installed_note": "이 변형은 이미 디스크에 있으며 다시 다운로드되지 않습니다.",
     "local_asr.model.variant.int8": "Parakeet TDT int8",
+    "local_asr.model.variant.fp16": "Parakeet TDT fp16",
     "local_asr.model.variant.fp32": "Parakeet TDT fp32",
     "local_asr.model.variant.int8_smoothquant": "Parakeet TDT int8 SmoothQuant",
     "local_asr.model.author_label": "작성자: {author}",
@@ -1617,6 +1705,8 @@ const voicesubExtrasLocalized = {
     "local_asr.ep.cuda": "NVIDIA CUDA",
     "local_asr.ep.save": "저장",
     "local_asr.ep.note": "EP 또는 GPU deps를 변경한 뒤에는 모델을 unload하고 warm load를 다시 실행하세요.",
+    "local_asr.ep.cuda_int8_warning":
+      "CUDA + int8/int8_smoothquant: ONNX Runtime has no CUDA kernels for MatMulInteger / ConvInteger / DynamicQuantizeLinear, so decode stays on CPU. Use fp16 (lighter) or fp32 for GPU.",
     "local_asr.inference.title": "Inference",
     "local_asr.inference.active_ep": "Active EP",
     "local_asr.inference.loaded": "모델 loaded",
@@ -1634,6 +1724,11 @@ const voicesubExtrasLocalized = {
     "local_asr.test.start": "마이크 테스트 시작",
     "local_asr.test.stop": "중지",
     "local_asr.test.note": "기본 마이크에서 약 5초 녹음한 뒤 loaded 모델로 전사합니다.",
+    "tools.runtime.runtime_metrics": "상세 런타임 메트릭 사용",
+    "tools.runtime.runtime_metrics.hint":
+      "번역 디스패처 통계와 Local ASR decode 카운터를 표시합니다. 인식 중 추가 diagnostics 트래픽을 피하기 위해 기본값은 끔입니다. Save 후 적용되며 재시작은 필요 없습니다.",
+    "tools.runtime.runtime_metrics.off_hint":
+      "상세 메트릭이 꺼져 있습니다. 위에서 켠 뒤 Save하면 번역/Local ASR 진단을 수집합니다.",
     "tools.runtime.full_logging": "전체 진단 로깅 사용",
     "tools.runtime.full_logging.hint":
       "컴팩트 로그는 항상 logs/에 기록됩니다. 전체 로깅은 상세 runtime 이벤트와 JSONL 트레이스(api, pipeline, ui, startup)를 추가합니다. Save 후 적용되며 앱 재시작은 필요 없습니다.",
@@ -1754,6 +1849,17 @@ const voicesubExtrasLocalized = {
     "runtime.chip.asr": "ASR",
     "runtime.chip.local_asr": "Local ASR",
     "runtime.chip.obs": "OBS CC",
+    "runtime.chip.obs_no_stream": "스트림 없음",
+    "obs.use_ssl": "SSL 사용 (wss://)",
+    "obs.use_ssl.help": "OBS WebSocket에서 SSL이 켜져 있을 때 사용합니다. 로컬 OBS 자체 서명 인증서를 허용합니다.",
+    "obs.translation_live_partials": "번역 모드에서 라이브 부분 번역 전송",
+    "obs.translation_live_partials.help": "가능한 경우 성장 중인 MT 초안을 사용합니다. 제공자가 final만 반환해도(예: LLM) 최종 번역은 전송됩니다.",
+    "obs.note.languages":
+      "Twitch 네이티브 CC(OBS SendStreamCaption 경유)는 CEA-608/708을 사용합니다. 라틴 문자 언어는 안정적입니다(예: 영어, 스페인어, 프랑스어, 독일어, 포르투갈어, 이탈리아어, 네덜란드어). 키릴, CJK, 아랍 등 비라틴 문자는 보통 표시되지 않거나 깨집니다 — 그런 경우 브라우저 오버레이(또는 디버그 미러)를 사용하세요.",
+    "obs.output.translation_active": "번역 {number} · {lang}",
+    "obs.output.translation_inactive": "번역 {number} · {lang} (비활성)",
+    "obs.output.translations.help":
+      "번역 모드에는 켜진 Translation 라인(활성 슬롯)만 표시됩니다. Translation에서 라인을 끄면 여기에서도 사라집니다.",
     "runtime.details.open": "자세히",
     "runtime.details.title": "런타임 진단",
     "runtime.details.state_machine": "상태 머신",
@@ -1835,6 +1941,11 @@ const voicesubExtrasLocalized = {
     "credits.website": "웹사이트 열기",
   },
   zh: {
+    "style.font.script.latin": "拉丁",
+    "style.font.script.cyrillic": "西里尔",
+    "style.font.script.japanese": "日文",
+    "style.font.script.chinese": "中文",
+    "style.font.script.korean": "韩文",
     "save.status.default": "按“保存”后，设置会写入磁盘。",
     "help.quick_start.5":
       "按开始。更改 Web Speech 识别语言后请停止再启动。",
@@ -1919,6 +2030,8 @@ const voicesubExtrasLocalized = {
     "translation.validation.missing_provider_fields":
       "缺少必需的提供商设置：{fields}。请打开提供商设置并填写。",
     "worker.advanced.title": "高级",
+    "worker.continuous.note":
+      "关闭后，在当前 Chrome 中识别可能不稳定或完全停止。建议保持开启。",
     "translation.latest.show": "显示翻译结果",
     "translation.latest.hidden": "翻译结果已隐藏。打开开关以查看实时输出。",
     "translation.live_partial.enable":
@@ -1998,6 +2111,7 @@ const voicesubExtrasLocalized = {
     "local_asr.model.active_badge": "已选择",
     "local_asr.model.installed_note": "该变体已在磁盘上，不会重复下载。",
     "local_asr.model.variant.int8": "Parakeet TDT int8",
+    "local_asr.model.variant.fp16": "Parakeet TDT fp16",
     "local_asr.model.variant.fp32": "Parakeet TDT fp32",
     "local_asr.model.variant.int8_smoothquant": "Parakeet TDT int8 SmoothQuant",
     "local_asr.model.author_label": "作者：{author}",
@@ -2006,6 +2120,8 @@ const voicesubExtrasLocalized = {
     "local_asr.ep.cuda": "NVIDIA CUDA",
     "local_asr.ep.save": "保存",
     "local_asr.ep.note": "更改 EP 或 GPU 依赖后，请先 unload 模型并重新 warm load。",
+    "local_asr.ep.cuda_int8_warning":
+      "CUDA + int8/int8_smoothquant：ONNX Runtime 没有 MatMulInteger / ConvInteger / DynamicQuantizeLinear 的 CUDA 内核，解码仍在 CPU。要用 GPU 请切换到 fp16（更轻）或 fp32 模型。",
     "local_asr.inference.title": "Inference",
     "local_asr.inference.active_ep": "Active EP",
     "local_asr.inference.loaded": "模型已加载",
@@ -2023,6 +2139,11 @@ const voicesubExtrasLocalized = {
     "local_asr.test.start": "开始麦克风测试",
     "local_asr.test.stop": "停止",
     "local_asr.test.note": "从默认麦克风录制约 5 秒，然后用已加载模型转写。",
+    "tools.runtime.runtime_metrics": "启用详细运行时指标",
+    "tools.runtime.runtime_metrics.hint":
+      "显示翻译调度统计与 Local ASR decode 计数。默认关闭，以免在识别期间产生额外 diagnostics 流量。保存后生效，无需重启。",
+    "tools.runtime.runtime_metrics.off_hint":
+      "详细指标已关闭。在上方启用并 Save 后即可收集翻译/Local ASR 诊断。",
     "tools.runtime.full_logging": "启用完整诊断日志",
     "tools.runtime.full_logging.hint":
       "精简日志始终写入 logs/。完整日志会添加详细的 runtime 事件和 JSONL 跟踪（api、pipeline、ui、startup）。保存后立即生效，无需重启应用。",
@@ -2142,6 +2263,17 @@ const voicesubExtrasLocalized = {
     "runtime.chip.asr": "ASR",
     "runtime.chip.local_asr": "Local ASR",
     "runtime.chip.obs": "OBS CC",
+    "runtime.chip.obs_no_stream": "未开播",
+    "obs.use_ssl": "使用 SSL (wss://)",
+    "obs.use_ssl.help": "当 OBS WebSocket 启用 SSL 时打开。接受本地 OBS 的自签名证书。",
+    "obs.translation_live_partials": "在翻译模式发送实时部分翻译",
+    "obs.translation_live_partials.help": "有可用的增长中 MT 草稿时使用。若提供方只返回最终结果（如 LLM），最终翻译仍会发送。",
+    "obs.note.languages":
+      "Twitch 原生 CC（经 OBS SendStreamCaption）使用 CEA-608/708。拉丁字母语言较可靠（如英语、西班牙语、法语、德语、葡萄牙语、意大利语、荷兰语）。西里尔文、CJK、阿拉伯文等非拉丁文字通常无法显示或会乱码 — 请改用浏览器叠加层（或调试镜像文本）。",
+    "obs.output.translation_active": "翻译 {number} · {lang}",
+    "obs.output.translation_inactive": "翻译 {number} · {lang}（未启用）",
+    "obs.output.translations.help":
+      "翻译模式只列出已启用的 Translation 线路（活动槽位）。在「翻译」中关闭线路后，这里也会隐藏。",
     "runtime.details.open": "详情",
     "runtime.details.title": "运行时诊断",
     "runtime.details.state_machine": "状态机",

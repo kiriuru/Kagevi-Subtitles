@@ -9,6 +9,14 @@ use voicesub_asr_local::{CUDA_TOOLKIT_URL, DepDownloadKind, LocalAsrConfig, Tran
 
 use super::state::HttpState;
 
+/// Fan out `asr.local_module` changes to the main dashboard via `runtime_update`.
+///
+/// Coalescing (force=false) suppresses duplicates; readiness / phase flips still publish
+/// immediately because they are part of the runtime material signature.
+async fn publish_local_module_runtime(state: &HttpState) {
+    state.orchestrator.publish_status(state, false).await;
+}
+
 pub async fn local_asr_status(State(state): State<Arc<HttpState>>) -> Json<Value> {
     // Use cached snapshot when warm; cold path still scans deps once via refresh_status.
     let status = state.local_asr.status();
@@ -33,16 +41,21 @@ pub async fn local_asr_config_save(
     Json(body): Json<LocalAsrConfigSaveBody>,
 ) -> Response {
     match state.local_asr.save_config(&body.config) {
-        Ok(()) => match state.local_asr.load_config() {
-            Ok(config) => Json(json!({ "ok": true, "config": config })).into_response(),
-            Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
-        },
+        Ok(()) => {
+            let _ = state.local_asr.refresh_status();
+            publish_local_module_runtime(&state).await;
+            match state.local_asr.load_config() {
+                Ok(config) => Json(json!({ "ok": true, "config": config })).into_response(),
+                Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
+            }
+        }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
 
 pub async fn local_asr_deps_check(State(state): State<Arc<HttpState>>) -> Json<Value> {
     let status = state.local_asr.refresh_status();
+    publish_local_module_runtime(&state).await;
     Json(json!({ "ok": true, "status": status }))
 }
 
@@ -63,7 +76,10 @@ pub async fn local_asr_deps_download(
         .into_response();
     };
     match state.local_asr.download_deps(kind).await {
-        Ok(status) => Json(json!({ "ok": true, "status": status })).into_response(),
+        Ok(status) => {
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "status": status })).into_response()
+        }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
@@ -87,7 +103,10 @@ pub async fn local_asr_model_download(
             .unwrap_or_else(|_| "parakeet_tdt".into())
     });
     match state.local_asr.download_model(&family, &body.variant).await {
-        Ok(status) => Json(json!({ "ok": true, "status": status })).into_response(),
+        Ok(status) => {
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "status": status })).into_response()
+        }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
@@ -104,7 +123,10 @@ pub async fn local_asr_model_select(
             .unwrap_or_else(|_| "parakeet_tdt".into())
     });
     match state.local_asr.select_model(&family, &body.variant) {
-        Ok(status) => Json(json!({ "ok": true, "status": status })).into_response(),
+        Ok(status) => {
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "status": status })).into_response()
+        }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
@@ -140,7 +162,10 @@ pub async fn local_asr_deps_delete(
         .into_response();
     };
     match state.local_asr.delete_deps(kind) {
-        Ok(status) => Json(json!({ "ok": true, "status": status })).into_response(),
+        Ok(status) => {
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "status": status })).into_response()
+        }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
@@ -164,7 +189,10 @@ pub async fn local_asr_model_delete(
             .unwrap_or_else(|_| "parakeet_tdt".into())
     });
     match state.local_asr.delete_model(&family, &body.variant) {
-        Ok(status) => Json(json!({ "ok": true, "status": status })).into_response(),
+        Ok(status) => {
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "status": status })).into_response()
+        }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
@@ -183,8 +211,9 @@ pub async fn local_asr_deps_probe(
     let provider = body.provider.clone();
     match tokio::task::spawn_blocking(move || service.probe_provider(&provider)).await {
         Ok(Ok(probe)) => {
-            Json(json!({ "ok": true, "probe": probe, "status": refresh.refresh_status() }))
-                .into_response()
+            let status = refresh.refresh_status();
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "probe": probe, "status": status })).into_response()
         }
         Ok(Err(err)) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
@@ -201,6 +230,7 @@ pub async fn local_asr_model_load(State(state): State<Arc<HttpState>>) -> Respon
     {
         Ok(Ok(Ok(load))) => {
             let status = refresh.refresh_status();
+            publish_local_module_runtime(&state).await;
             Json(json!({ "ok": true, "load": load, "status": status })).into_response()
         }
         Ok(Ok(Err(err))) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
@@ -215,6 +245,7 @@ pub async fn local_asr_model_load(State(state): State<Arc<HttpState>>) -> Respon
 
 pub async fn local_asr_model_unload(State(state): State<Arc<HttpState>>) -> Response {
     let status = state.local_asr.unload_model();
+    publish_local_module_runtime(&state).await;
     Json(json!({ "ok": true, "status": status })).into_response()
 }
 
@@ -249,7 +280,10 @@ pub async fn local_asr_test_start(
     match tokio::task::spawn_blocking(move || service.start_test(duration_ms, device_id.as_deref()))
         .await
     {
-        Ok(Ok(test)) => Json(json!({ "ok": true, "test": test })).into_response(),
+        Ok(Ok(test)) => {
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "test": test })).into_response()
+        }
         Ok(Err(err)) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
@@ -258,14 +292,25 @@ pub async fn local_asr_test_start(
 pub async fn local_asr_test_stop(State(state): State<Arc<HttpState>>) -> Response {
     let service = Arc::clone(&state.local_asr);
     match tokio::task::spawn_blocking(move || service.stop_test()).await {
-        Ok(Ok(test)) => Json(json!({ "ok": true, "test": test })).into_response(),
+        Ok(Ok(test)) => {
+            // stop_test may finalize the one-time setup checklist → ready flips.
+            let _ = state.local_asr.refresh_status();
+            publish_local_module_runtime(&state).await;
+            Json(json!({ "ok": true, "test": test })).into_response()
+        }
         Ok(Err(err)) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
     }
 }
 
 pub async fn local_asr_test_status(State(state): State<Arc<HttpState>>) -> Json<Value> {
+    // May commit setup checklist when the bench reaches Done (side effect → cache invalidate).
+    let before = state.local_asr.status();
     let test = state.local_asr.test_bench_snapshot();
+    let after = state.local_asr.status();
+    if before.ready != after.ready || before.phase != after.phase {
+        publish_local_module_runtime(&state).await;
+    }
     Json(json!({ "ok": true, "test": test }))
 }
 

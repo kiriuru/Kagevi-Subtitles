@@ -3,6 +3,7 @@
   import { locale, t } from "../i18n";
   import type { RuntimeStatus } from "../types";
   import { RUNTIME_STATE_PHASES, buildRuntimeConnectionChips } from "../runtime-status";
+  import { formatObsCaptionError, formatObsChipLabel } from "../obs-status-i18n";
   import X from "lucide-svelte/icons/x";
 
   export let open = false;
@@ -15,6 +16,9 @@
   $: loc = $locale;
   $: tr = (key: string, vars?: Record<string, string | number>) => t(key, vars, loc);
   $: chips = buildRuntimeConnectionChips(runtime, wsConnected, obsDiagnostics);
+  $: obsLabel = formatObsChipLabel(chips.obsLabelKind, chips.obsLabelCode, tr);
+  $: obsErrorDetail =
+    chips.obsLabelKind === "error" ? formatObsCaptionError(chips.obsLabelCode, tr) : "";
 
   $: if (dialogEl) {
     if (open && !dialogEl.open) {
@@ -62,13 +66,28 @@
         <span class="badge" class:active={chips.running}>
           {tr("runtime.badge.runtime", { value: chips.phase })}
         </span>
-        <span class="badge" class:ok={chips.workerConnected}>
-          {tr("runtime.chip.worker")}: {chips.workerConnected ? tr("common.connected") : tr("common.disconnected")}
-        </span>
+        {#if chips.showBrowserWorkerChip}
+          <span class="badge" class:ok={chips.workerConnected}>
+            {tr("runtime.chip.worker")}: {chips.workerConnected ? tr("common.connected") : tr("common.disconnected")}
+          </span>
+        {/if}
+        {#if chips.showLocalAsrChip}
+          <span class="badge" class:ok={chips.asrSourceConnected}>
+            {tr("runtime.chip.local_asr")}: {chips.asrSourceConnected ? tr("common.connected") : tr("common.disconnected")}
+          </span>
+        {/if}
         <span class="badge">{tr("runtime.badge.asr", { value: chips.asrMode })}</span>
-        <span class="badge" class:ok={chips.obsStatus === "ready"} class:err={chips.obsStatus === "error"}>
-          {tr("runtime.badge.obs_cc", { value: chips.obsLabel })}
+        <span
+          class="badge"
+          class:ok={chips.obsStatus === "ready"}
+          class:warn={chips.obsStatus === "warn" || chips.obsStatus === "waiting"}
+          class:err={chips.obsStatus === "error"}
+        >
+          {tr("runtime.badge.obs_cc", { value: obsLabel })}
         </span>
+        {#if obsErrorDetail}
+          <span class="badge err">{obsErrorDetail}</span>
+        {/if}
         {#if chips.lastError}
           <span class="badge err">{chips.lastError}</span>
         {/if}

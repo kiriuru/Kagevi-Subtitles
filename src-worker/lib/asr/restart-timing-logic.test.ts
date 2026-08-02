@@ -21,16 +21,17 @@ const limits = {
   voiceBelowRecognitionGraceMs: 8000,
   voiceBelowRecognitionMicWindowMs: 2000,
   voiceBelowRecognitionMinNoSpeech: 1,
-  stallDegradedAfterMs: 6000,
+  stallDegradedAfterMs: 12000,
   recentMicActivityWindowMs: 2000,
 };
 
 describe("restart-timing-logic", () => {
-  it("backs off no_speech delays", () => {
-    const state = createBrowserAsrStateSeed();
+  it("keeps a fixed no_speech restart delay (no accumulating backoff)", () => {
+    const state = createBrowserAsrStateSeed({ noSpeechRestartDelayMs: 150 });
     const first = restartDelayForReason(state, "no_speech", limits);
     const second = restartDelayForReason(state, "no_speech", limits);
-    expect(second).toBeGreaterThanOrEqual(first);
+    expect(first).toBe(150);
+    expect(second).toBe(150);
   });
 
   it("extends reconnect delay when minimum interval not met", () => {
@@ -41,12 +42,16 @@ describe("restart-timing-logic", () => {
     expect(state.browserMinimumReconnectSuppressedCount).toBe(1);
   });
 
-  it("backs off audio_capture like network", () => {
-    const state = createBrowserAsrStateSeed();
-    const first = restartDelayForReason(state, "audio_capture", limits);
-    const second = restartDelayForReason(state, "audio_capture", limits);
-    expect(first).toBeGreaterThan(0);
-    expect(second).toBeGreaterThanOrEqual(first);
+  it("keeps a fixed network and audio_capture restart delay (no growing backoff)", () => {
+    const state = createBrowserAsrStateSeed({ networkReconnectInitialMs: 500 });
+    const firstNetwork = restartDelayForReason(state, "network", limits);
+    const secondNetwork = restartDelayForReason(state, "network", limits);
+    const firstCapture = restartDelayForReason(state, "audio_capture", limits);
+    const secondCapture = restartDelayForReason(state, "audio_capture", limits);
+    expect(firstNetwork).toBe(500);
+    expect(secondNetwork).toBe(500);
+    expect(firstCapture).toBe(500);
+    expect(secondCapture).toBe(500);
   });
 
   it("triggers network preflight after burst threshold", () => {

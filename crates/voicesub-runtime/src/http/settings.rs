@@ -7,7 +7,10 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use voicesub_config::{build_font_catalog, normalize_config_payload, read_full_logging_enabled};
+use voicesub_config::{
+    build_font_catalog, normalize_config_payload, read_full_logging_enabled,
+    read_runtime_metrics_enabled,
+};
 use voicesub_logging::apply_logging_preferences;
 
 use super::state::HttpState;
@@ -61,7 +64,11 @@ pub async fn settings_save(
         }
     };
 
-    apply_logging_preferences(&state.paths.logs_dir, read_full_logging_enabled(&payload));
+    apply_logging_preferences(
+        &state.paths.logs_dir,
+        read_full_logging_enabled(&payload),
+        read_runtime_metrics_enabled(&payload),
+    );
     state.translation.lock().await.apply_live_settings().await;
     state.obs_captions.apply_live_settings().await;
     state.subtitle.republish_latest().await;

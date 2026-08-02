@@ -165,7 +165,6 @@
   "obs.output.translation_2": "번역 2",
   "obs.output.translation_3": "번역 3",
   "obs.output.translation_4": "번역 4",
-  "obs.output.translation_5": "번역 5",
   "obs.partial_throttle": "부분 전송 간의 최소 간격",
   "obs.password": "비밀번호",
   "obs.password.placeholder": "OBS 웹소켓 비밀번호",

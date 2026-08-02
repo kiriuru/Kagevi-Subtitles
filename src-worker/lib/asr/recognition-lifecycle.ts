@@ -2,6 +2,7 @@ import type { AsrManagerHost } from "./types";
 import type { WorkerSpeechRecognition } from "./speech-types";
 import { ensureMicrophonePermission } from "./mic-permission-bridge";
 import {
+  clearOverlapPrestartTimer,
   createOverlapRecognitionPair,
   recognitionOverlapActive,
   recognitionOverlapModeDesired,
@@ -68,6 +69,7 @@ export function cleanupRecognitionInstance(manager: AsrManagerHost, generationId
   if (generationId !== manager.state.recognitionGenerationId) {
     return;
   }
+  clearOverlapPrestartTimer(manager.state);
   collectRecognitionInstances(manager).forEach((recognition) => {
     try {
       recognition.abort();
@@ -96,6 +98,7 @@ export function cleanupRecognitionInstance(manager: AsrManagerHost, generationId
 export function createRecognition(manager: AsrManagerHost, generationId: number): WorkerSpeechRecognition {
   const recognition = new manager.SpeechRecognitionCtor!();
   recognition.maxAlternatives = 1;
+  clearOverlapPrestartTimer(manager.state);
   manager.state.recognitionGenerationId = generationId;
   manager.state.recognitionOverlapSlots = null;
   manager.state.recognitionOverlapActiveSlot = null;

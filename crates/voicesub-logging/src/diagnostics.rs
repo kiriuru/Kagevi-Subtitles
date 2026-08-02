@@ -6,6 +6,7 @@ const TRUE_TOKENS: &[&str] = &["1", "true", "yes", "on"];
 const FALSE_TOKENS: &[&str] = &["0", "false", "no", "off"];
 
 static CONFIG_FULL_LOGGING_ENABLED: AtomicBool = AtomicBool::new(false);
+static CONFIG_RUNTIME_METRICS_ENABLED: AtomicBool = AtomicBool::new(false);
 
 fn env_value(name: &str) -> Option<String> {
     std::env::var(name)
@@ -31,6 +32,15 @@ pub fn set_config_full_logging_enabled(enabled: bool) {
 
 pub fn is_config_full_logging_enabled() -> bool {
     CONFIG_FULL_LOGGING_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Live Tools / runtime detailed metrics (`logging.runtime_metrics_enabled`).
+pub fn set_config_runtime_metrics_enabled(enabled: bool) {
+    CONFIG_RUNTIME_METRICS_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+pub fn is_config_runtime_metrics_enabled() -> bool {
+    CONFIG_RUNTIME_METRICS_ENABLED.load(Ordering::Relaxed)
 }
 
 /// Master switch — config ``logging.full_enabled`` or ``VOICESUB_DEEP_DIAGNOSTICS`` / ``SST_DEEP_DIAGNOSTICS``.

@@ -131,9 +131,9 @@ const voicesubExtras = {
   "settings.webspeech.advanced.stuck_stopping_timeout_ms.help":
     "If recognition stays in the stopping state too long, the worker forces recovery after this timeout.",
   "settings.webspeech.advanced.network_reconnect_initial_ms.help":
-    "First backoff delay when Google Web Speech reports a network error. Lower values retry sooner.",
+    "Fixed delay before retrying when Google Web Speech reports a network or audio-capture error. Lower values retry sooner.",
   "settings.webspeech.advanced.network_reconnect_max_ms.help":
-    "Maximum backoff cap for network reconnect. Delays grow up to this limit between attempts.",
+    "Legacy setting kept for config compatibility. Retries no longer grow; the fixed delay above is always used.",
   "settings.webspeech.advanced.max_browser_session_age_ms.help":
     "After this age the browser worker rotates to a fresh SpeechRecognition session to reduce long-run degradation.",
   "settings.webspeech.advanced.prepare_cycle_before_ms.help":
@@ -342,9 +342,9 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.stuck_stopping_timeout_ms.help":
       "Если распознавание зависло в состоянии stopping, воркер принудительно восстанавливается после этого таймаута.",
     "settings.webspeech.advanced.network_reconnect_initial_ms.help":
-      "Первая задержка backoff при сетевой ошибке Google Web Speech. Меньше — раньше первая попытка.",
+      "Фиксированная задержка перед повтором при ошибке network или audio-capture Google Web Speech. Меньше — раньше повтор.",
     "settings.webspeech.advanced.network_reconnect_max_ms.help":
-      "Верхняя граница backoff при сетевом reconnect. Задержки растут до этого предела.",
+      "Устаревший параметр для совместимости конфига. Задержка больше не растёт; всегда используется фиксированное значение выше.",
     "settings.webspeech.advanced.max_browser_session_age_ms.help":
       "После этого возраста воркер переходит на новую сессию SpeechRecognition, чтобы снизить деградацию на длинных стримах.",
     "settings.webspeech.advanced.prepare_cycle_before_ms.help":
@@ -393,9 +393,9 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.stuck_stopping_timeout_ms.help":
       "認識が stopping 状態で固まったとき、この時間後にワーカーが強制復旧します。",
     "settings.webspeech.advanced.network_reconnect_initial_ms.help":
-      "Google Web Speech の network エラー時の最初の backoff 待機 (ms)。小さいほど早く再試行します。",
+      "Google Web Speech の network / audio-capture エラー時の再試行までの固定待機 (ms)。小さいほど早く再試行します。",
     "settings.webspeech.advanced.network_reconnect_max_ms.help":
-      "ネットワーク再接続 backoff の上限 (ms)。試行間隔はこの値まで増えます。",
+      "互換性のための旧設定。再試行間隔は増えず、常に上の固定待機を使います。",
     "settings.webspeech.advanced.max_browser_session_age_ms.help":
       "この時間を超えると新しい SpeechRecognition セッションにローテーションし、長時間運用時の劣化を抑えます。",
     "settings.webspeech.advanced.prepare_cycle_before_ms.help":
@@ -444,9 +444,9 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.stuck_stopping_timeout_ms.help":
       "인식이 stopping 상태에 오래 머물면 이 시간 후 워커가 강제 복구합니다.",
     "settings.webspeech.advanced.network_reconnect_initial_ms.help":
-      "Google Web Speech network 오류 시 첫 backoff 지연(ms). 짧을수록 더 빨리 재시도합니다.",
+      "Google Web Speech network/audio-capture 오류 시 재시도 전 고정 지연(ms). 짧을수록 더 빨리 재시도합니다.",
     "settings.webspeech.advanced.network_reconnect_max_ms.help":
-      "network reconnect backoff 상한(ms). 시도 간격이 이 값까지 증가합니다.",
+      "설정 호환용 레거시 값. 재시도 간격은 더 이상 증가하지 않으며 위 고정 지연만 사용합니다.",
     "settings.webspeech.advanced.max_browser_session_age_ms.help":
       "이 시간이 지나면 새 SpeechRecognition 세션으로 로테이션해 장시간 사용 시 성능 저하를 줄입니다.",
     "settings.webspeech.advanced.prepare_cycle_before_ms.help":
@@ -495,9 +495,9 @@ const webspeechAdvancedLocalized = {
     "settings.webspeech.advanced.stuck_stopping_timeout_ms.help":
       "识别长时间停在 stopping 状态时，worker 在此超时后强制恢复。",
     "settings.webspeech.advanced.network_reconnect_initial_ms.help":
-      "Google Web Speech 报 network 错误时首次 backoff 延迟 (ms)。更短则更快首次重试。",
+      "Google Web Speech 报 network 或 audio-capture 错误时的固定重试延迟 (ms)。更短则更快重试。",
     "settings.webspeech.advanced.network_reconnect_max_ms.help":
-      "网络重连 backoff 上限 (ms)。重试间隔最多增长到该值。",
+      "为配置兼容保留的旧项。重试间隔不再增长；始终使用上方固定延迟。",
     "settings.webspeech.advanced.max_browser_session_age_ms.help":
       "超过此年龄后 worker 轮换到新的 SpeechRecognition 会话，减轻长时间运行的退化。",
     "settings.webspeech.advanced.prepare_cycle_before_ms.help":

@@ -3,6 +3,7 @@ import {
   formatLocalAsrExecutionProvider,
   formatLocalAsrModelLabel,
   isLocalAsrCudaProvider,
+  mergeLocalModuleBadgeSnapshots,
   readLocalModuleBadgeSnapshot,
 } from "./local-asr-labels";
 
@@ -31,5 +32,26 @@ describe("local-asr-labels", () => {
     });
     expect(snap?.executionProvider).toBe("cuda");
     expect(snap?.activeModelVariant).toBe("int8");
+  });
+
+  it("prefers runtime ready over a sticky API snapshot", () => {
+    const runtime = readLocalModuleBadgeSnapshot({
+      ready: false,
+      phase: "model_ready",
+      executionProvider: "cpu",
+      activeModelFamily: "parakeet_tdt",
+      activeModelVariant: "int8",
+    });
+    const api = readLocalModuleBadgeSnapshot({
+      ready: true,
+      phase: "ready",
+      executionProvider: "cuda",
+      activeModelFamily: "parakeet_tdt",
+      activeModelVariant: "fp32",
+    });
+    const merged = mergeLocalModuleBadgeSnapshots(runtime, api);
+    expect(merged?.ready).toBe(false);
+    expect(merged?.phase).toBe("model_ready");
+    expect(merged?.activeModelVariant).toBe("fp32");
   });
 });

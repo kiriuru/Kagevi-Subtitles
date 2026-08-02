@@ -592,9 +592,24 @@
       }
     }, 30_000);
 
+    // Local ASR setup runs in a separate window; refresh readiness when the main
+    // dashboard regains focus (WebView may delay IPC while unfocused).
+    const refreshRuntimeOnFocus = () => {
+      if (document.visibilityState !== "visible") return;
+      void fetchRuntimeStatus()
+        .then((runtime) => patchApp({ runtime }))
+        .catch(() => {
+          // server may be restarting
+        });
+    };
+    document.addEventListener("visibilitychange", refreshRuntimeOnFocus);
+    window.addEventListener("focus", refreshRuntimeOnFocus);
+
     return () => {
       window.clearInterval(poll);
       window.clearInterval(slowPoll);
+      document.removeEventListener("visibilitychange", refreshRuntimeOnFocus);
+      window.removeEventListener("focus", refreshRuntimeOnFocus);
     };
   });
 

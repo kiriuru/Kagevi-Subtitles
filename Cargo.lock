@@ -5375,6 +5375,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-native-tls"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbae76ab933c85776efabc971569dd6119c580d8f5d448769dec1764bf796ef2"
+dependencies = [
+ "native-tls",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-rustls"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5404,7 +5414,9 @@ checksum = "8f72a05e828585856dacd553fba484c242c46e391fb0e58917c942ee9202915c"
 dependencies = [
  "futures-util",
  "log",
+ "native-tls",
  "tokio",
+ "tokio-native-tls",
  "tungstenite 0.29.0",
 ]
 
@@ -5738,6 +5750,7 @@ dependencies = [
  "http",
  "httparse",
  "log",
+ "native-tls",
  "rand",
  "sha1",
  "thiserror 2.0.18",
@@ -6073,6 +6086,7 @@ version = "0.6.1"
 dependencies = [
  "base64 0.22.1",
  "futures-util",
+ "native-tls",
  "serde",
  "serde_json",
  "sha2",
@@ -6081,6 +6095,7 @@ dependencies = [
  "tokio-tungstenite 0.29.0",
  "tracing",
  "uuid",
+ "voicesub-config",
  "voicesub-logging",
  "voicesub-subtitle",
  "voicesub-types",

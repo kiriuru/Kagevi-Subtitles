@@ -10,13 +10,15 @@ import {
   handleInactiveOverlapBuddyEnded,
   handleOverlapRecognitionEnded,
   markOverlapSlotActivity,
+  noteOverlapActiveActivity,
   onOverlapActiveSlotReady,
   overlapActiveSlotIndex,
   overlapResultAllowed,
   overlapSlotInactive,
-  preStartNextOverlapInstance,
   recognitionOverlapActive,
   shouldIgnoreOverlapBuddyError,
+  safeRestartOverlapRecognition,
+  preStartNextOverlapInstance,
 } from "./overlap-logic";
 import {
   maybeFlushAfterCommittedLongSegment,
@@ -165,6 +167,7 @@ function handleRecognitionResult(
   }
   if (overlapSlotIndex != null) {
     markOverlapSlotActivity(manager.state, overlapSlotIndex, manager.now());
+    noteOverlapActiveActivity(manager.state);
   }
   const { interimText, finalText, resultIndex } = parseRecognitionResultEvent(event);
   manager.state.lastResultIndex = resultIndex;
@@ -224,7 +227,7 @@ function handleRecognitionResult(
       forced_final: false,
     });
     manager.consumeCompletedSegmentInternal();
-    // Pre-start buddy only on segment final (hasNewFinal).
+    // Final → immediate preStartNextInstance (catch start of next phrase).
     if (overlapSlotIndex === overlapActiveSlotIndex(manager.state)) {
       preStartNextOverlapInstance(manager, "natural-final");
     }
@@ -252,6 +255,7 @@ export function wireRecognitionHandlers(
       }
       manager.state.recognitionOverlapSlotListening[overlapSlotIndex] = true;
       onOverlapActiveSlotReady(manager, overlapSlotIndex);
+      // 0.5.5: buddy onstart is silent (no status event / counters).
       if (overlapSlotInactive(manager.state, overlapSlotIndex)) {
         manager.markActivityInternal("start");
         return;
@@ -347,11 +351,20 @@ export function wireRecognitionHandlers(
     if (overlapSlotIndex != null && handleInactiveOverlapBuddyEnded(manager, overlapSlotIndex)) {
       return;
     }
+    // 0.5.5: no orphan commit / prestart on onend — force-finalize timer already
+    // committed + prestarted buddy while active was alive; handoff or generation restart.
     manager.state.lastEndAtMs = manager.now();
     manager.state.lastSessionEndedAtMs = manager.state.lastEndAtMs;
     manager.state.onSound = false;
     manager.setRecognitionStateInternal("idle");
     if (overlapSlotIndex != null && handleOverlapRecognitionEnded(manager, overlapSlotIndex)) {
+      return;
+    }
+    // safeRestartRecognition: no buddy → flip slot + short delay start.
+    if (
+      overlapSlotIndex != null &&
+      safeRestartOverlapRecognition(manager, overlapSlotIndex)
+    ) {
       return;
     }
     manager.cleanupRecognitionInstance(generationId);

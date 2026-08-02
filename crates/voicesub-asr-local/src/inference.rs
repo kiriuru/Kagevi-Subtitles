@@ -16,7 +16,9 @@ use crate::deps::{
     DepError, env_check, ort_dll_path_for_provider, prepare_ort_runtime, validate_deps_for_provider,
 };
 use crate::model_family::ModelFamily;
-use crate::model_manager::{is_model_installed_for, resolve_model_dir};
+use crate::model_manager::{
+    is_model_installed_for, resolve_model_dir, variant_cpu_bound_under_cuda,
+};
 
 #[derive(Debug, Error)]
 pub enum InferenceError {
@@ -311,12 +313,24 @@ impl InferenceEngine {
             }
         }
 
+        let cuda_quant_cpu_bound = active_provider == EXECUTION_PROVIDER_CUDA
+            && variant_cpu_bound_under_cuda(&config.model.variant);
+        if cuda_quant_cpu_bound {
+            warn!(
+                target: "voicesub.asr_local.inference",
+                variant = %config.model.variant,
+                "CUDA EP registered, but quantized Parakeet ops (MatMulInteger/ConvInteger/DynamicQuantizeLinear) have no CUDA kernels — decode stays on CPU. Use fp16 or fp32 for GPU acceleration."
+            );
+        }
+
         info!(
             target: "voicesub.asr_local.inference",
             path = %model_dir.display(),
             family = family.as_str(),
+            variant = %config.model.variant,
             provider = %active_provider,
             load_ms,
+            cuda_quant_cpu_bound,
             intra_op = config.inference.intra_op_threads,
             inter_op = config.inference.inter_op_threads,
             graph_opt = config.inference.graph_optimization_level,
@@ -330,6 +344,11 @@ impl InferenceEngine {
         let message = if active_provider != requested {
             format!(
                 "Loaded with {active_provider} EP (requested {requested}; CUDA fallback applied)"
+            )
+        } else if cuda_quant_cpu_bound {
+            format!(
+                "Model loaded with CUDA EP — {} keeps most decode on CPU (no CUDA kernels for integer-quant ops). Switch to fp16 or fp32 for GPU.",
+                config.model.variant
             )
         } else if config.inference.ort_profiling {
             format!(
@@ -613,16 +632,26 @@ fn execution_config(
     } else {
         None
     };
-    let provider = if provider == EXECUTION_PROVIDER_CUDA {
-        ExecutionProvider::Cuda
-    } else {
-        ExecutionProvider::Cpu
-    };
+    let use_cuda = provider == EXECUTION_PROVIDER_CUDA;
+    // Always leave parakeet-rs on Cpu for EP selection. Its Cuda path registers
+    // CUDA without error_on_failure; if we then re-register CUDA in custom_configure,
+    // ORT fails with "Provider CUDAExecutionProvider has already been registered."
+    // Register CUDA once here with error_on_failure (probe already ran in verify_cuda_session).
     ExecutionConfig::new()
-        .with_execution_provider(provider)
+        .with_execution_provider(ExecutionProvider::Cpu)
         .with_intra_threads(inference.intra_op_threads as usize)
         .with_inter_threads(inference.inter_op_threads as usize)
         .with_custom_configure(move |builder| {
+            #[cfg(windows)]
+            let builder = if use_cuda {
+                use ort::ep::{CPU, CUDA};
+                builder.with_execution_providers([
+                    CUDA::default().build().error_on_failure(),
+                    CPU::default().build().error_on_failure(),
+                ])?
+            } else {
+                builder
+            };
             apply_session_options(builder, &inference, profiling_prefix.as_deref())
         })
 }
@@ -641,6 +670,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = encoder_probe_path(dir.path(), ModelFamily::ParakeetTdt, "fp32").unwrap();
         assert!(path.ends_with("encoder-model.onnx"));
+        let fp16 = encoder_probe_path(dir.path(), ModelFamily::ParakeetTdt, "fp16").unwrap();
+        assert!(fp16.ends_with("encoder-model.onnx"));
         let int8 = encoder_probe_path(dir.path(), ModelFamily::ParakeetTdt, "int8").unwrap();
         assert!(int8.ends_with("encoder-model.int8.onnx"));
     }

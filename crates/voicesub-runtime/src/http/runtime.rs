@@ -10,12 +10,12 @@ use tokio::sync::Mutex;
 use voicesub_browser::BrowserWorkerLauncher;
 use voicesub_config::{
     ASR_MODE_LOCAL_PARAKEET, base_url_from_socket, overlay_url, read_full_logging_enabled,
-    worker_url_for_payload,
+    read_runtime_metrics_enabled, worker_url_for_payload,
 };
 use voicesub_logging::apply_logging_preferences;
 use voicesub_translation::DispatcherCallbacks;
 
-use super::asr_diagnostics::assemble_browser_asr_diagnostics;
+use super::asr_diagnostics::{assemble_browser_asr_diagnostics, slim_asr_diagnostics};
 use super::local_asr::local_asr_module_json;
 use super::partial_emit::partial_emit_settings_from_config;
 use super::state::HttpState;
@@ -97,6 +97,7 @@ impl RuntimeOrchestrator {
             apply_logging_preferences(
                 &state.paths.logs_dir,
                 read_full_logging_enabled(&snapshot_payload),
+                read_runtime_metrics_enabled(&snapshot_payload),
             );
             state.translation.lock().await.apply_live_settings().await;
             state.subtitle.republish_latest().await;
@@ -449,6 +450,13 @@ impl RuntimeOrchestrator {
         let snapshot = self.inner.lock().await.clone();
         build_runtime_status(&snapshot, state).await
     }
+
+    /// Push a `runtime_update` so the dashboard picks up Local ASR module readiness
+    /// without waiting for the next heartbeat or a tab remount.
+    pub async fn publish_status(&self, state: &HttpState, force: bool) {
+        let snapshot = self.inner.lock().await.clone();
+        broadcast_runtime_update(state, &snapshot, force).await;
+    }
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -529,10 +537,10 @@ async fn runtime_action_response(
 async fn build_runtime_status(inner: &OrchestratorInner, state: &HttpState) -> Value {
     let browser_diag = state.asr_worker.service().diagnostics().await;
     let ws_diag = state.events.diagnostics();
-    let translation_diag = state.translation.lock().await.diagnostics_snapshot();
     let base = resolve_base_url(state).await;
     let store = state.config.read().await;
     let payload = store.payload();
+    let runtime_metrics_enabled = read_runtime_metrics_enabled(payload);
     let asr_mode = asr_mode_from_payload(payload);
     let use_local_asr = asr_mode == ASR_MODE_LOCAL_PARAKEET;
     let obs_diag = state.obs_captions.diagnostics().await;
@@ -544,7 +552,11 @@ async fn build_runtime_status(inner: &OrchestratorInner, state: &HttpState) -> V
         "output_mode": obs_diag.get("output_mode").cloned().unwrap_or(json!("disabled")),
         "diagnostics": obs_diag,
     });
-    let subtitle_router_counters = state.subtitle.diagnostic_counters();
+    let subtitle_router_counters = if runtime_metrics_enabled {
+        state.subtitle.diagnostic_counters()
+    } else {
+        json!({ "runtime_metrics_enabled": false })
+    };
     let browser_lang = payload
         .get("asr")
         .and_then(|v| v.get("browser"))
@@ -552,7 +564,7 @@ async fn build_runtime_status(inner: &OrchestratorInner, state: &HttpState) -> V
         .and_then(|v| v.as_str())
         .unwrap_or("en-US");
     let partial_emit = partial_emit_settings_from_config(payload);
-    let asr_diagnostics = if use_local_asr {
+    let asr_diagnostics_full = if use_local_asr {
         state.local_asr.diagnostics()
     } else {
         assemble_browser_asr_diagnostics(
@@ -563,30 +575,56 @@ async fn build_runtime_status(inner: &OrchestratorInner, state: &HttpState) -> V
             inner.running,
         )
     };
+    let asr_diagnostics = if runtime_metrics_enabled {
+        asr_diagnostics_full
+    } else {
+        slim_asr_diagnostics(asr_diagnostics_full)
+    };
 
+    // Detailed translation diagnostics lock the dispatcher — skip unless metrics are enabled.
+    let translation_diag = if runtime_metrics_enabled {
+        state.translation.lock().await.diagnostics_snapshot()
+    } else {
+        json!({ "runtime_metrics_enabled": false })
+    };
+    let empty_translation = json!({});
     let mut metrics = state.runtime_metrics.snapshot(
         &ws_diag,
-        browser_diag.browser_stale_events_ignored,
-        &translation_diag,
+        if runtime_metrics_enabled {
+            browser_diag.browser_stale_events_ignored
+        } else {
+            0
+        },
+        if runtime_metrics_enabled {
+            &translation_diag
+        } else {
+            &empty_translation
+        },
     );
     if let Some(obj) = metrics.as_object_mut() {
-        if let Some(bus) = state.ws_publisher.event_bus() {
-            let bus_diag = bus.diagnostics();
-            obj.insert(
-                "event_bus_subscribers".into(),
-                json!(bus_diag.subscriber_count),
-            );
-            obj.insert("event_bus_revision".into(), json!(bus_diag.revision));
-            obj.insert(
-                "event_bus_publish_count".into(),
-                json!(bus_diag.publish_count),
-            );
-            obj.insert(
-                "event_bus_channel_capacity".into(),
-                json!(bus_diag.channel_capacity),
-            );
+        obj.insert(
+            "runtime_metrics_enabled".into(),
+            json!(runtime_metrics_enabled),
+        );
+        if runtime_metrics_enabled {
+            if let Some(bus) = state.ws_publisher.event_bus() {
+                let bus_diag = bus.diagnostics();
+                obj.insert(
+                    "event_bus_subscribers".into(),
+                    json!(bus_diag.subscriber_count),
+                );
+                obj.insert("event_bus_revision".into(), json!(bus_diag.revision));
+                obj.insert(
+                    "event_bus_publish_count".into(),
+                    json!(bus_diag.publish_count),
+                );
+                obj.insert(
+                    "event_bus_channel_capacity".into(),
+                    json!(bus_diag.channel_capacity),
+                );
+            }
+            obj.insert("background_tasks".into(), state.background_tasks.snapshot());
         }
-        obj.insert("background_tasks".into(), state.background_tasks.snapshot());
     }
 
     let local_module = local_asr_module_json(&state.local_asr.status());
@@ -608,6 +646,7 @@ async fn build_runtime_status(inner: &OrchestratorInner, state: &HttpState) -> V
         "last_error": inner.last_error,
         "status_message": inner.status_message,
         "active_config_source": store.document().loaded_from(),
+        "runtime_metrics_enabled": runtime_metrics_enabled,
         "asr": {
             "active_mode": asr_mode,
             "local_module": local_module,

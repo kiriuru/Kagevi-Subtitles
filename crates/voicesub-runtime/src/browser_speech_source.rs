@@ -120,11 +120,13 @@ impl BrowserSpeechSource {
         format!("{}:{generation_id}", session_id.unwrap_or(""))
     }
 
-    /// Concrete language for ingest when the worker/Local ASR omit `source_lang`.
+    /// Language for ingest when the worker/Local ASR omit `source_lang`.
     ///
-    /// Local ASR always omits it; falling back to config `source_lang = "auto"` made Google TTS
-    /// fetch `tl=auto` and silently fail source speech (Web Speech works because the worker
-    /// sends `recognition_language`).
+    /// Browser Web Speech usually sends a concrete language; Local ASR always omits it.
+    /// For Local ASR with `source_lang = "auto"`, keep `"auto"` so MT can detect the spoken
+    /// language — do **not** borrow `asr.browser.recognition_language` (often `ru-RU`), which
+    /// mislabels English Parakeet text as Russian and short-circuits / no-ops EN→RU translation.
+    /// Google TTS maps ingest `auto` → `en` via `normalize_tts_lang`.
     fn browser_source_lang(snapshot: &std::sync::RwLock<serde_json::Value>) -> String {
         resolve_ingest_source_lang(&snapshot.read().unwrap_or_else(|e| e.into_inner()))
     }
@@ -392,7 +394,12 @@ impl SharedBrowserSpeechSource {
     }
 }
 
-/// Resolve a speakable source language for ASR ingest (never `"auto"`).
+/// Resolve source language for ASR ingest when the worker/Local ASR omit it.
+///
+/// - Concrete `source_lang` wins for every ASR mode.
+/// - Local ASR (`local_parakeet`) keeps `"auto"` so translation can detect language; TTS maps
+///   `auto` → `en` at the speech boundary.
+/// - Browser mode falls back to `asr.browser.recognition_language`, then `"en"`.
 pub(crate) fn resolve_ingest_source_lang(config: &serde_json::Value) -> String {
     let source = config
         .get("source_lang")
@@ -401,6 +408,14 @@ pub(crate) fn resolve_ingest_source_lang(config: &serde_json::Value) -> String {
         .trim();
     if !source.is_empty() && !source.eq_ignore_ascii_case("auto") {
         return source.to_ascii_lowercase();
+    }
+    let mode = config
+        .pointer("/asr/mode")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+    if mode.eq_ignore_ascii_case("local_parakeet") {
+        return "auto".into();
     }
     let recognition = config
         .pointer("/asr/browser/recognition_language")
@@ -430,13 +445,32 @@ mod tests {
     }
 
     #[test]
-    fn resolve_ingest_source_lang_maps_auto_to_recognition_language() {
+    fn resolve_ingest_source_lang_maps_auto_to_recognition_language_for_browser() {
         assert_eq!(
             resolve_ingest_source_lang(&json!({
                 "source_lang": "auto",
-                "asr": { "browser": { "recognition_language": "ru-RU" } }
+                "asr": {
+                    "mode": "browser_google",
+                    "browser": { "recognition_language": "ru-RU" }
+                }
             })),
             "ru-ru"
+        );
+    }
+
+    #[test]
+    fn resolve_ingest_source_lang_keeps_auto_for_local_parakeet() {
+        // Must not borrow browser recognition_language — that mislabels English ASR as ru
+        // and breaks EN→RU translation (short-circuit / provider same-lang no-op).
+        assert_eq!(
+            resolve_ingest_source_lang(&json!({
+                "source_lang": "auto",
+                "asr": {
+                    "mode": "local_parakeet",
+                    "browser": { "recognition_language": "ru-RU" }
+                }
+            })),
+            "auto"
         );
     }
 

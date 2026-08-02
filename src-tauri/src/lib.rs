@@ -22,11 +22,11 @@ use tracing::{info, warn};
 use voicesub_audio::PlaybackHub;
 use voicesub_config::{
     AppConfig, ProjectPaths, discover_project_root, ensure_runtime_data_dirs, http_bind_from_env,
-    read_full_logging_enabled_from_user_data,
+    read_full_logging_enabled_from_user_data, read_runtime_metrics_enabled_from_user_data,
 };
 use voicesub_logging::{
     complete_graceful_shutdown, init_tracing_backbone, install_lifecycle_hooks, log_shutdown_begin,
-    log_shutdown_step, set_config_full_logging_enabled,
+    log_shutdown_step, set_config_full_logging_enabled, set_config_runtime_metrics_enabled,
 };
 use voicesub_runtime::{RuntimeHandle, RuntimeService, RuntimeStateSnapshot};
 use voicesub_tts::{TTS_WINDOW_LABEL, TtsModuleService, TtsSpeechPipeline, TwitchOAuthBridge};
@@ -121,6 +121,9 @@ pub fn run() {
     let paths = ProjectPaths::discover(&project_root);
     ensure_runtime_data_dirs(&paths).expect("failed to ensure runtime user-data/logs directories");
     set_config_full_logging_enabled(read_full_logging_enabled_from_user_data(
+        &paths.user_data_dir,
+    ));
+    set_config_runtime_metrics_enabled(read_runtime_metrics_enabled_from_user_data(
         &paths.user_data_dir,
     ));
     init_tracing_backbone(&project_root);

@@ -101,6 +101,10 @@ body {
   margin: 0;
 }
 
+.warn-line {
+  color: var(--warning, #c48a1a);
+}
+
 .badge-ok {
   color: var(--text-positive);
 }

@@ -18,4 +18,11 @@ describe("overlay layout CSS contract", () => {
   it("keeps default content stack as column for stacked rows", () => {
     expect(css).toMatch(/\.subtitle-line__content\s*\{[^}]*flex-direction:\s*column/s);
   });
+
+  it("shrink-wraps stacked surfaces to text width (not full stage)", () => {
+    expect(css).toMatch(
+      /\.subtitle-line__content\s*\{[^}]*align-items:\s*var\(--subtitle-justify,\s*center\)/s,
+    );
+    expect(css).toMatch(/\.subtitle-line__surface\s*\{[^}]*width:\s*fit-content/s);
+  });
 });

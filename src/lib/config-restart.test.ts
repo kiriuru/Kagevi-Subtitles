@@ -21,6 +21,15 @@ describe("config restart reasons", () => {
     expect(getRestartRequiredReasons(previous, next)).toEqual([]);
   });
 
+  it("does not require restart for runtime metrics toggle (applied live on save)", () => {
+    const previous = baseConfig();
+    const next = {
+      ...baseConfig(),
+      logging: { full_enabled: false, runtime_metrics_enabled: true },
+    };
+    expect(getRestartRequiredReasons(previous, next)).toEqual([]);
+  });
+
   it("detects web speech language change", () => {
     const previous = baseConfig();
     const next = {

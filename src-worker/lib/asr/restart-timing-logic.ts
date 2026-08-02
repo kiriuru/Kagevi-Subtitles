@@ -36,43 +36,29 @@ export function minimumReconnectGuardDelayMs(
   return remainingMs;
 }
 
-export function nextNetworkBackoffMs(
-  state: BrowserAsrState,
-  initialNetworkBackoffMs: number,
-  maxNetworkBackoffMs: number
-): number {
-  const current = Number(state.restartBackoffMs || 0);
-  if (!current) {
-    state.restartBackoffMs = Math.max(0, Number(state.networkReconnectInitialMs || initialNetworkBackoffMs || 1000));
-  } else {
-    state.restartBackoffMs = Math.min(
-      maxNetworkBackoffMs,
-      Math.max(Number(state.networkReconnectInitialMs || initialNetworkBackoffMs || 1000), current * 2)
-    );
-  }
-  return state.restartBackoffMs;
-}
-
 export function restartDelayForReason(state: BrowserAsrState, reason: string, limits: TimingLimits): number {
   const normalized = String(reason || "")
     .trim()
     .toLowerCase();
   if (normalized === "no_speech") {
-    if (!state.noSpeechBackoffMs) {
-      state.noSpeechBackoffMs = Math.max(0, Number(state.noSpeechRestartDelayMs || limits.initialNoSpeechDelayMs || 350));
-    } else {
-      state.noSpeechBackoffMs = Math.min(
-        limits.maxNoSpeechDelayMs,
-        Math.max(
-          Math.max(0, Number(state.noSpeechRestartDelayMs || limits.initialNoSpeechDelayMs || 350)),
-          state.noSpeechBackoffMs + 800
-        )
-      );
-    }
-    return state.noSpeechBackoffMs;
+    // Fixed delay — accumulating +800 ms backoff opened multi-second gaps between
+    // overlap/segmented restarts when Chrome ends on silence without a buddy armed.
+    const delayMs = Math.max(
+      0,
+      Number(state.noSpeechRestartDelayMs || limits.initialNoSpeechDelayMs || 150),
+    );
+    state.noSpeechBackoffMs = delayMs;
+    return delayMs;
   }
   if (normalized === "network" || normalized === "audio_capture") {
-    return nextNetworkBackoffMs(state, limits.initialNetworkBackoffMs, limits.maxNetworkBackoffMs);
+    // Fixed delay — exponential growth left multi-second gaps while Google/mic recovered.
+    // `network_reconnect_max_ms` is retained in config for compatibility but no longer applied.
+    const delayMs = Math.max(
+      0,
+      Number(state.networkReconnectInitialMs || limits.initialNetworkBackoffMs || 500),
+    );
+    state.restartBackoffMs = delayMs;
+    return delayMs;
   }
   return limits.restartDelayByReasonMs[normalized] ?? limits.restartDelayByReasonMs.normal_onend ?? 0;
 }

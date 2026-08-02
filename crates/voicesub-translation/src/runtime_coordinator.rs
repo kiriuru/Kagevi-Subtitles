@@ -25,6 +25,7 @@ pub fn summarize_translation_diagnostics(
     let snapshot = dispatcher_snapshot.as_object().cloned().unwrap_or_default();
     let mut merged = readiness.as_object().cloned().unwrap_or_default();
 
+    // Short aliases (legacy / readiness consumers).
     merged.insert(
         "queue_depth".into(),
         json!(int_field(snapshot.get("translation_queue_depth"))),
@@ -61,6 +62,14 @@ pub fn summarize_translation_diagnostics(
             .map(Value::String)
             .unwrap_or(Value::Null),
     );
+
+    // Pass through dispatcher `translation_*` keys so `/api/runtime/status` metrics and the
+    // Tools panel (which read the prefixed names) are not wiped when diagnostics are merged.
+    for (key, value) in &snapshot {
+        if key.starts_with("translation_") {
+            merged.insert(key.clone(), value.clone());
+        }
+    }
 
     Value::Object(merged)
 }
@@ -105,6 +114,9 @@ mod tests {
         assert_eq!(merged["last_provider_latency_ms"], 88.0);
         assert_eq!(merged["last_runtime_reason"], "stale");
         assert_eq!(merged["status"], "ready");
+        assert_eq!(merged["translation_jobs_started"], 9);
+        assert_eq!(merged["translation_queue_latency_ms"], 12.5);
+        assert_eq!(merged["translation_last_runtime_reason"], "stale");
     }
 
     #[test]

@@ -14,6 +14,49 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
+### Added
+
+- Pruned ~49 near-duplicate `bin/fonts/` faces (~41 MB): old workhorse twins (Roboto, JetBrains Mono, Source Code Pro, Bebas Neue, …) and creative near-clones (horror twins, Londrina/Bungee outline variants, oversized Stylish/QingKe, …); kept distinct creative/texture pack.
+- Eight creative built-in style presets from the new pack: **Titan Gothic**, **Dirt Grunge**, **Spray Street**, **Glitch Neon**, **Pixel Arcade**, **Brush Ink**, **Military Stencil**, **Metal Horror**. Built-in catalog now loaded from `crates/voicesub-config/data/builtin_style_presets.json` via `include_str!`.
+- Creative subtitle fonts in `bin/fonts/`: Latin (**Press Start 2P**, **Silkscreen**, **Lobster**, **Pacifico**, **Righteous**, **Bungee**, **Fredoka**); Latin+Cyrillic (**Russo One**, **Caveat**, **Philosopher**, **Neucha**, **Yeseva One**, **Marck Script**, **Bad Script**, **Poetsen One**, **Rubik**, **Nunito**, **Manrope**, **Onest**, **Unbounded**); Japanese (**DotGothic16**, **Yusei Magic**, **Hachi Maru Pop**, **Stick**); Chinese (**ZCOOL KuaiLe**, **Ma Shan Zheng**); Korean (**Do Hyeon**, **Gaegu**, **Single Day**, **Poor Story**).
+- Dramatic / anime-title fonts (AoT-adjacent energy): JP+Cyrillic **Dela Gothic One**, **Rampart One**, **Reggae One**, **Train One**, **Zen Old Mincho Black**; JP **New Tegomin**, **Potta One**, **Chokokutai**; Latin horror/military **Metal Mania**, **Creepster**, **Nosifer**, **Eater**, **Butcherman**, **Pirata One**, **Black Ops One**, **Germania One**, **Cinzel Decorative**, **Keania One**, **Limelight**, **Unifraktur Cook**; Cyrillic display **Stalinist One**, **Kelly Slab**, **Poiret One**, **Ruslan Display**; KR **Gugi**, **Stylish**, **Yeon Sung**, **Dokdo**, **Song Myung**; CN brush/display **Liu Jian Mao Cao**, **Zhi Mang Xing**, **Long Cang**, **ZCOOL QingKe HuangYou**.
+- Textured / distressed / stencil fonts: Latin+Cyrillic **Rubik Dirt / Distressed / Burned / Glitch / Wet Paint / Spray Paint / Marker Hatch / Moonrocks / Beastly / Broken Fax / Vinyl / Iso / Puddles**; Latin outline/stencil **Londrina Sketch/Outline/Shadow**, **Bungee Shade/Inline/Outline**, **Stardos Stencil**, **Wallpoet**, **Big Shoulders Stencil**, **Rock Salt**, **Permanent Marker**; JP brush **Yomogi**, **Zen Kurenaido**; KR brush/texture **Nanum Brush/Pen Script**, **East Sea Dokdo**, **Bagel Fat One**.
+- OBS CC: optional `timing.send_translation_partials` — live-partial translations in `translation_1…4` modes (throttled like source); finals remain the fallback for LLM / providers without partials.
+- OBS panel: hint for Twitch native CC languages (CEA-608/708 — Latin scripts reliable; Cyrillic/CJK → browser overlay).
+- CJK fonts in `bin/fonts/`: **Zen Maru Gothic** (JP), **RocknRoll One** (JP display), **ZCOOL XiaoWei** (CN), **Black Han Sans** / **Jua** (KR); font pickers show alphabet tags with ` · ` (`Oswald Bold · Latin`, `Noto Sans Regular · Latin · Cyrillic`, …).
+- Presets that already had Cyrillic stacks now include matching CJK fallbacks (soft: Zen Maru / ZCOOL / Jua; bold/HUD: RocknRoll / ZCOOL / Black Han Sans; anime: ZCOOL / Jua on top of Mochiy).
+
+### Changed
+
+- Idle subtitle preview: translation lines show short sample phrases in every supported target language instead of tags like `RU`/`JA`, so font stacks can be judged on Cyrillic, CJK, and other scripts.
+- Style → slot overrides: tabs only for `source` and enabled translation lines (same rule as OBS `translation_*` modes), with language in the label.
+- OBS panel: `translation_*` modes list only enabled Translation lines (with language in the label); a selected inactive slot is marked and normalize resets it to `disabled`.
+- OBS overlay renderer split into ESM modules under `bin/overlay/shared/js/subtitle-style/` (entry `index.js`) instead of the `subtitle-style.js` monolith. Public `window.SubtitleStyleRenderer` API and fast/slow-path behavior are unchanged.
+- Subtitle style slots aligned with the **4** translation-line cap: dropped leftover `translation_5` from JS/Rust `LINE_SLOT_NAMES` and built-in presets; `inferStyleSlot` clamp is 1…4.
+- Overlay i18n: `npm run i18n:bundle` emits a minimal CEF bundle (`document.title.overlay` only) instead of the full dashboard catalog (~193 KB → ~0.5 KB).
+
+### Fixed
+
+- Creative presets readability pass: **Pixel Arcade** uses CC0 **Pixel Operator** (Latin) + **Press Start 2P** Cyrillic (unicode-range bug fixed so RU no longer skipped); **Metal Horror** → **Rubik Wet Paint** (OFL Latin+Cyrillic drip face — Typodermic Shlop is desktop-only / no Cyrillic); **Glitch Neon** / **Dirt Grunge** plates removed and effects dialed down; **Spray Street** → **Rubik Distressed**; **Titan Gothic** stroke lightened.
+- Overlay stacked: line background/frame hugs the text again (like `single` / `dual-line`) instead of stretching to full stage width.
+- Idle subtitle preview: changing text alignment (or line gap) updates immediately — fast-path re-renders now refresh stage/row layout CSS vars, not only surface styles (no full page reload).
+- Idle subtitle preview: source line uses a native-script sample for the recognition language (`asr.browser.recognition_language` / `source_lang`), not UI-locale copy — e.g. Japanese recognition no longer shows Russian “Предпросмотр исходной строки” when the UI is Russian.
+- Browser Web Speech: suppress Chrome “Restore pages?” / unclean-shutdown bubble on every worker relaunch — add `--hide-crash-restore-bubble` and clear `exit_type`/`exited_cleanly` in the isolated profile before spawn (worker stop uses `taskkill /F`).
+- Browser Web Speech: harden worker Chrome launch for current Stable (133+) — disable `AllowAggressiveThrottlingWithWebSocket` + `BatterySaverModeAvailable`, add `--disable-field-trial-config`, `--disable-hang-monitor`, `--audio-process-high-priority`.
+- Browser Web Speech: `network` / `audio_capture` restart delay is fixed (`network_reconnect_initial_ms`, default 500 ms) — no exponential growth up to `network_reconnect_max_ms`.
+- Runtime Diagnostics (Tools): translation metrics (`jobs started`, latency, provider) show again — summarized `translation_diagnostics` no longer wipes `translation_*` keys in `metrics`; for Local ASR — live decode/partial/final counters, capture/EP instead of a misleading `worker: Disconnected`.
+- Runtime Diagnostics: `logging.runtime_metrics_enabled` (Tools, default off) — detailed translation/Local ASR metrics and high-churn `diagnostics_update` only on demand, so active recognition does not pay extra fanout cost.
+- Local ASR: translation to Russian (and other targets) works again — ingest no longer labels Parakeet text with `asr.browser.recognition_language` (e.g. `ru-RU`), which made EN→RU look like a same-language copy of the English ASR line. With `source_lang=auto`, Local ASR keeps `auto` for MT; TTS still maps `auto`→`en`.
+- Local ASR CUDA: `int8` / `int8_smoothquant` decode stays on CPU (no CUDA kernels for integer-quant ops) — UI/log warning; use **fp16** (~1.2 GB) or **fp32** (~2.5 GB) for GPU. ORT `1.24.2` cuda13 still registers correctly; bumping to 1.28 alone does not move int8 onto the GPU.
+- Local ASR: catalog adds **fp16** (`grikdotnet/parakeet-tdt-0.6b-fp16`) — lighter floating-point analog of int8 for CUDA.
+- Local ASR: module readiness on the main dashboard (Modules badge + Live mode selector) updates immediately after setup / window focus, without switching tabs (`runtime_update` + focus refresh).
+- OBS Closed Captions: Live chip no longer turns red for `stream_not_running` (connected, stream not started yet); status uses `connection_state`.
+- OBS CC: debug-mirror `SetInputSettings` failures no longer block native `SendStreamCaption`.
+- OBS CC: `enabled` is the master gate for the debug mirror (no WS without it); hot path skips enqueue when OBS is off.
+- OBS CC: queue overflow prefers dropping partials/payloads over `DelayedClear`; enqueue uses an atomic worker flag (no `try_lock` drops); faster stream-status poll (3s) while inactive.
+- OBS panel: `connection_state` via i18n; partial-throttle UI in `source_live` and `translation_*`.
+- Browser Web Speech continuous: stall with orphan partial commits without full restart; stall grace 12 s; long-segment flush ≥450 chars; faster `watchdog_stall` / flush restart delays.
+
 ## [0.6.1] - 2026-07-30
 
 ### Added

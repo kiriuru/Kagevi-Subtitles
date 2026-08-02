@@ -3,7 +3,7 @@ import { normalizeTranscriptText } from "./transcript-logic";
 import { overlapActiveSlotIndex, recognitionOverlapActive } from "./overlap-logic";
 import { requestRecognitionFlush } from "./recognition-lifecycle";
 
-export const DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 200;
+export const DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450;
 
 export function shouldFlushAfterLongSegment(
   state: BrowserAsrState,
@@ -80,6 +80,7 @@ export function maybeFlushAfterCommittedLongSegment(
   manager.state.longSegmentFlushCount = Number(manager.state.longSegmentFlushCount || 0) + 1;
   resetSegmentPartialPeak(manager.state);
   const reason = "long_segment_flush";
+  // 0.5.5: only stop the active slot. Caller already ran preStart on natural/force final.
   if (recognitionOverlapActive(manager.state)) {
     flushOverlapActiveSlot(manager, source);
     return;

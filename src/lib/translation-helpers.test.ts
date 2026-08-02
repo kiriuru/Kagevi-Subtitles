@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildProviderOptionGroups,
+  getActiveStyleLineSlots,
   getProviderFieldLabel,
   getProviderHintKey,
   getProviderSetupUrl,
@@ -8,6 +9,7 @@ import {
   isLlmProvider,
 } from "./translation-helpers";
 import { t } from "./i18n";
+import type { ConfigPayload } from "./types";
 
 describe("translation-helpers", () => {
   it("builds grouped provider options for all supported providers", () => {
@@ -44,5 +46,33 @@ describe("translation-helpers", () => {
     expect(isCustomPromptOverrideEnabled({ override_prompt: "false", custom_prompt: "x" })).toBe(
       false,
     );
+  });
+
+  it("lists style override slots for source and enabled translation lines only", () => {
+    const config: ConfigPayload = {
+      translation: {
+        enabled: true,
+        lines: [
+          { slot_id: "translation_1", enabled: true, target_lang: "ru", provider: "google_translate_v2" },
+          { slot_id: "translation_2", enabled: false, target_lang: "ja", provider: "google_translate_v2" },
+          { slot_id: "translation_3", enabled: true, target_lang: "ko", provider: "google_translate_v2" },
+          { slot_id: "translation_4", enabled: false, target_lang: "zh-cn", provider: "google_translate_v2" },
+        ],
+      },
+    };
+    expect(getActiveStyleLineSlots(config)).toEqual(["source", "translation_1", "translation_3"]);
+  });
+
+  it("hides translation style slots when show_translations is false", () => {
+    const config: ConfigPayload = {
+      subtitle_output: { show_translations: false },
+      translation: {
+        enabled: true,
+        lines: [
+          { slot_id: "translation_1", enabled: true, target_lang: "en", provider: "google_translate_v2" },
+        ],
+      },
+    };
+    expect(getActiveStyleLineSlots(config)).toEqual(["source"]);
   });
 });

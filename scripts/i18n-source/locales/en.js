@@ -118,7 +118,6 @@
   "obs.output.translation_2": "Translation 2",
   "obs.output.translation_3": "Translation 3",
   "obs.output.translation_4": "Translation 4",
-  "obs.output.translation_5": "Translation 5",
   "obs.partial_throttle": "Minimum gap between partial sends",
   "obs.password": "Password",
   "obs.password.placeholder": "OBS websocket password",

@@ -355,6 +355,11 @@
           "default": "",
           "title": "Password",
           "type": "string"
+        },
+        "use_ssl": {
+          "default": false,
+          "title": "Use SSL (wss)",
+          "type": "boolean"
         }
       },
       "title": "ObsClosedCaptionsConnectionConfig",
@@ -388,13 +393,18 @@
           "title": "Send Partials",
           "type": "boolean"
         },
+        "send_translation_partials": {
+          "default": false,
+          "title": "Send Translation Partials",
+          "type": "boolean"
+        },
         "partial_throttle_ms": {
-          "default": 250,
+          "default": 140,
           "title": "Partial Throttle Ms",
           "type": "integer"
         },
         "min_partial_delta_chars": {
-          "default": 3,
+          "default": 1,
           "title": "Min Partial Delta Chars",
           "type": "integer"
         },
@@ -917,6 +927,12 @@
         "full_enabled": {
           "default": false,
           "title": "Full Enabled",
+          "type": "boolean"
+        },
+        "runtime_metrics_enabled": {
+          "default": false,
+          "title": "Runtime Metrics Enabled",
+          "description": "Detailed Tools runtime metrics and high-churn Local ASR diagnostics fanout. Default off to reduce load while recognition is active.",
           "type": "boolean"
         }
       },

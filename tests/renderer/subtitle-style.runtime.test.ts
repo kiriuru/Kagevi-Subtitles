@@ -558,11 +558,11 @@ describe("SubtitleStyleRenderer runtime", () => {
 
   it("maps expensive overlay fragment filters to fade", () => {
     const R = renderer();
-    expect(R.resolveFreshFragmentEffect("glow", { overlay: true }, 3, 10)).toBe("fade");
-    expect(R.resolveFreshFragmentEffect("blur_in", { overlay: true }, 3, 10)).toBe("fade");
-    expect(R.resolveFreshFragmentEffect("glow", { overlay: false }, 3, 10)).toBe("glow");
-    expect(R.resolveFreshFragmentEffect("pulse", { overlay: true }, 3, 10)).toBe("pulse");
-    expect(R.resolveFreshFragmentEffect("reveal", { overlay: true }, 3, 10)).toBe("reveal");
+    expect(R.resolveFreshFragmentEffect("glow", { overlay: true }, 3)).toBe("fade");
+    expect(R.resolveFreshFragmentEffect("blur_in", { overlay: true }, 3)).toBe("fade");
+    expect(R.resolveFreshFragmentEffect("glow", { overlay: false }, 3)).toBe("glow");
+    expect(R.resolveFreshFragmentEffect("pulse", { overlay: true }, 3)).toBe("pulse");
+    expect(R.resolveFreshFragmentEffect("reveal", { overlay: true }, 3)).toBe("reveal");
   });
 
   it("marks animated fresh fragments with transform-capable effect classes", () => {
@@ -700,5 +700,56 @@ describe("SubtitleStyleRenderer runtime", () => {
     const row = container.querySelector(".subtitle-line") as HTMLElement | null;
     expect(stage?.style.getPropertyValue("--subtitle-line-gap")).toBe("14px");
     expect(row?.style.getPropertyValue("--subtitle-text-align")).toBe("left");
+  });
+
+  it("updates text_align and line_gap on fast-path re-render (same shape)", () => {
+    const R = renderer();
+    const basePayload = {
+      preset: "stacked",
+      compact: false,
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      show_source: true,
+      show_translations: false,
+      visible_items: [{ kind: "source", text: "Preview", style_slot: "source" }],
+    };
+    const leftStyle = R.resolveEffectiveStyle?.(
+      {
+        preset: "clean_default",
+        base: {
+          ...(minimalStyle().base as Record<string, unknown>),
+          text_align: "left",
+          line_gap_px: 8,
+        },
+        line_slots: {},
+      },
+      {},
+    );
+    R.render(container, { ...basePayload, style: leftStyle || {} }, { overlay: true });
+    const row = container.querySelector(".subtitle-line") as HTMLElement | null;
+    const stage = container.querySelector(".subtitle-stage") as HTMLElement | null;
+    expect(row?.style.getPropertyValue("--subtitle-text-align")).toBe("left");
+    expect(row?.style.getPropertyValue("--subtitle-justify")).toBe("flex-start");
+    expect(stage?.style.getPropertyValue("--subtitle-line-gap")).toBe("8px");
+
+    const rightStyle = R.resolveEffectiveStyle?.(
+      {
+        preset: "clean_default",
+        base: {
+          ...(minimalStyle().base as Record<string, unknown>),
+          text_align: "right",
+          line_gap_px: 20,
+        },
+        line_slots: {},
+      },
+      {},
+    );
+    const traces = collectTrace(container, { ...basePayload, style: rightStyle || {} });
+    const summary = traces.find((event) => event.type === "render_summary");
+    expect(summary?.fast_path).toBe(true);
+    expect(row?.style.getPropertyValue("--subtitle-text-align")).toBe("right");
+    expect(row?.style.getPropertyValue("--subtitle-justify")).toBe("flex-end");
+    expect(stage?.style.getPropertyValue("--subtitle-line-gap")).toBe("20px");
   });
 });

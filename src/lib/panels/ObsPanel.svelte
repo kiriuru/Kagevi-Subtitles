@@ -1,9 +1,15 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { openLocalUrl } from "../api";
+  import { LANGUAGES } from "../constants";
   import { locale, t } from "../i18n";
   import { obsStatusMessage } from "../diagnostics";
-  import { formatObsNativeCaptionStatus } from "../obs-status-i18n";
+  import { formatObsConnectionState, formatObsNativeCaptionStatus } from "../obs-status-i18n";
+  import {
+    getLineCards,
+    getSlotNumber,
+    isTranslationLineEnabled,
+  } from "../translation-helpers";
   import type { ConfigPayload } from "../types";
 
   export let overlayUrl: string;
@@ -17,10 +23,11 @@
   $: obs = (config.obs_closed_captions || {}) as {
     enabled?: boolean;
     output_mode?: string;
-    connection?: { host?: string; port?: number; password?: string };
+    connection?: { host?: string; port?: number; password?: string; use_ssl?: boolean };
     debug_mirror?: { enabled?: boolean; input_name?: string; send_partials?: boolean };
     timing?: {
       send_partials?: boolean;
+      send_translation_partials?: boolean;
       partial_throttle_ms?: number;
       min_partial_delta_chars?: number;
       final_replace_delay_ms?: number;
@@ -34,6 +41,28 @@
   let copyFlashTimer: ReturnType<typeof setTimeout> | null = null;
 
   $: statusText = obsStatusMessage(obs.enabled === true, obsDiagnostics, tr);
+  $: sourceLiveMode = (obs.output_mode || "disabled") === "source_live";
+  $: translationMode = /^translation_[1-4]$/.test(obs.output_mode || "");
+  $: showPartialThrottle = sourceLiveMode || translationMode;
+  $: connectionStateLabel = obsDiagnostics?.connection_state
+    ? formatObsConnectionState(String(obsDiagnostics.connection_state), tr)
+    : "";
+
+  $: enabledTranslationLines = getLineCards(config).filter((line) => isTranslationLineEnabled(line));
+  $: enabledTranslationModes = enabledTranslationLines.map((line) => String(line.slot_id));
+  $: currentOutputMode = obs.output_mode || "disabled";
+  $: staleTranslationMode =
+    /^translation_[1-4]$/.test(currentOutputMode) && !enabledTranslationModes.includes(currentOutputMode)
+      ? currentOutputMode
+      : null;
+  $: outputModes = [
+    "disabled",
+    "source_live",
+    "source_final_only",
+    ...enabledTranslationModes,
+    ...(staleTranslationMode ? [staleTranslationMode] : []),
+    "first_visible_line",
+  ];
 
   onDestroy(() => {
     if (copyFlashTimer !== null) {
@@ -42,16 +71,29 @@
     }
   });
 
-  const outputModes = [
-    "disabled",
-    "source_live",
-    "source_final_only",
-    "translation_1",
-    "translation_2",
-    "translation_3",
-    "translation_4",
-    "first_visible_line",
-  ] as const;
+  function languageLabel(code: string): string {
+    const normalized = String(code || "").trim().toLowerCase();
+    const entry = LANGUAGES.find((item) => item.code === normalized);
+    return entry ? tr(entry.labelKey) : normalized.toUpperCase() || "?";
+  }
+
+  function translationModeLabel(mode: string, inactive: boolean): string {
+    const line = enabledTranslationLines.find((entry) => entry.slot_id === mode)
+      || getLineCards(config).find((entry) => entry.slot_id === mode);
+    const lang = languageLabel(String(line?.target_lang || line?.label || ""));
+    const key = inactive ? "obs.output.translation_inactive" : "obs.output.translation_active";
+    return tr(key, {
+      number: String(getSlotNumber(mode) || "?"),
+      lang,
+    });
+  }
+
+  function outputModeLabel(mode: string): string {
+    if (/^translation_[1-4]$/.test(mode)) {
+      return translationModeLabel(mode, mode === staleTranslationMode);
+    }
+    return tr(`obs.output.${mode}`);
+  }
 
   function patchObs(partial: Record<string, unknown>) {
     onChange({
@@ -166,18 +208,30 @@
         </button>
       </div>
 
+      <label class="checkbox-row">
+        <input
+          type="checkbox"
+          checked={obs.connection?.use_ssl === true}
+          on:change={(e) =>
+            patchNested("connection", { use_ssl: (e.currentTarget as HTMLInputElement).checked })}
+        />
+        <span>{tr("obs.use_ssl")}</span>
+      </label>
+      <p class="muted panel-note">{tr("obs.use_ssl.help")}</p>
+
       <label class="stack-field">
         <span>{tr("obs.output_mode")}</span>
         <select
           class="control"
-          value={obs.output_mode || "disabled"}
+          value={currentOutputMode}
           on:change={(e) => patchObs({ output_mode: (e.currentTarget as HTMLSelectElement).value })}
         >
           {#each outputModes as mode}
-            <option value={mode}>{tr(`obs.output.${mode}`)}</option>
+            <option value={mode}>{outputModeLabel(mode)}</option>
           {/each}
         </select>
       </label>
+      <p class="muted panel-note">{tr("obs.output.translations.help")}</p>
 
       <label class="checkbox-row">
         <input
@@ -207,38 +261,57 @@
         <span>{tr("obs.debug.send_partials")}</span>
       </label>
 
-      <label class="checkbox-row">
-        <input
-          type="checkbox"
-          checked={obs.timing?.send_partials !== false}
-          on:change={(e) => patchNested("timing", { send_partials: (e.currentTarget as HTMLInputElement).checked })}
-        />
-        <span>{tr("obs.source_live_partials")}</span>
-      </label>
+      {#if sourceLiveMode}
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            checked={obs.timing?.send_partials !== false}
+            on:change={(e) => patchNested("timing", { send_partials: (e.currentTarget as HTMLInputElement).checked })}
+          />
+          <span>{tr("obs.source_live_partials")}</span>
+        </label>
+      {/if}
+
+      {#if translationMode}
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            checked={obs.timing?.send_translation_partials === true}
+            on:change={(e) =>
+              patchNested("timing", {
+                send_translation_partials: (e.currentTarget as HTMLInputElement).checked,
+              })}
+          />
+          <span>{tr("obs.translation_live_partials")}</span>
+        </label>
+        <p class="muted panel-note">{tr("obs.translation_live_partials.help")}</p>
+      {/if}
 
       <div class="grid-2">
-        <label class="stack-field">
-          <span>{tr("obs.partial_throttle")}</span>
-          <input
-            class="control"
-            type="number"
-            min="0"
-            value={obs.timing?.partial_throttle_ms ?? 140}
-            on:input={(e) =>
-              patchNested("timing", { partial_throttle_ms: Number((e.currentTarget as HTMLInputElement).value) })}
-          />
-        </label>
-        <label class="stack-field">
-          <span>{tr("obs.min_partial_delta")}</span>
-          <input
-            class="control"
-            type="number"
-            min="0"
-            value={obs.timing?.min_partial_delta_chars ?? 1}
-            on:input={(e) =>
-              patchNested("timing", { min_partial_delta_chars: Number((e.currentTarget as HTMLInputElement).value) })}
-          />
-        </label>
+        {#if showPartialThrottle}
+          <label class="stack-field">
+            <span>{tr("obs.partial_throttle")}</span>
+            <input
+              class="control"
+              type="number"
+              min="0"
+              value={obs.timing?.partial_throttle_ms ?? 140}
+              on:input={(e) =>
+                patchNested("timing", { partial_throttle_ms: Number((e.currentTarget as HTMLInputElement).value) })}
+            />
+          </label>
+          <label class="stack-field">
+            <span>{tr("obs.min_partial_delta")}</span>
+            <input
+              class="control"
+              type="number"
+              min="0"
+              value={obs.timing?.min_partial_delta_chars ?? 1}
+              on:input={(e) =>
+                patchNested("timing", { min_partial_delta_chars: Number((e.currentTarget as HTMLInputElement).value) })}
+            />
+          </label>
+        {/if}
         <label class="stack-field">
           <span>{tr("obs.final_delay")}</span>
           <input
@@ -273,6 +346,7 @@
         <span>{tr("obs.avoid_duplicates")}</span>
       </label>
 
+      <p class="muted panel-note">{tr("obs.note.languages")}</p>
       <p class="muted">{tr("obs.note.native")}</p>
     </article>
 
@@ -286,7 +360,7 @@
       <p class="muted">{statusText}</p>
       {#if obsDiagnostics?.connection_state}
         <p class="muted panel-note">
-          {String(obsDiagnostics.connection_state)} · {obsDiagnostics.host || obs.connection?.host}:{obsDiagnostics.port ?? obs.connection?.port}
+          {connectionStateLabel} · {obsDiagnostics.host || obs.connection?.host}:{obsDiagnostics.port ?? obs.connection?.port}
         </p>
       {/if}
       {#if obsDiagnostics?.native_caption_status}

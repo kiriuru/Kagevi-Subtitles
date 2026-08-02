@@ -2,9 +2,10 @@ export const RESTART_DELAY_BY_REASON_MS: Record<string, number> = {
   normal_onend: 150,
   settings_change: 150,
   websocket_reconnect: 150,
-  watchdog_stall: 750,
+  // Keep short — multi-second gaps after stall were dominated by this delay + recovery.
+  watchdog_stall: 200,
   session_cycle: 150,
-  long_segment_flush: 150,
+  long_segment_flush: 100,
 };
 
 export const INSTANCE_DEFAULTS = {
@@ -17,7 +18,8 @@ export const INSTANCE_DEFAULTS = {
   maxStoppingMs: 2000,
   visibleIdleRestartMs: 30000,
   hiddenIdleRestartMs: 60000,
-  stallDegradedAfterMs: 6000,
+  // Chrome continuous often pauses interim for >6s while still alive; 6s caused false stalls.
+  stallDegradedAfterMs: 12000,
   micSilentDegradedAfterMs: 5000,
   recentMicActivityWindowMs: 2000,
   minimumReconnectIntervalMs: 500,

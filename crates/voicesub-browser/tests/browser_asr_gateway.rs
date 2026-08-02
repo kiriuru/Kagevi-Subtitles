@@ -1,12 +1,13 @@
 use std::sync::{Arc, Mutex};
 
-use serde_json::json;
+use serde_json::{Value, json};
 use voicesub_browser::{BrowserAsrGateway, StructuredLogFn, structured_log_from_runtime_logger};
 use voicesub_logging::{StructuredRuntimeLogger, set_config_full_logging_enabled};
 
 #[derive(Debug, Clone)]
 struct LogRecord {
     event: String,
+    fields: Value,
 }
 
 struct RecordingStructuredLog {
@@ -22,11 +23,21 @@ impl RecordingStructuredLog {
 
     fn structured_log_fn(&self) -> StructuredLogFn {
         let records = self.records.clone();
-        Arc::new(move |_channel, event, _fields| {
+        Arc::new(move |_channel, event, fields| {
             records.lock().unwrap().push(LogRecord {
                 event: event.into(),
+                fields,
             });
         })
+    }
+
+    fn fields_for(&self, event: &str) -> Option<Value> {
+        self.records
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|record| record.event == event)
+            .map(|record| record.fields.clone())
     }
 
     fn events(&self) -> Vec<String> {
@@ -229,6 +240,11 @@ fn maps_overlap_telemetry_events() {
 
     for (reason, expected) in [
         ("overlap-handoff", "browser_overlap_handoff"),
+        ("overlap-buddy-prestart", "browser_overlap_buddy_prestart"),
+        ("overlap-buddy-started", "browser_overlap_buddy_started"),
+        ("overlap-soft-rearm", "browser_overlap_soft_rearm"),
+        ("overlap-soft-rearm-scheduled", "browser_overlap_soft_rearm_scheduled"),
+        ("overlap-silence-rearm", "browser_overlap_silence_rearm"),
         ("overlap-buddy-ended", "browser_overlap_buddy_ended"),
         ("overlap-buddy-error", "browser_overlap_buddy_error"),
         (
@@ -283,6 +299,58 @@ fn stores_overlap_fields_in_diagnostics() {
     assert!(diagnostics.overlap_active_listening);
     assert!(!diagnostics.overlap_buddy_listening);
     assert!(diagnostics.overlap_prestart_timer_armed);
+}
+
+#[test]
+fn stores_slot_scoped_overlap_buddy_telemetry() {
+    let logger = RecordingStructuredLog::new();
+    let mut gateway = BrowserAsrGateway::new(Some(logger.structured_log_fn()));
+    gateway.worker_connected();
+    logger.records.lock().unwrap().clear();
+
+    gateway.update_status(&json!({
+        "reason": "overlap-buddy-started",
+        "desired_running": true,
+        "recognition_running": true,
+        "overlap_active": true,
+        "overlap_active_slot": 0,
+        "overlap_buddy_slot": 1,
+        "overlap_slot0_listening": true,
+        "overlap_slot1_listening": true,
+        "overlap_buddy_prestart_ok_count": 3,
+        "overlap_buddy_prestart_fail_count": 1,
+        "overlap_buddy_onstart_count": 2,
+        "overlap_buddy_onend_count": 1,
+        "overlap_last_prestart_reason": "natural-final",
+        "overlap_last_prestart_error": "InvalidStateError",
+        "overlap_last_buddy_error": "no-speech",
+    }));
+
+    let diagnostics = gateway.diagnostics();
+    assert!(diagnostics.overlap_slot0_listening);
+    assert!(diagnostics.overlap_slot1_listening);
+    assert_eq!(diagnostics.overlap_buddy_prestart_ok_count, 3);
+    assert_eq!(diagnostics.overlap_buddy_prestart_fail_count, 1);
+    assert_eq!(diagnostics.overlap_buddy_onstart_count, 2);
+    assert_eq!(diagnostics.overlap_buddy_onend_count, 1);
+    assert_eq!(
+        diagnostics.overlap_last_prestart_reason.as_deref(),
+        Some("natural-final")
+    );
+    assert_eq!(
+        diagnostics.overlap_last_prestart_error.as_deref(),
+        Some("InvalidStateError")
+    );
+    assert_eq!(
+        diagnostics.overlap_last_buddy_error.as_deref(),
+        Some("no-speech")
+    );
+
+    let fields = logger
+        .fields_for("browser_overlap_buddy_started")
+        .expect("buddy started event");
+    assert_eq!(fields["overlap_slot1_listening"], json!(true));
+    assert_eq!(fields["overlap_buddy_onstart_count"], json!(2));
 }
 
 #[test]

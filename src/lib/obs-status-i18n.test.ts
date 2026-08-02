@@ -7,6 +7,7 @@ import zh from "./i18n/locales/zh.json";
 import {
   formatObsCaptionError,
   formatObsCcRuntimeStatus,
+  formatObsChipLabel,
   formatObsNativeCaptionStatus,
   resolveObsErrorCode,
 } from "./obs-status-i18n";
@@ -42,6 +43,18 @@ describe("obs status i18n", () => {
   it("formats errors using locale catalog keys", () => {
     expect(formatObsCaptionError("connection_refused", tr)).toBe(
       en["obs.cc.error.connection_refused"],
+    );
+  });
+
+  it("keeps Live strip OBS chip labels short so Start/Stop stay put", () => {
+    expect(formatObsChipLabel("error", "connection_refused", tr)).toBe(
+      en["obs.cc.connection_state.error"],
+    );
+    expect(formatObsChipLabel("error", "auth_failed", tr)).toBe(
+      en["obs.cc.connection_state.auth_failed"],
+    );
+    expect(formatObsChipLabel("error", "connection_refused", tr).length).toBeLessThan(
+      en["obs.cc.error.connection_refused"].length,
     );
   });
 

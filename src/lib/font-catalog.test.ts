@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { extractPrimaryFontFamily, replacePrimaryFontFamily } from "./font-catalog";
+import {
+  extractPrimaryFontFamily,
+  formatFontOptionLabel,
+  replacePrimaryFontFamily,
+} from "./font-catalog";
 
 describe("extractPrimaryFontFamily", () => {
   it("returns the first quoted family from a CSS chain", () => {
@@ -35,5 +39,35 @@ describe("replacePrimaryFontFamily", () => {
     expect(replacePrimaryFontFamily(chain, '"Montserrat Bold"')).toBe(
       '"Montserrat Bold", "Impact", sans-serif',
     );
+  });
+});
+
+describe("formatFontOptionLabel", () => {
+  const tr = (key: string) =>
+    ({
+      "style.font.script.latin": "Latin",
+      "style.font.script.cyrillic": "Cyrillic",
+      "style.font.script.japanese": "Japanese",
+      "style.font.script.chinese": "Chinese",
+      "style.font.script.korean": "Korean",
+    })[key] || key;
+
+  it("appends supported alphabets with OBS-style middle-dot separators", () => {
+    expect(
+      formatFontOptionLabel({ label: "Oswald Bold", scripts: ["latin"] }, tr),
+    ).toBe("Oswald Bold · Latin");
+    expect(
+      formatFontOptionLabel(
+        { label: "Noto Sans Regular", scripts: ["latin", "cyrillic"] },
+        tr,
+      ),
+    ).toBe("Noto Sans Regular · Latin · Cyrillic");
+    expect(
+      formatFontOptionLabel({ label: "Zen Maru Gothic Bold", scripts: ["japanese"] }, tr),
+    ).toBe("Zen Maru Gothic Bold · Japanese");
+  });
+
+  it("returns the bare label when scripts are missing", () => {
+    expect(formatFontOptionLabel({ label: "Segoe UI" }, tr)).toBe("Segoe UI");
   });
 });

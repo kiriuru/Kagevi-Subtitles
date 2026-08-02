@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{Duration, Instant};
 
@@ -16,11 +16,15 @@ use crate::diagnostics::{ConnectionState, ObsCaptionDiagnostics};
 use crate::error_codes::{self, native_status};
 use crate::settings::{CONNECTABLE_OUTPUT_MODES, ObsCaptionSettings, SOURCE_EVENT_OUTPUT_MODES};
 use crate::text::{
-    normalize_text, select_first_visible_text, select_payload_text, should_throttle_partial_update,
+    normalize_text, select_payload_live_draft_text, select_payload_text,
+    should_throttle_partial_update,
 };
 use crate::trace::{ObsCaptionLog, StructuredLogFn};
 
 const QUEUE_MAX_SIZE: usize = 32;
+/// Retries for best-effort remote clear on stop / disable (transient OBS WS hiccups).
+const CLEAR_REMOTE_ATTEMPTS: u32 = 3;
+const CLEAR_REMOTE_RETRY_DELAY: Duration = Duration::from_millis(50);
 
 enum QueueItem {
     SourcePartial(String),
@@ -52,6 +56,10 @@ struct Inner {
     queue: StdMutex<VecDeque<QueueItem>>,
     queue_notify: Notify,
     worker_task: Mutex<Option<JoinHandle<()>>>,
+    /// Hot-path gate: avoids `try_lock` races that silently dropped queue items.
+    worker_running: AtomicBool,
+    /// True when worker is up and OBS settings want a connection (native and/or debug).
+    accepting_events: AtomicBool,
     connection_task: Mutex<Option<JoinHandle<()>>>,
     client: Mutex<Option<ObsClientHandle>>,
     diagnostics: Mutex<ObsCaptionDiagnostics>,
@@ -60,7 +68,7 @@ struct Inner {
     last_partial_text: Mutex<String>,
     last_partial_sent: Mutex<Option<Instant>>,
     last_payload_signature: StdMutex<Option<(u64, String, String)>>,
-    connection_key: Mutex<Option<(String, u16, String)>>,
+    connection_key: Mutex<Option<(String, u16, String, bool)>>,
     delayed_generation: AtomicU64,
     clear_generation: AtomicU64,
 }
@@ -91,6 +99,8 @@ impl ObsCaptionService {
                 queue: StdMutex::new(VecDeque::new()),
                 queue_notify: Notify::new(),
                 worker_task: Mutex::new(None),
+                worker_running: AtomicBool::new(false),
+                accepting_events: AtomicBool::new(false),
                 connection_task: Mutex::new(None),
                 client: Mutex::new(None),
                 diagnostics: Mutex::new(ObsCaptionDiagnostics::default()),
@@ -131,20 +141,41 @@ impl ObsCaptionService {
         value
     }
 
+    /// Cheap hot-path check used by the subtitle publish callback to skip `payload.clone()`.
+    pub fn is_accepting_events(&self) -> bool {
+        self.inner.accepting_events.load(Ordering::Relaxed)
+    }
+
+    fn refresh_accepting_events(&self) {
+        let settings = ObsCaptionSettings::from_config(&(self.config_getter)());
+        let accepting = self.inner.worker_running.load(Ordering::Relaxed) && settings.should_connect();
+        self.inner
+            .accepting_events
+            .store(accepting, Ordering::SeqCst);
+    }
+
     pub async fn start(&self) {
         let mut worker = self.inner.worker_task.lock().await;
         if worker.as_ref().is_some_and(|task| !task.is_finished()) {
+            self.inner.worker_running.store(true, Ordering::SeqCst);
+            drop(worker);
+            self.refresh_accepting_events();
             return;
         }
         let inner = self.inner.clone();
         self.inner.log.service_started();
+        self.inner.worker_running.store(true, Ordering::SeqCst);
         *worker = Some(tokio::spawn(async move {
             worker_loop(inner).await;
         }));
+        drop(worker);
+        self.refresh_accepting_events();
     }
 
     pub async fn stop(&self) {
         self.inner.log.service_stopped();
+        self.inner.worker_running.store(false, Ordering::SeqCst);
+        self.inner.accepting_events.store(false, Ordering::SeqCst);
         bump_delayed_generation(&self.inner);
         bump_clear_generation(&self.inner);
         *self.inner.desired_connection.lock().await = false;
@@ -157,6 +188,7 @@ impl ObsCaptionService {
         if let Some(client) = self.inner.client.lock().await.take() {
             client.close().await;
         }
+        *self.inner.connection_key.lock().await = None;
         {
             let mut diag = self.inner.diagnostics.lock().await;
             diag.connected = false;
@@ -188,43 +220,68 @@ impl ObsCaptionService {
         let diag = self.inner.diagnostics.lock().await;
         let should_clear_native = (settings.enabled
             && CONNECTABLE_OUTPUT_MODES.contains(&settings.output_mode.as_str()))
-            || diag.last_caption_text.is_some();
+            || diag.last_caption_text.as_ref().is_some_and(|text| !text.is_empty());
         let debug_input_name = if settings.debug_text_input_enabled() {
             Some(settings.debug_input_name.clone())
         } else {
             None
         };
         let last_debug_input_name = diag.last_debug_input_name.clone();
-        let should_clear_debug = debug_input_name.is_some()
-            || diag.last_debug_text.is_some()
+        let should_clear_debug = diag
+            .last_debug_text
+            .as_ref()
+            .is_some_and(|text| !text.is_empty())
             || last_debug_input_name.is_some();
         drop(diag);
 
-        if should_clear_native
-            && client
-                .send_request("SendStreamCaption", json!({ "captionText": "" }))
-                .await
-                .is_ok()
-        {
-            let mut diag = self.inner.diagnostics.lock().await;
-            diag.last_caption_text = Some(String::new());
-            diag.last_caption_sent_at_utc = Some(utc_now_iso());
+        if should_clear_native {
+            match send_clear_with_retries(
+                client,
+                "SendStreamCaption",
+                json!({ "captionText": "" }),
+                /*accept_stream_inactive*/ true,
+            )
+            .await
+            {
+                Ok(()) => {
+                    let mut diag = self.inner.diagnostics.lock().await;
+                    diag.last_caption_text = Some(String::new());
+                    diag.last_caption_sent_at_utc = Some(utc_now_iso());
+                }
+                Err(err) => {
+                    self.inner
+                        .log
+                        .caption_send_failed(&format!("clear_native: {err}"));
+                    debug!(error = %err, "obs clear SendStreamCaption failed after retries");
+                }
+            }
         }
 
         if should_clear_debug && let Some(input_name) = debug_input_name.or(last_debug_input_name) {
-            let _ = client
-                .send_request(
-                    "SetInputSettings",
-                    json!({
-                        "inputName": input_name,
-                        "inputSettings": { "text": "" },
-                        "overlay": true
-                    }),
-                )
-                .await;
-            let mut diag = self.inner.diagnostics.lock().await;
-            diag.last_debug_text = Some(String::new());
-            diag.last_debug_input_name = Some(input_name);
+            match send_clear_with_retries(
+                client,
+                "SetInputSettings",
+                json!({
+                    "inputName": input_name,
+                    "inputSettings": { "text": "" },
+                    "overlay": true
+                }),
+                /*accept_stream_inactive*/ false,
+            )
+            .await
+            {
+                Ok(()) => {
+                    let mut diag = self.inner.diagnostics.lock().await;
+                    diag.last_debug_text = Some(String::new());
+                    diag.last_debug_input_name = Some(input_name);
+                }
+                Err(err) => {
+                    self.inner
+                        .log
+                        .caption_send_failed(&format!("clear_debug_mirror: {err}"));
+                    debug!(error = %err, input = %input_name, "obs clear debug mirror failed after retries");
+                }
+            }
         }
     }
 
@@ -242,14 +299,17 @@ impl ObsCaptionService {
             if let Some(client) = self.inner.client.lock().await.take() {
                 client.close().await;
             }
+            *self.inner.connection_key.lock().await = None;
             {
                 let mut diag = self.inner.diagnostics.lock().await;
                 diag.connected = false;
                 diag.stream_output_active = None;
                 diag.stream_output_reconnecting = None;
                 diag.native_caption_status = None;
+                diag.last_error = None;
             }
             set_connection_state(&self.inner, ConnectionState::Disabled, None).await;
+            self.refresh_accepting_events();
             self.inner.log.live_settings_applied(
                 settings.enabled,
                 false,
@@ -276,6 +336,7 @@ impl ObsCaptionService {
         drop(connection_key);
 
         *self.inner.desired_connection.lock().await = true;
+        self.refresh_accepting_events();
         self.inner.log.live_settings_applied(
             settings.enabled,
             true,
@@ -286,6 +347,9 @@ impl ObsCaptionService {
     }
 
     pub fn publish_source(&self, text: &str, is_final: bool) {
+        if !self.is_accepting_events() {
+            return;
+        }
         if is_final {
             bump_delayed_generation(&self.inner);
             bump_clear_generation(&self.inner);
@@ -299,6 +363,9 @@ impl ObsCaptionService {
     }
 
     pub fn publish_payload(&self, payload: SubtitlePayloadEvent) {
+        if !self.is_accepting_events() {
+            return;
+        }
         let settings = ObsCaptionSettings::from_config(&(self.config_getter)());
         if payload_will_supersede_caption(&self.inner, &settings, &payload) {
             bump_delayed_generation(&self.inner);
@@ -308,14 +375,7 @@ impl ObsCaptionService {
     }
 
     fn enqueue(&self, item: QueueItem) {
-        let worker_running = self
-            .inner
-            .worker_task
-            .try_lock()
-            .ok()
-            .and_then(|worker| worker.as_ref().map(|task| !task.is_finished()))
-            .unwrap_or(false);
-        if !worker_running {
+        if !self.inner.worker_running.load(Ordering::Relaxed) {
             return;
         }
         if matches!(&item, QueueItem::SourcePartial(_)) {
@@ -323,10 +383,7 @@ impl ObsCaptionService {
         }
         {
             let mut queue = self.inner.queue.lock().expect("obs queue lock");
-            if queue.len() >= QUEUE_MAX_SIZE {
-                queue.pop_front();
-            }
-            queue.push_back(item);
+            push_queue_item(&mut queue, item);
         }
         self.inner.queue_notify.notify_one();
     }
@@ -356,7 +413,17 @@ async fn connection_loop(inner: Arc<Inner>) {
         }
 
         if inner.client.lock().await.is_some() {
-            tokio::time::sleep(Duration::from_secs(15)).await;
+            let stream_inactive = {
+                let diag = inner.diagnostics.lock().await;
+                diag.stream_output_active == Some(false)
+            };
+            // Poll faster while waiting for the user to start streaming so partials resume quickly.
+            let poll = if stream_inactive {
+                Duration::from_secs(3)
+            } else {
+                Duration::from_secs(15)
+            };
+            tokio::time::sleep(poll).await;
             if !*inner.desired_connection.lock().await {
                 break;
             }
@@ -389,7 +456,14 @@ async fn connection_loop(inner: Arc<Inner>) {
 
         set_connection_state(&inner, ConnectionState::Connecting, None).await;
 
-        match ObsWsClient::connect(&settings.host, settings.port, &settings.password).await {
+        match ObsWsClient::connect(
+            &settings.host,
+            settings.port,
+            &settings.password,
+            settings.use_ssl,
+        )
+        .await
+        {
             Ok(client) => {
                 let (studio, ws_ver) = client.versions();
                 {
@@ -485,6 +559,12 @@ async fn refresh_stream_status(
     } else {
         native_status::STREAM_INACTIVE.into()
     });
+    // Stream inactivity is readiness, not a connection failure — clear sticky 501 error.
+    if output_active
+        && diag.last_error.as_deref() == Some(error_codes::error::STREAM_NOT_RUNNING)
+    {
+        diag.last_error = None;
+    }
     Ok(())
 }
 
@@ -646,16 +726,29 @@ async fn handle_payload(inner: Arc<Inner>, payload: SubtitlePayloadEvent) -> Res
     if !send_stream && !mirror_debug {
         return Ok(());
     }
+
+    // Optional live-partial translations (MT); finals below remain the LLM / no-partial fallback.
+    if settings.send_translation_partials && mode.starts_with("translation_") {
+        let draft = select_payload_live_draft_text(&payload, mode);
+        let draft_normalized = normalize_text(&draft);
+        if !draft_normalized.is_empty() {
+            return handle_translation_partial(
+                inner,
+                &settings,
+                mode,
+                payload.sequence,
+                &draft_normalized,
+                send_stream,
+                mirror_debug,
+            )
+            .await;
+        }
+    }
+
     if !payload.completed_block_visible {
         return Ok(());
     }
-    let mut selected = select_payload_text(&payload, mode);
-    // SST parity: non-translation payload modes fall back to the first visible line.
-    // With the current output_mode enum, send_stream here is only true for translation_*
-    // and first_visible_line, so this branch is inactive today but kept for forward compatibility.
-    if send_stream && !mode.starts_with("translation_") && mode != "first_visible_line" {
-        selected = select_first_visible_text(&payload);
-    }
+    let selected = select_payload_text(&payload, mode);
     let normalized = normalize_text(&selected);
     if normalized.is_empty() {
         return Ok(());
@@ -684,8 +777,67 @@ async fn handle_payload(inner: Arc<Inner>, payload: SubtitlePayloadEvent) -> Res
         .last_payload_signature
         .lock()
         .unwrap_or_else(|e| e.into_inner()) = Some(signature);
+    *inner.last_partial_text.lock().await = String::new();
+    *inner.last_partial_sent.lock().await = None;
     schedule_final_send(inner, normalized, send_stream, mirror_debug).await?;
     Ok(())
+}
+
+async fn handle_translation_partial(
+    inner: Arc<Inner>,
+    settings: &ObsCaptionSettings,
+    mode: &str,
+    sequence: u64,
+    normalized: &str,
+    mut send_stream: bool,
+    mirror_debug_base: bool,
+) -> Result<(), String> {
+    if send_stream {
+        let diag = inner.diagnostics.lock().await;
+        if diag.stream_output_active == Some(false) {
+            send_stream = false;
+        }
+    }
+    let mirror_debug = mirror_debug_base && settings.debug_send_partials;
+    if !send_stream && !mirror_debug {
+        return Ok(());
+    }
+    let previous = inner.last_partial_text.lock().await.clone();
+    let elapsed_ms = inner
+        .last_partial_sent
+        .lock()
+        .await
+        .map(|instant| instant.elapsed().as_millis() as u64);
+    if normalized == previous {
+        return Ok(());
+    }
+    if should_throttle_partial_update(
+        &previous,
+        normalized,
+        elapsed_ms,
+        settings.partial_throttle_ms,
+        settings.min_partial_delta_chars,
+    ) {
+        inner
+            .log
+            .partial_throttled(normalized.chars().count(), elapsed_ms);
+        return Ok(());
+    }
+    *inner.last_partial_text.lock().await = normalized.to_string();
+    *inner.last_partial_sent.lock().await = Some(Instant::now());
+    inner
+        .log
+        .payload_routed(sequence, mode, normalized.chars().count());
+    send_text(
+        inner,
+        normalized,
+        settings,
+        send_stream,
+        mirror_debug,
+        !settings.avoid_duplicate_text,
+        false,
+    )
+    .await
 }
 
 async fn send_text(
@@ -749,6 +901,7 @@ async fn send_text(
     }
 
     if !should_send_caption && !should_send_debug {
+        drop(client_guard);
         inner.log.send_skipped(
             "dedup",
             json!({
@@ -757,11 +910,21 @@ async fn send_text(
                 "mirror_debug": mirror_debug_text,
             }),
         );
+        // Finals after an identical live-partial still need clear_after scheduling.
+        if schedule_clear_after && !normalized.is_empty() {
+            enqueue_clear(
+                inner,
+                send_stream_caption,
+                mirror_debug_text,
+                settings.clear_after_ms,
+            );
+        }
         return Ok(());
     }
 
+    let mut debug_mirror_ok = false;
     if should_send_debug {
-        client
+        match client
             .send_request(
                 "SetInputSettings",
                 json!({
@@ -771,12 +934,26 @@ async fn send_text(
                 }),
             )
             .await
-            .map_err(|err| format!("OBS debug mirror failed: {err}"))?;
-        let mut diag = inner.diagnostics.lock().await;
-        diag.last_debug_text = Some(normalized.clone());
-        diag.last_debug_input_name = Some(settings.debug_input_name.clone());
-        if !should_send_caption {
-            inner.log.debug_mirror_sent(normalized.chars().count());
+        {
+            Ok(_) => {
+                let mut diag = inner.diagnostics.lock().await;
+                diag.last_debug_text = Some(normalized.clone());
+                diag.last_debug_input_name = Some(settings.debug_input_name.clone());
+                debug_mirror_ok = true;
+                if !should_send_caption {
+                    inner.log.debug_mirror_sent(normalized.chars().count());
+                }
+            }
+            Err(err) => {
+                // Never block native captions or tear down the WS for a missing/renamed text source.
+                let detail = err.to_string();
+                {
+                    let mut diag = inner.diagnostics.lock().await;
+                    diag.last_error = Some(error_codes::error::REQUEST_FAILED.into());
+                }
+                debug!(error = %detail, "obs debug mirror SetInputSettings failed");
+                inner.log.caption_send_failed(&format!("debug_mirror: {detail}"));
+            }
         }
     }
 
@@ -798,7 +975,7 @@ async fn send_text(
                 inner.log.caption_sent(
                     normalized.chars().count(),
                     true,
-                    should_send_debug,
+                    debug_mirror_ok,
                     used_active_connection,
                     waited_for_connection,
                 );
@@ -807,11 +984,14 @@ async fn send_text(
             Err(ObsClientError::RequestFailed {
                 code: Some(501), ..
             }) => {
+                // obs-websocket: output not active — keep connection; surface via native status only.
                 let mut diag = inner.diagnostics.lock().await;
                 diag.stream_output_active = Some(false);
                 diag.stream_output_reconnecting = Some(false);
                 diag.native_caption_status = Some(native_status::STREAM_NOT_RUNNING.into());
-                diag.last_error = Some(error_codes::error::STREAM_NOT_RUNNING.into());
+                if diag.last_error.as_deref() == Some(error_codes::error::STREAM_NOT_RUNNING) {
+                    diag.last_error = None;
+                }
                 drop(diag);
                 inner.log.stream_output_inactive();
                 set_connection_state(&inner, ConnectionState::Connected, None).await;
@@ -876,10 +1056,7 @@ fn payload_will_supersede_caption(
     if !payload.completed_block_visible {
         return false;
     }
-    let mut selected = select_payload_text(payload, mode);
-    if send_stream && !mode.starts_with("translation_") && mode != "first_visible_line" {
-        selected = select_first_visible_text(payload);
-    }
+    let selected = select_payload_text(payload, mode);
     let normalized = normalize_text(&selected);
     if normalized.is_empty() {
         return false;
@@ -949,21 +1126,12 @@ fn enqueue_clear(inner: Arc<Inner>, send_stream: bool, mirror_debug: bool, delay
 }
 
 fn enqueue_item(inner: &Inner, item: QueueItem) {
-    let worker_running = inner
-        .worker_task
-        .try_lock()
-        .ok()
-        .and_then(|worker| worker.as_ref().map(|task| !task.is_finished()))
-        .unwrap_or(false);
-    if !worker_running {
+    if !inner.worker_running.load(Ordering::Relaxed) {
         return;
     }
     {
         let mut queue = inner.queue.lock().expect("obs queue lock");
-        if queue.len() >= QUEUE_MAX_SIZE {
-            queue.pop_front();
-        }
-        queue.push_back(item);
+        push_queue_item(&mut queue, item);
     }
     inner.queue_notify.notify_one();
 }
@@ -975,6 +1143,67 @@ fn drain_queue(inner: &Inner) {
 fn drop_queued_partials(inner: &Inner) {
     let mut queue = inner.queue.lock().expect("obs queue lock");
     queue.retain(|item| !matches!(item, QueueItem::SourcePartial(_)));
+}
+
+async fn send_clear_with_retries(
+    client: &mut ObsClientHandle,
+    request_type: &str,
+    request_data: Value,
+    accept_stream_inactive: bool,
+) -> Result<(), String> {
+    let mut last_err = String::from("clear failed");
+    for attempt in 1..=CLEAR_REMOTE_ATTEMPTS {
+        match client
+            .send_request(request_type, request_data.clone())
+            .await
+        {
+            Ok(_) => return Ok(()),
+            Err(ObsClientError::RequestFailed {
+                code: Some(501), ..
+            }) if accept_stream_inactive => {
+                // Empty SendStreamCaption while not streaming — nothing visible to clear.
+                return Ok(());
+            }
+            Err(err) => {
+                last_err = err.to_string();
+                if attempt < CLEAR_REMOTE_ATTEMPTS {
+                    tokio::time::sleep(CLEAR_REMOTE_RETRY_DELAY).await;
+                }
+            }
+        }
+    }
+    Err(last_err)
+}
+
+fn push_queue_item(queue: &mut VecDeque<QueueItem>, item: QueueItem) {
+    if queue.len() >= QUEUE_MAX_SIZE {
+        // Prefer dropping coalescable partials/payloads over DelayedClear (stale text risk).
+        let drop_idx = queue
+            .iter()
+            .position(|entry| matches!(entry, QueueItem::SourcePartial(_)))
+            .or_else(|| {
+                queue
+                    .iter()
+                    .position(|entry| matches!(entry, QueueItem::Payload(_)))
+            })
+            .or_else(|| {
+                if matches!(item, QueueItem::DelayedClear { .. }) {
+                    queue
+                        .iter()
+                        .position(|entry| !matches!(entry, QueueItem::DelayedClear { .. }))
+                } else {
+                    queue
+                        .iter()
+                        .position(|entry| matches!(entry, QueueItem::DelayedSend { .. }))
+                }
+            });
+        if let Some(idx) = drop_idx {
+            queue.remove(idx);
+        } else {
+            queue.pop_front();
+        }
+    }
+    queue.push_back(item);
 }
 
 async fn wait_for_connection(

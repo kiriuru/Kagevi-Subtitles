@@ -209,11 +209,12 @@ export function createWorkerController(ui: WorkerUiStore): WorkerController {
     ensureMicrophonePermission: () => ensureMicrophonePermission(state, appendLog),
     releaseMicrophoneMonitor: () => releaseMicrophoneMonitor(state),
     getRecognitionSettings: () => ({
+      ...state.browserLifecycleConfig,
       language: state.configuredLanguage,
       interimResults: ui.interimResults,
+      // Must win over any accidental lifecycle fields — continuous=false enables overlap.
       continuous: ui.continuousResults,
       providerName: state.browserMode,
-      ...state.browserLifecycleConfig,
     }),
     isForceFinalizationEnabled: () => ui.forceFinalization,
     setPartialText: (value) => ui.setPartialText(value),

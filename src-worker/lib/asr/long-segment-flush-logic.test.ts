@@ -20,13 +20,23 @@ function stateWithPeak(peak: number, overrides: Partial<BrowserAsrState> = {}): 
 }
 
 function mockManager(state: BrowserAsrState): AsrManagerHost {
+  const SpeechRecognitionCtor = vi.fn(() => ({
+    start: vi.fn(),
+    abort: vi.fn(),
+    stop: vi.fn(),
+    maxAlternatives: 1,
+  }));
   return {
     state,
+    SpeechRecognitionCtor,
     appendLogInternal: vi.fn(),
     clearForceFinalizeTimerInternal: vi.fn(),
     setSupervisorStateInternal: vi.fn(),
     setRecognitionStateInternal: vi.fn(),
     setStatusInternal: vi.fn(),
+    emitWorkerStatus: vi.fn(() => true),
+    applyRecognitionSettings: vi.fn(),
+    wireRecognitionHandlers: vi.fn(),
     now: () => 10_000,
     scheduleRestartInternal: vi.fn(),
   } as unknown as AsrManagerHost;
@@ -48,13 +58,13 @@ describe("long-segment-flush-logic", () => {
   });
 
   it("uses partial peak when final is shorter than peak", () => {
-    const state = stateWithPeak(350);
+    const state = stateWithPeak(500);
     expect(shouldFlushAfterLongSegment(state, "corrected shorter final")).toBe(true);
   });
 
   it("skips flush while restart is already pending", () => {
-    const state = stateWithPeak(300, { pendingRestartReason: "network" });
-    expect(shouldFlushAfterLongSegment(state, "x".repeat(250))).toBe(false);
+    const state = stateWithPeak(500, { pendingRestartReason: "network" });
+    expect(shouldFlushAfterLongSegment(state, "x".repeat(500))).toBe(false);
   });
 
   it("tracks partial peak growth", () => {
@@ -67,11 +77,11 @@ describe("long-segment-flush-logic", () => {
   });
 
   it("requests native continuous flush after long committed final", () => {
-    const state = stateWithPeak(320);
+    const state = stateWithPeak(500);
     const stop = vi.fn();
     state.recognition = { stop } as BrowserAsrState["recognition"];
     const manager = mockManager(state);
-    maybeFlushAfterCommittedLongSegment(manager, "x".repeat(300), "natural-final");
+    maybeFlushAfterCommittedLongSegment(manager, "x".repeat(500), "natural-final");
     expect(state.longSegmentFlushCount).toBe(1);
     expect(state.currentSegmentPeakPartialChars).toBe(0);
     expect(stop).toHaveBeenCalledTimes(1);
@@ -80,13 +90,26 @@ describe("long-segment-flush-logic", () => {
     );
   });
 
+  it("does not flush below the raised continuous threshold", () => {
+    const state = stateWithPeak(320);
+    expect(shouldFlushAfterLongSegment(state, "x".repeat(320))).toBe(false);
+  });
+
   it("stops only the active overlap slot after long committed final", () => {
-    const state = stateWithPeak(280, { actualContinuous: false });
+    const state = stateWithPeak(500, { actualContinuous: false });
     const stop = vi.fn();
-    state.recognitionOverlapSlots = [{ stop }, { start: vi.fn(), stop: vi.fn() }] as BrowserAsrState["recognitionOverlapSlots"];
+    const buddyStart = vi.fn();
+    state.recognitionOverlapSlots = [
+      { stop, abort: vi.fn() },
+      { start: buddyStart, stop: vi.fn(), abort: vi.fn() },
+    ] as BrowserAsrState["recognitionOverlapSlots"];
     state.recognitionOverlapActiveSlot = 0;
+    state.recognitionOverlapSlotListening = [true, false];
+    state.recognitionOverlapPrestarted = true;
     const manager = mockManager(state);
-    maybeFlushAfterCommittedLongSegment(manager, "x".repeat(280), "natural-final");
+    maybeFlushAfterCommittedLongSegment(manager, "x".repeat(500), "natural-final");
+    // 0.5.5: long-segment flush only stop()s active — prestart is the caller's job
+    expect(buddyStart).not.toHaveBeenCalled();
     expect(stop).toHaveBeenCalledTimes(1);
     expect(manager.appendLogInternal).toHaveBeenCalledWith(
       expect.stringContaining("overlap: active slot flush"),

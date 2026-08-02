@@ -7,7 +7,7 @@ export function getRestartRequiredReasons(
 ): string[] {
   const reasons: string[] = [];
 
-  // logging.full_enabled is applied live on settings save via apply_logging_preferences.
+  // logging.full_enabled / runtime_metrics_enabled apply live on Save via apply_logging_preferences.
   if (
     String(previousPayload.asr?.browser?.recognition_language || "ru-RU") !==
     String(nextPayload.asr?.browser?.recognition_language || "ru-RU")

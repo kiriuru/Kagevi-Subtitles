@@ -14,8 +14,12 @@ mod send_integration_tests;
 
 #[cfg(test)]
 pub use client::MockObsClient;
+pub use client::format_obs_ws_url;
 pub use diagnostics::ObsCaptionDiagnostics;
 pub use service::ObsCaptionService;
 pub use settings::ObsCaptionSettings;
-pub use text::{normalize_text, select_payload_text, should_throttle_partial_update};
+pub use text::{
+    normalize_text, select_payload_live_draft_text, select_payload_text,
+    should_throttle_partial_update,
+};
 pub use trace::{ObsCaptionLog, StructuredLogFn, structured_log_from_runtime_logger};

@@ -2,6 +2,7 @@
   import { locale, t } from "../i18n";
   import type { RuntimeStatus } from "../types";
   import { buildRuntimeConnectionChips, RUNTIME_STATE_PHASES, type RuntimePhaseChip } from "../runtime-status";
+  import { formatObsCaptionError, formatObsChipLabel } from "../obs-status-i18n";
   import Info from "lucide-svelte/icons/info";
 
   export let runtime: RuntimeStatus;
@@ -16,6 +17,9 @@
   $: loc = $locale;
   $: tr = (key: string, vars?: Record<string, string | number>) => t(key, vars, loc);
   $: chips = buildRuntimeConnectionChips(runtime, wsConnected, obsDiagnostics);
+  $: obsLabel = formatObsChipLabel(chips.obsLabelKind, chips.obsLabelCode, tr);
+  $: obsChipTitle =
+    chips.obsLabelKind === "error" ? formatObsCaptionError(chips.obsLabelCode, tr) : undefined;
   $: phaseLabel = RUNTIME_STATE_PHASES.includes(chips.phase as RuntimePhaseChip)
     ? tr(`runtime.state.${chips.phase}` as "runtime.state.idle")
     : tr("runtime.badge.runtime", { value: chips.phase });
@@ -73,10 +77,12 @@
       <span
         class="filter-chip"
         class:ok={chips.obsStatus === "ready"}
+        class:warn={chips.obsStatus === "warn" || chips.obsStatus === "waiting"}
         class:err={chips.obsStatus === "error"}
         role="listitem"
+        title={obsChipTitle}
       >
-        {tr("runtime.chip.obs")}: {chips.obsLabel}
+        {tr("runtime.chip.obs")}: {obsLabel}
       </span>
     </div>
   </div>
@@ -110,8 +116,8 @@
   .live-hero__main {
     display: grid;
     gap: var(--space-2);
-    min-width: min(100%, 280px);
-    flex: 1 1 auto;
+    min-width: 0;
+    flex: 1 1 0;
   }
 
   .live-hero__eyebrow {
@@ -144,6 +150,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+    min-width: 0;
   }
 
   .live-hero__actions {
@@ -152,7 +159,8 @@
     align-items: center;
     justify-content: flex-end;
     gap: var(--space-2);
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    margin-inline-start: auto;
   }
 
   .live-hero__details {

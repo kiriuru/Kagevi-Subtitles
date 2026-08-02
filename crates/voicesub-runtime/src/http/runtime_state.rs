@@ -7,12 +7,17 @@ use std::sync::Arc;
 use serde_json::Value;
 use voicesub_ws::WsEventPublisher;
 
+use voicesub_logging::is_config_runtime_metrics_enabled;
+
 use super::metrics::RuntimeMetricsCollector;
 use crate::trace::RuntimePipelineLog;
 
 /// Material status fields used for runtime_update coalescing (SST `runtime_material_status_snapshot`).
 fn runtime_material_status_snapshot(payload: &Value) -> Vec<Value> {
     let asr = payload.get("asr").and_then(|v| v.as_object());
+    let local_module = asr
+        .and_then(|a| a.get("local_module"))
+        .and_then(|v| v.as_object());
     let asr_diagnostics = payload.get("asr_diagnostics").and_then(|v| v.as_object());
     let browser_worker = asr_diagnostics
         .and_then(|d| d.get("browser_worker"))
@@ -46,6 +51,28 @@ fn runtime_material_status_snapshot(payload: &Value) -> Vec<Value> {
             .cloned()
             .unwrap_or(Value::Null),
         asr.and_then(|a| a.get("provider_error_kind"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        // Dashboard Modules badge + Live `local_parakeet` gate read these fields.
+        local_module
+            .and_then(|m| m.get("ready"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        local_module
+            .and_then(|m| m.get("phase"))
+            .cloned()
+            .unwrap_or(Value::Null),
+        local_module
+            .and_then(|m| m.get("cudaReady").or_else(|| m.get("cuda_ready")))
+            .cloned()
+            .unwrap_or(Value::Null),
+        local_module
+            .and_then(|m| {
+                m.get("activeExecutionProvider")
+                    .or_else(|| m.get("active_execution_provider"))
+                    .or_else(|| m.get("executionProvider"))
+                    .or_else(|| m.get("execution_provider"))
+            })
             .cloned()
             .unwrap_or(Value::Null),
         browser_worker
@@ -220,7 +247,7 @@ impl RuntimeStatusBroadcaster {
 }
 
 fn diagnostics_material_snapshot(payload: &Value) -> Vec<Value> {
-    vec![
+    let mut fields = vec![
         payload.get("provider").cloned().unwrap_or(Value::Null),
         payload.get("degraded_mode").cloned().unwrap_or(Value::Null),
         payload
@@ -245,7 +272,34 @@ fn diagnostics_material_snapshot(payload: &Value) -> Vec<Value> {
             .get("partial_emit_mode")
             .cloned()
             .unwrap_or(Value::Null),
-    ]
+        payload
+            .get("selected_execution_provider")
+            .cloned()
+            .unwrap_or(Value::Null),
+        payload
+            .get("runtime_initialized")
+            .cloned()
+            .unwrap_or(Value::Null),
+    ];
+    // High-churn Local ASR counters only when detailed runtime metrics are enabled —
+    // otherwise diagnostics_update would fan out on every decode while recognition runs.
+    if is_config_runtime_metrics_enabled() {
+        fields.push(payload.get("decode_count").cloned().unwrap_or(Value::Null));
+        fields.push(
+            payload
+                .get("partial_emits")
+                .cloned()
+                .unwrap_or(Value::Null),
+        );
+        fields.push(payload.get("final_emits").cloned().unwrap_or(Value::Null));
+        fields.push(
+            payload
+                .get("last_decode_wall_ms")
+                .cloned()
+                .unwrap_or(Value::Null),
+        );
+    }
+    fields
 }
 
 fn model_material_snapshot(payload: &Value) -> Vec<Value> {
@@ -299,6 +353,60 @@ mod tests {
         assert_eq!(
             runtime_material_status_snapshot(&connected),
             runtime_material_status_snapshot(&connected)
+        );
+    }
+
+    #[test]
+    fn diagnostics_material_snapshot_decode_count_gated_by_runtime_metrics_flag() {
+        // Single test — shared AtomicBool must not race with parallel cases.
+        let before = json!({
+            "provider": "local_parakeet",
+            "provider_phase": "running",
+            "decode_count": 3,
+            "partial_emits": 3,
+            "final_emits": 1,
+        });
+        let after = json!({
+            "provider": "local_parakeet",
+            "provider_phase": "running",
+            "decode_count": 4,
+            "partial_emits": 4,
+            "final_emits": 1,
+        });
+        voicesub_logging::set_config_runtime_metrics_enabled(false);
+        assert_eq!(
+            diagnostics_material_snapshot(&before),
+            diagnostics_material_snapshot(&after)
+        );
+        voicesub_logging::set_config_runtime_metrics_enabled(true);
+        assert_ne!(
+            diagnostics_material_snapshot(&before),
+            diagnostics_material_snapshot(&after)
+        );
+        voicesub_logging::set_config_runtime_metrics_enabled(false);
+    }
+
+    #[test]
+    fn runtime_material_status_snapshot_changes_when_local_module_becomes_ready() {
+        let not_ready = json!({
+            "is_running": false,
+            "status": "idle",
+            "asr": {
+                "active_mode": "browser_google",
+                "local_module": { "ready": false, "phase": "model_ready", "cudaReady": false }
+            }
+        });
+        let ready = json!({
+            "is_running": false,
+            "status": "idle",
+            "asr": {
+                "active_mode": "browser_google",
+                "local_module": { "ready": true, "phase": "ready", "cudaReady": false }
+            }
+        });
+        assert_ne!(
+            runtime_material_status_snapshot(&not_ready),
+            runtime_material_status_snapshot(&ready)
         );
     }
 }

@@ -128,8 +128,6 @@
       show_source: current.show_source !== false,
       show_translations: current.show_translations !== false,
       active_partial_text: String(current.active_partial_text || ""),
-      max_translation_languages: Number(current.max_translation_languages || 0),
-      display_order: Array.isArray(current.display_order) ? current.display_order : [],
       visible_items: (Array.isArray(current.visible_items) ? current.visible_items : []).map((item) => ({
         kind: String(item?.kind || "source"),
         text: String(item?.text || ""),
@@ -453,8 +451,6 @@
       preset: payload.preset,
       show_source: overlayState.showSource,
       show_translations: overlayState.showTranslations,
-      max_translation_languages: payload.max_translation_languages,
-      display_order: payload.display_order,
       visible_texts: itemTexts,
     }));
 

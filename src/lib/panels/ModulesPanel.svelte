@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { locale, t } from "../i18n";
   import { openLocalAsrModule, openTtsModule } from "../api";
   import { apiFetch } from "../loopback-api-client";
-  import { appStore } from "../stores/app";
+  import { appStore, patchApp } from "../stores/app";
   import {
     formatLocalAsrModelLabel,
     isLocalAsrCudaProvider,
@@ -38,6 +39,20 @@
 
   onMount(() => {
     void refreshAsrBadge();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshAsrBadge();
+      }
+    };
+    const onFocus = () => {
+      void refreshAsrBadge();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
   });
 
   async function refreshAsrBadge() {
@@ -45,7 +60,20 @@
       const res = await apiFetch("/api/asr/local/status");
       if (!res.ok) return;
       const body = (await res.json()) as { status?: Record<string, unknown> };
-      apiSnapshot = readLocalModuleBadgeSnapshot(body.status ?? null);
+      const status = body.status ?? null;
+      apiSnapshot = readLocalModuleBadgeSnapshot(status);
+      if (status) {
+        const current = get(appStore).runtime;
+        patchApp({
+          runtime: {
+            ...current,
+            asr: {
+              ...(current.asr || {}),
+              local_module: status,
+            },
+          },
+        });
+      }
     } catch {
       // dashboard may run before token bootstrap
     }

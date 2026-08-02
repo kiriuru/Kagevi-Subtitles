@@ -24,6 +24,7 @@
   const CONFIG_EXPORT_FILENAME = "kagevi-subtitles-config.json";
 
   $: fullLoggingEnabled = config.logging?.full_enabled === true;
+  $: runtimeMetricsEnabled = config.logging?.runtime_metrics_enabled === true;
 
   function setFullLoggingEnabled(enabled: boolean) {
     onChange({
@@ -31,6 +32,16 @@
       logging: {
         ...(config.logging || {}),
         full_enabled: enabled,
+      },
+    });
+  }
+
+  function setRuntimeMetricsEnabled(enabled: boolean) {
+    onChange({
+      ...config,
+      logging: {
+        ...(config.logging || {}),
+        runtime_metrics_enabled: enabled,
       },
     });
   }
@@ -164,6 +175,21 @@
     }
   }
 
+  const TRANSLATION_METRIC_ALIASES: Record<string, string[]> = {
+    translation_queue_depth: ["queue_depth"],
+    translation_jobs_started: ["jobs_started"],
+    translation_jobs_cancelled: ["jobs_cancelled", "cancelled_count"],
+    translation_stale_results_dropped: ["stale_results_dropped", "stale_drop_count"],
+    translation_queue_latency_ms: ["last_queue_latency_ms"],
+    translation_provider_latency_ms: ["last_provider_latency_ms"],
+    translation_last_runtime_reason: ["last_runtime_reason"],
+    translation_last_slot_id: ["last_slot_id"],
+    translation_last_target_lang: ["last_target_lang"],
+    translation_last_provider: ["last_provider"],
+    translation_last_timeout_ms: ["last_timeout_ms"],
+    translation_provider_skipped_before_call: ["provider_skipped_before_call"],
+  };
+
   function formatMetric(value: unknown): string {
     if (value === null || value === undefined || value === "") return "—";
     const n = Number(value);
@@ -171,14 +197,33 @@
     return String(value);
   }
 
-  function metricValue(
+  function formatCount(value: unknown): string {
+    if (value === null || value === undefined || value === "") return "—";
+    const n = Number(value);
+    if (Number.isFinite(n)) return String(Math.round(n));
+    return String(value);
+  }
+
+  function lookupMetric(
     key: string,
     metrics: Record<string, unknown>,
     translation: Record<string, unknown>,
   ): unknown {
     if (metrics[key] !== undefined && metrics[key] !== null) return metrics[key];
     if (translation[key] !== undefined && translation[key] !== null) return translation[key];
+    for (const alias of TRANSLATION_METRIC_ALIASES[key] || []) {
+      if (metrics[alias] !== undefined && metrics[alias] !== null) return metrics[alias];
+      if (translation[alias] !== undefined && translation[alias] !== null) return translation[alias];
+    }
     return undefined;
+  }
+
+  function metricValue(
+    key: string,
+    metrics: Record<string, unknown>,
+    translation: Record<string, unknown>,
+  ): unknown {
+    return lookupMetric(key, metrics, translation);
   }
 
   function metricLabel(value: unknown): string {
@@ -189,12 +234,34 @@
   $: translationMetrics = (diagnostics.metrics || {}) as Record<string, unknown>;
   $: translationDiag = (diagnostics.translation || {}) as Record<string, unknown>;
   $: asrDiag = (diagnostics.asr || {}) as Record<string, unknown>;
+  $: asrRaw = (asrDiag.raw || {}) as Record<string, unknown>;
   $: browserWorker = (asrDiag.browser_worker || {}) as Record<string, unknown>;
   $: localModule = (asrDiag.local_module || {}) as Record<string, unknown>;
   $: asrProvider = String(asrDiag.provider || asrDiag.active_mode || "n/a");
+  $: isLocalAsr = asrProvider === "local_parakeet" || String(asrDiag.active_mode || "") === "local_parakeet";
   $: workerConnected = browserWorker.worker_connected === true;
   $: localReady = localModule.ready === true;
-  $: localPhase = String(localModule.phase || localModule.message || "—");
+  $: localPhase = String(
+    asrDiag.provider_phase || localModule.phase || localModule.message || "—",
+  );
+  $: localEp = String(
+    asrDiag.selected_execution_provider ||
+      asrRaw.selected_execution_provider ||
+      localModule.activeExecutionProvider ||
+      localModule.active_execution_provider ||
+      "—",
+  );
+  $: localRuntimeActive =
+    asrDiag.runtime_initialized === true || asrRaw.runtime_initialized === true;
+  $: localDecodeCount = asrDiag.decode_count ?? asrRaw.decode_count;
+  $: localPartialEmits = asrDiag.partial_emits ?? asrRaw.partial_emits;
+  $: localFinalEmits = asrDiag.final_emits ?? asrRaw.final_emits;
+  $: localDecodeWallMs = asrDiag.last_decode_wall_ms ?? asrRaw.last_decode_wall_ms;
+  $: localFirstPartialMs = asrDiag.last_first_partial_ms ?? asrRaw.last_first_partial_ms;
+  $: localLastFinalMs = asrDiag.last_final_ms ?? asrRaw.last_final_ms;
+  $: translationProvider = metricLabel(
+    lookupMetric("translation_last_provider", translationMetrics, translationDiag) ?? "idle",
+  );
 
   function handleExportConfig() {
     const blob = new Blob([JSON.stringify(redactObject(config), null, 2)], {
@@ -304,42 +371,80 @@
     <h3>{tr("tools.runtime.title")}</h3>
   </div>
 
+  <label class="tools-logging-toggle stack-gap-sm">
+    <input
+      type="checkbox"
+      checked={runtimeMetricsEnabled}
+      disabled={busy}
+      on:change={(e) => setRuntimeMetricsEnabled((e.currentTarget as HTMLInputElement).checked)}
+    />
+    <span>{tr("tools.runtime.runtime_metrics")}</span>
+  </label>
+  <p class="muted">{tr("tools.runtime.runtime_metrics.hint")}</p>
+
   <p class="muted mono-block">
     ASR: {asrProvider}
-    · worker: {workerConnected ? tr("common.connected") : tr("common.disconnected")}
-    · Local ASR: {localReady ? tr("tools.runtime.local_asr.ready") : tr("tools.runtime.local_asr.not_ready")} ({localPhase})
+    {#if isLocalAsr}
+      · Local ASR: {localReady ? tr("tools.runtime.local_asr.ready") : tr("tools.runtime.local_asr.not_ready")} ({localPhase})
+      {#if runtimeMetricsEnabled}
+        · capture: {localRuntimeActive ? tr("common.connected") : tr("common.disconnected")}
+        · EP: {localEp}
+      {/if}
+    {:else}
+      · worker: {workerConnected ? tr("common.connected") : tr("common.disconnected")}
+      · Local ASR: {localReady ? tr("tools.runtime.local_asr.ready") : tr("tools.runtime.local_asr.not_ready")} ({String(localModule.phase || "—")})
+    {/if}
   </p>
-  <p class="muted mono-block">
-    Translation: {String(
-      diagnostics.metrics?.translation_last_provider ||
-        diagnostics.translation?.translation_last_provider ||
-        "idle",
-    )}
-    · queue: {String(diagnostics.metrics?.translation_queue_depth ?? 0)}
-    · queue latency: {formatMetric(diagnostics.metrics?.translation_queue_latency_ms)}
-    · provider latency: {formatMetric(diagnostics.metrics?.translation_provider_latency_ms)}
-    · cancelled: {String(diagnostics.metrics?.translation_jobs_cancelled ?? 0)}
-  </p>
-  <p class="muted mono-block">
-    {tr("tools.runtime.dispatcher.reason")}: {metricLabel(metricValue("translation_last_runtime_reason", translationMetrics, translationDiag))}
-    · {tr("tools.runtime.dispatcher.stale_dropped")}: {String(metricValue("translation_stale_results_dropped", translationMetrics, translationDiag) ?? 0)}
-    · {tr("tools.runtime.dispatcher.provider_skipped")}: {String(metricValue("translation_provider_skipped_before_call", translationMetrics, translationDiag) ?? 0)}
-    · {tr("tools.runtime.dispatcher.timeout")}: {formatMetric(metricValue("translation_last_timeout_ms", translationMetrics, translationDiag))}
-    · {tr("tools.runtime.dispatcher.last_slot")}: {metricLabel(metricValue("translation_last_slot_id", translationMetrics, translationDiag))}/{metricLabel(metricValue("translation_last_target_lang", translationMetrics, translationDiag))}
-  </p>
-  <p class="muted mono-block">
-    asr partial {formatMetric(diagnostics.metrics?.asr_partial_ms)}
-    · asr final {formatMetric(diagnostics.metrics?.asr_final_ms)}
-    · partials {String(diagnostics.metrics?.partial_updates_emitted ?? 0)}
-    · finals {String(diagnostics.metrics?.finals_emitted ?? 0)}
-    · suppressed {String(diagnostics.metrics?.suppressed_partial_updates ?? 0)}
-    · browser rx {String(diagnostics.metrics?.browser_transcripts_received ?? 0)}
-    · stale dropped {String(diagnostics.metrics?.browser_transcript_stale_dropped ?? 0)}
-  </p>
-  <p class="muted mono-block">
-    WS connections: {String(diagnostics.metrics?.ws_events_connections_active ?? 0)}
-    · jobs started: {String(diagnostics.metrics?.translation_jobs_started ?? 0)}
-  </p>
+  {#if runtimeMetricsEnabled}
+    {#if isLocalAsr}
+      <p class="muted mono-block">
+        decode {formatCount(localDecodeCount)}
+        · partial emits {formatCount(localPartialEmits)}
+        · final emits {formatCount(localFinalEmits)}
+        · decode wall {formatMetric(localDecodeWallMs)}
+        · first partial {formatMetric(localFirstPartialMs)}
+        · last final {formatMetric(localLastFinalMs)}
+      </p>
+    {/if}
+    <p class="muted mono-block">
+      Translation: {translationProvider}
+      · queue: {String(lookupMetric("translation_queue_depth", translationMetrics, translationDiag) ?? 0)}
+      · queue latency: {formatMetric(lookupMetric("translation_queue_latency_ms", translationMetrics, translationDiag))}
+      · provider latency: {formatMetric(lookupMetric("translation_provider_latency_ms", translationMetrics, translationDiag))}
+      · cancelled: {String(lookupMetric("translation_jobs_cancelled", translationMetrics, translationDiag) ?? 0)}
+    </p>
+    <p class="muted mono-block">
+      {tr("tools.runtime.dispatcher.reason")}: {metricLabel(metricValue("translation_last_runtime_reason", translationMetrics, translationDiag))}
+      · {tr("tools.runtime.dispatcher.stale_dropped")}: {String(metricValue("translation_stale_results_dropped", translationMetrics, translationDiag) ?? 0)}
+      · {tr("tools.runtime.dispatcher.provider_skipped")}: {String(metricValue("translation_provider_skipped_before_call", translationMetrics, translationDiag) ?? 0)}
+      · {tr("tools.runtime.dispatcher.timeout")}: {formatMetric(metricValue("translation_last_timeout_ms", translationMetrics, translationDiag))}
+      · {tr("tools.runtime.dispatcher.last_slot")}: {metricLabel(metricValue("translation_last_slot_id", translationMetrics, translationDiag))}/{metricLabel(metricValue("translation_last_target_lang", translationMetrics, translationDiag))}
+    </p>
+    <p class="muted mono-block">
+      asr partial {formatMetric(diagnostics.metrics?.asr_partial_ms)}
+      · asr final {formatMetric(diagnostics.metrics?.asr_final_ms)}
+      · partials {String(diagnostics.metrics?.partial_updates_emitted ?? 0)}
+      · finals {String(diagnostics.metrics?.finals_emitted ?? 0)}
+      · suppressed {String(diagnostics.metrics?.suppressed_partial_updates ?? 0)}
+      {#if !isLocalAsr}
+        · browser rx {String(diagnostics.metrics?.browser_transcripts_received ?? 0)}
+        · stale dropped {String(diagnostics.metrics?.browser_transcript_stale_dropped ?? 0)}
+      {:else}
+        · ingest rx {String(diagnostics.metrics?.browser_transcripts_received ?? 0)}
+      {/if}
+    </p>
+    <p class="muted mono-block">
+      WS connections: {String(diagnostics.metrics?.ws_events_connections_active ?? 0)}
+      · jobs started: {String(lookupMetric("translation_jobs_started", translationMetrics, translationDiag) ?? 0)}
+    </p>
+  {:else}
+    <p class="muted mono-block">
+      partials {String(diagnostics.metrics?.partial_updates_emitted ?? 0)}
+      · finals {String(diagnostics.metrics?.finals_emitted ?? 0)}
+      · WS {String(diagnostics.metrics?.ws_events_connections_active ?? 0)}
+    </p>
+    <p class="muted">{tr("tools.runtime.runtime_metrics.off_hint")}</p>
+  {/if}
   <label class="tools-logging-toggle stack-gap-sm">
     <input
       type="checkbox"

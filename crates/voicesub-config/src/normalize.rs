@@ -709,10 +709,12 @@ mod tests {
     fn normalizes_logging_defaults() {
         let out = normalize_config_payload(json!({}));
         assert_eq!(out["logging"]["full_enabled"], false);
+        assert_eq!(out["logging"]["runtime_metrics_enabled"], false);
         let enabled = normalize_config_payload(json!({
-            "logging": { "full_enabled": true }
+            "logging": { "full_enabled": true, "runtime_metrics_enabled": true }
         }));
         assert_eq!(enabled["logging"]["full_enabled"], true);
+        assert_eq!(enabled["logging"]["runtime_metrics_enabled"], true);
     }
 
     #[test]

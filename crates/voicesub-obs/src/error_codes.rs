@@ -35,6 +35,42 @@ pub fn obs_client_error_code(err: &ObsClientError) -> &'static str {
 }
 
 fn classify_io_error(err: &tokio_tungstenite::tungstenite::Error) -> &'static str {
+    use std::error::Error as _;
+    use std::io::ErrorKind;
+
+    let classify_std_io = |io_err: &std::io::Error| -> Option<&'static str> {
+        match io_err.kind() {
+            ErrorKind::ConnectionRefused => return Some(error::CONNECTION_REFUSED),
+            ErrorKind::TimedOut => return Some(error::CONNECTION_TIMEOUT),
+            ErrorKind::ConnectionReset | ErrorKind::BrokenPipe | ErrorKind::UnexpectedEof => {
+                return Some(error::CONNECTION_LOST);
+            }
+            _ => {}
+        }
+        match io_err.raw_os_error() {
+            // Windows WSAECONNREFUSED / WSAETIMEDOUT
+            Some(10061) => Some(error::CONNECTION_REFUSED),
+            Some(10060) => Some(error::CONNECTION_TIMEOUT),
+            _ => None,
+        }
+    };
+
+    if let tokio_tungstenite::tungstenite::Error::Io(io_err) = err
+        && let Some(code) = classify_std_io(io_err)
+    {
+        return code;
+    }
+
+    let mut source = err.source();
+    while let Some(cause) = source {
+        if let Some(io_err) = cause.downcast_ref::<std::io::Error>()
+            && let Some(code) = classify_std_io(io_err)
+        {
+            return code;
+        }
+        source = cause.source();
+    }
+
     let haystack = err.to_string().to_ascii_lowercase();
     if haystack.contains("10061")
         || haystack.contains("connection refused")
@@ -68,5 +104,19 @@ mod tests {
             obs_client_error_code(&ObsClientError::AuthFailed),
             error::AUTH_FAILED
         );
+    }
+
+    #[test]
+    fn classifies_io_connection_refused_by_os_code() {
+        let io_err = std::io::Error::from_raw_os_error(10061);
+        let err = ObsClientError::Io(tokio_tungstenite::tungstenite::Error::Io(io_err));
+        assert_eq!(obs_client_error_code(&err), error::CONNECTION_REFUSED);
+    }
+
+    #[test]
+    fn classifies_io_connection_refused_by_error_kind() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "refused");
+        let err = ObsClientError::Io(tokio_tungstenite::tungstenite::Error::Io(io_err));
+        assert_eq!(obs_client_error_code(&err), error::CONNECTION_REFUSED);
     }
 }

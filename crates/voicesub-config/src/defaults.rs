@@ -54,9 +54,13 @@ pub fn default_config_payload() -> Value {
                         "--no-default-browser-check",
                         "--disable-default-apps",
                         "--disable-session-crashed-bubble",
+                        "--hide-crash-restore-bubble",
                         "--disable-backgrounding-occluded-windows",
                         "--disable-renderer-backgrounding",
                         "--disable-background-timer-throttling",
+                        "--disable-field-trial-config",
+                        "--disable-hang-monitor",
+                        "--audio-process-high-priority",
                         "--noerrdialogs",
                         "--window-size=980,860"
                     ],
@@ -65,6 +69,8 @@ pub fn default_config_payload() -> Value {
                         "HighEfficiencyModeAvailable",
                         "HeuristicMemorySaver",
                         "IntensiveWakeUpThrottling",
+                        "AllowAggressiveThrottlingWithWebSocket",
+                        "BatterySaverModeAvailable",
                         "GlobalMediaControls"
                     ],
                     "extra_args": [],
@@ -80,21 +86,23 @@ pub fn default_config_payload() -> Value {
             "enabled": false,
             "output_mode": "disabled",
             "connection": {
-                "host": "127.0.0.1",
-                "port": 4455,
-                "password": ""
+                "host": crate::OBS_CC_DEFAULT_HOST,
+                "port": crate::OBS_CC_DEFAULT_PORT,
+                "password": "",
+                "use_ssl": crate::OBS_CC_DEFAULT_USE_SSL
             },
             "debug_mirror": {
                 "enabled": false,
-                "input_name": "CC_DEBUG",
+                "input_name": crate::OBS_CC_DEFAULT_DEBUG_INPUT,
                 "send_partials": true
             },
             "timing": {
                 "send_partials": true,
-                "partial_throttle_ms": 140,
-                "min_partial_delta_chars": 1,
-                "final_replace_delay_ms": 0,
-                "clear_after_ms": 2500,
+                "send_translation_partials": crate::OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS,
+                "partial_throttle_ms": crate::OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS,
+                "min_partial_delta_chars": crate::OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS,
+                "final_replace_delay_ms": crate::OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS,
+                "clear_after_ms": crate::OBS_CC_DEFAULT_CLEAR_AFTER_MS,
                 "avoid_duplicate_text": true
             }
         },
@@ -152,7 +160,8 @@ pub fn default_config_payload() -> Value {
             "pairs": []
         },
         "logging": {
-            "full_enabled": false
+            "full_enabled": false,
+            "runtime_metrics_enabled": false
         },
         "updates": {
             "enabled": true,

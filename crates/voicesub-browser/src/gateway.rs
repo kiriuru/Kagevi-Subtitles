@@ -88,6 +88,16 @@ pub struct GatewayDiagnostics {
     pub overlap_active_listening: bool,
     pub overlap_buddy_listening: bool,
     pub overlap_prestart_timer_armed: bool,
+    pub overlap_slot0_listening: bool,
+    pub overlap_slot1_listening: bool,
+    pub overlap_buddy_prestart_ok_count: u64,
+    pub overlap_buddy_prestart_fail_count: u64,
+    pub overlap_buddy_onstart_count: u64,
+    pub overlap_buddy_onend_count: u64,
+    pub overlap_buddy_arm_attempts: u64,
+    pub overlap_last_prestart_reason: Option<String>,
+    pub overlap_last_prestart_error: Option<String>,
+    pub overlap_last_buddy_error: Option<String>,
 }
 
 pub struct BrowserAsrGateway {
@@ -518,6 +528,37 @@ fn apply_status_payload(state: &mut GatewayDiagnostics, payload: &serde_json::Ma
         s.overlap_buddy_slot = v
     });
 
+    apply_bool(state, payload, "overlap_slot0_listening", |s, v| {
+        s.overlap_slot0_listening = v
+    });
+    apply_bool(state, payload, "overlap_slot1_listening", |s, v| {
+        s.overlap_slot1_listening = v
+    });
+    apply_u64(state, payload, "overlap_buddy_prestart_ok_count", |s, v| {
+        s.overlap_buddy_prestart_ok_count = v
+    });
+    apply_u64(state, payload, "overlap_buddy_prestart_fail_count", |s, v| {
+        s.overlap_buddy_prestart_fail_count = v
+    });
+    apply_u64(state, payload, "overlap_buddy_onstart_count", |s, v| {
+        s.overlap_buddy_onstart_count = v
+    });
+    apply_u64(state, payload, "overlap_buddy_onend_count", |s, v| {
+        s.overlap_buddy_onend_count = v
+    });
+    apply_u64(state, payload, "overlap_buddy_arm_attempts", |s, v| {
+        s.overlap_buddy_arm_attempts = v
+    });
+    apply_str(state, payload, "overlap_last_prestart_reason", |s, v| {
+        s.overlap_last_prestart_reason = v
+    });
+    apply_str(state, payload, "overlap_last_prestart_error", |s, v| {
+        s.overlap_last_prestart_error = v
+    });
+    apply_str(state, payload, "overlap_last_buddy_error", |s, v| {
+        s.overlap_last_buddy_error = v
+    });
+
     if let Some(mode) = state.browser_mode.as_deref()
         && mode == "browser_google"
     {
@@ -613,6 +654,11 @@ fn map_reason_to_event(reason: Option<&str>) -> Option<&'static str> {
         "recognition-started" => Some("browser_recognition_started"),
         "recognition-ended" => Some("browser_onend"),
         "overlap-handoff" => Some("browser_overlap_handoff"),
+        "overlap-buddy-prestart" => Some("browser_overlap_buddy_prestart"),
+        "overlap-buddy-started" => Some("browser_overlap_buddy_started"),
+        "overlap-soft-rearm" => Some("browser_overlap_soft_rearm"),
+        "overlap-soft-rearm-scheduled" => Some("browser_overlap_soft_rearm_scheduled"),
+        "overlap-silence-rearm" => Some("browser_overlap_silence_rearm"),
         "overlap-buddy-ended" => Some("browser_overlap_buddy_ended"),
         "overlap-buddy-error" => Some("browser_overlap_buddy_error"),
         "overlap-buddy-ghost-recovered" => Some("browser_overlap_buddy_ghost_recovered"),
@@ -815,6 +861,16 @@ fn overlap_status_fields(state: &GatewayDiagnostics) -> Value {
         "overlap_active_listening": state.overlap_active_listening,
         "overlap_buddy_listening": state.overlap_buddy_listening,
         "overlap_prestart_timer_armed": state.overlap_prestart_timer_armed,
+        "overlap_slot0_listening": state.overlap_slot0_listening,
+        "overlap_slot1_listening": state.overlap_slot1_listening,
+        "overlap_buddy_prestart_ok_count": state.overlap_buddy_prestart_ok_count,
+        "overlap_buddy_prestart_fail_count": state.overlap_buddy_prestart_fail_count,
+        "overlap_buddy_onstart_count": state.overlap_buddy_onstart_count,
+        "overlap_buddy_onend_count": state.overlap_buddy_onend_count,
+        "overlap_buddy_arm_attempts": state.overlap_buddy_arm_attempts,
+        "overlap_last_prestart_reason": state.overlap_last_prestart_reason,
+        "overlap_last_prestart_error": state.overlap_last_prestart_error,
+        "overlap_last_buddy_error": state.overlap_last_buddy_error,
     })
 }
 

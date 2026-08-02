@@ -1,11 +1,24 @@
 use serde_json::{Value, json};
 
-/// Chrome feature gates disabled for Web Speech stability (SST `browser_worker_launcher.py`).
+/// Chrome feature gates disabled for Web Speech stability (SST `browser_worker_launcher.py`
+/// plus post-Chrome-133 window/power policies).
+///
+/// Sources: Chromium `content_switches`, `performance_manager` features, Chrome for Developers
+/// “Freezing on Energy Saver” (Chrome 133+), Blink IntensiveWakeUpThrottling launch notes.
 pub const DISABLED_CHROME_FEATURES: &[&str] = &[
+    // Occlusion → renderer backgrounding when the worker window is covered by OBS/game.
     "CalculateNativeWinOcclusion",
+    // Memory Saver (formerly High Efficiency). Legacy name kept — ignored harmlessly if removed.
     "HighEfficiencyModeAvailable",
     "HeuristicMemorySaver",
+    // After ~5 min background: timers wake at most 1/min. Must stay off for recognition loops.
     "IntensiveWakeUpThrottling",
+    // Enabled-by-default: open WebSocket no longer opts the page out of aggressive throttling.
+    // The worker keeps a permanent `/ws/asr_worker` socket — without this, long streams degrade.
+    "AllowAggressiveThrottlingWithWebSocket",
+    // Chrome 133+: Energy Saver may freeze CPU-heavy hidden tabs (mic/capture usually opts out,
+    // but idle / occluded / permission-pending windows are not guaranteed).
+    "BatterySaverModeAvailable",
     "GlobalMediaControls",
 ];
 
@@ -24,15 +37,29 @@ pub const CHROME_DISK_BLOAT_GUARD_FLAGS: &[&str] =
     &["--disable-component-update", "--disable-sync"];
 
 /// Launch flags always applied for the classic Browser Speech worker (SST §11.1 / Appendix A).
+///
+/// Core anti-throttle trio (`background-timer` / `backgrounding-occluded` / `renderer-backgrounding`)
+/// is still present and documented in Chromium `content/public/common/content_switches.cc` (2026).
 pub const CHROME_ANTI_THROTTLE_FLAGS: &[&str] = &[
     "--new-window",
     "--no-first-run",
     "--no-default-browser-check",
     "--disable-default-apps",
+    // Legacy (pre-Chrome ~100); kept for older installs. Modern Chrome ignores it.
     "--disable-session-crashed-bubble",
+    // Current flag that hides "Restore pages? / Chrome didn't shut down correctly".
+    // Needed because the worker is force-killed via taskkill (/F), so every stop
+    // looks like a crash to Chrome.
+    "--hide-crash-restore-bubble",
     "--disable-backgrounding-occluded-windows",
     "--disable-renderer-backgrounding",
     "--disable-background-timer-throttling",
+    // Pin Blink/Chrome feature state — avoid Finch trials silently re-enabling throttling.
+    "--disable-field-trial-config",
+    // Avoid "Page Unresponsive" dialogs if recognition briefly blocks the renderer.
+    "--disable-hang-monitor",
+    // Raise the audio service process priority (Web Speech / getUserMedia path).
+    "--audio-process-high-priority",
     "--noerrdialogs",
     "--window-size=980,860",
 ];

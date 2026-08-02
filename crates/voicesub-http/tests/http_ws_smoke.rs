@@ -507,8 +507,8 @@ async fn subtitle_style_renderer_assets_served() {
     let client = reqwest::Client::new();
 
     for path in [
-        "/static/js/subtitle-style.js",
-        "/overlay-assets/shared/js/subtitle-style.js",
+        "/static/js/subtitle-style/index.js",
+        "/overlay-assets/shared/js/subtitle-style/index.js",
     ] {
         let response = client
             .get(format!("http://{addr}{path}"))

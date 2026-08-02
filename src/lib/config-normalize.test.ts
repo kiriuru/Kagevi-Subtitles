@@ -111,11 +111,50 @@ describe("normalizeConfigPayload SST parity", () => {
     expect(out.obs_closed_captions?.output_mode).toBe("disabled");
   });
 
-  it("keeps valid obs_closed_captions.output_mode", () => {
+  it("keeps valid obs_closed_captions.output_mode for an enabled translation slot", () => {
     const out = normalizeConfigPayload({
+      translation: {
+        lines: [
+          {
+            slot_id: "translation_1",
+            enabled: true,
+            target_lang: "en",
+            provider: "google_translate_v2",
+          },
+          {
+            slot_id: "translation_2",
+            enabled: true,
+            target_lang: "ja",
+            provider: "google_translate_v2",
+          },
+        ],
+      },
       obs_closed_captions: { output_mode: "translation_2" },
     } as ConfigPayload);
     expect(out.obs_closed_captions?.output_mode).toBe("translation_2");
+  });
+
+  it("disables obs translation output_mode when the slot is inactive", () => {
+    const out = normalizeConfigPayload({
+      translation: {
+        lines: [
+          {
+            slot_id: "translation_1",
+            enabled: true,
+            target_lang: "en",
+            provider: "google_translate_v2",
+          },
+          {
+            slot_id: "translation_2",
+            enabled: false,
+            target_lang: "ja",
+            provider: "google_translate_v2",
+          },
+        ],
+      },
+      obs_closed_captions: { output_mode: "translation_2" },
+    } as ConfigPayload);
+    expect(out.obs_closed_captions?.output_mode).toBe("disabled");
   });
 
   // Deprecated keys: still normalized/synced for legacy configs (no runtime effect).

@@ -22,10 +22,11 @@ mod ui_trace;
 mod ws_trace;
 
 pub use diagnostics::{
-    is_browser_trace_enabled, is_config_full_logging_enabled, is_deep_diagnostics_enabled,
-    is_obs_trace_enabled, is_pipeline_trace_enabled, is_runtime_events_verbose_enabled,
-    is_subtitle_trace_enabled, is_tts_trace_enabled, is_ui_trace_enabled, is_ws_trace_enabled,
-    set_config_full_logging_enabled, should_persist_client_log,
+    is_browser_trace_enabled, is_config_full_logging_enabled, is_config_runtime_metrics_enabled,
+    is_deep_diagnostics_enabled, is_obs_trace_enabled, is_pipeline_trace_enabled,
+    is_runtime_events_verbose_enabled, is_subtitle_trace_enabled, is_tts_trace_enabled,
+    is_ui_trace_enabled, is_ws_trace_enabled, set_config_full_logging_enabled,
+    set_config_runtime_metrics_enabled, should_persist_client_log,
 };
 pub use lifecycle::{
     SessionExitState, SessionLifecycleRecord, complete_graceful_shutdown, install_lifecycle_hooks,
@@ -158,9 +159,14 @@ pub fn ensure_logs_dir(project_root: &Path) -> io::Result<PathBuf> {
     Ok(dir)
 }
 
-/// Apply ``logging.full_enabled`` at runtime (trace JSONL gates + compact runtime-events verbosity).
-pub fn apply_logging_preferences(logs_dir: &Path, full_enabled: bool) {
+/// Apply ``logging.full_enabled`` / ``logging.runtime_metrics_enabled`` at runtime.
+pub fn apply_logging_preferences(
+    logs_dir: &Path,
+    full_enabled: bool,
+    runtime_metrics_enabled: bool,
+) {
     set_config_full_logging_enabled(full_enabled);
+    set_config_runtime_metrics_enabled(runtime_metrics_enabled);
     configure_subtitle_trace_log(logs_dir);
     configure_browser_trace_log(logs_dir);
     configure_obs_trace_log(logs_dir);

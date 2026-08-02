@@ -11,6 +11,7 @@ use tracing::info;
 use crate::model_family::{FamilyVariantSpec, ModelFamily, hf_file_url};
 
 pub const MODEL_VARIANT_INT8: &str = "int8";
+pub const MODEL_VARIANT_FP16: &str = "fp16";
 pub const MODEL_VARIANT_FP32: &str = "fp32";
 pub const MODEL_VARIANT_INT8_SMOOTHQUANT: &str = "int8_smoothquant";
 
@@ -18,6 +19,7 @@ pub const MODEL_VARIANT_INT8_SMOOTHQUANT: &str = "int8_smoothquant";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModelVariant {
     Int8,
+    Fp16,
     Fp32,
     Int8Smoothquant,
 }
@@ -26,6 +28,7 @@ impl ModelVariant {
     pub fn parse(raw: &str) -> Option<Self> {
         match raw.trim().to_ascii_lowercase().as_str() {
             MODEL_VARIANT_INT8 => Some(Self::Int8),
+            MODEL_VARIANT_FP16 => Some(Self::Fp16),
             MODEL_VARIANT_FP32 => Some(Self::Fp32),
             MODEL_VARIANT_INT8_SMOOTHQUANT => Some(Self::Int8Smoothquant),
             _ => None,
@@ -35,9 +38,18 @@ impl ModelVariant {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Int8 => MODEL_VARIANT_INT8,
+            Self::Fp16 => MODEL_VARIANT_FP16,
             Self::Fp32 => MODEL_VARIANT_FP32,
             Self::Int8Smoothquant => MODEL_VARIANT_INT8_SMOOTHQUANT,
         }
+    }
+
+    /// Integer-quantized Parakeet exports use `MatMulInteger` / `ConvInteger` /
+    /// `DynamicQuantizeLinear`. ORT CUDA EP has no kernels for those ops, so the
+    /// heavy graph falls back to CPU even when CUDA registers successfully.
+    /// Prefer [`Self::Fp16`] (lighter) or [`Self::Fp32`] for NVIDIA GPU acceleration.
+    pub fn cpu_bound_under_cuda(self) -> bool {
+        matches!(self, Self::Int8 | Self::Int8Smoothquant)
     }
 
     fn spec(self) -> &'static FamilyVariantSpec {
@@ -70,6 +82,13 @@ impl ModelVariant {
     pub fn size_mb(self) -> u32 {
         self.spec().size_mb
     }
+}
+
+/// True when the active model variant will keep most decode work on CPU under CUDA EP.
+pub fn variant_cpu_bound_under_cuda(variant: &str) -> bool {
+    ModelVariant::parse(variant)
+        .map(ModelVariant::cpu_bound_under_cuda)
+        .unwrap_or(false)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -633,12 +652,17 @@ mod tests {
     #[test]
     fn parses_model_variants() {
         assert_eq!(ModelVariant::parse("INT8"), Some(ModelVariant::Int8));
+        assert_eq!(ModelVariant::parse("fp16"), Some(ModelVariant::Fp16));
         assert_eq!(ModelVariant::parse("fp32"), Some(ModelVariant::Fp32));
         assert_eq!(
             ModelVariant::parse("int8_smoothquant"),
             Some(ModelVariant::Int8Smoothquant)
         );
         assert!(ModelVariant::parse("unknown").is_none());
+        assert!(variant_cpu_bound_under_cuda("int8"));
+        assert!(variant_cpu_bound_under_cuda("int8_smoothquant"));
+        assert!(!variant_cpu_bound_under_cuda("fp16"));
+        assert!(!variant_cpu_bound_under_cuda("fp32"));
     }
 
     #[test]
@@ -662,6 +686,16 @@ mod tests {
             "istupakov/parakeet-tdt-0.6b-v3-onnx"
         );
         assert_eq!(ModelVariant::Int8.source_author(), "istupakov");
+    }
+
+    #[test]
+    fn fp16_variant_uses_grikdotnet_repo() {
+        assert_eq!(
+            ModelVariant::Fp16.hf_repo(),
+            "grikdotnet/parakeet-tdt-0.6b-fp16"
+        );
+        assert_eq!(ModelVariant::Fp16.source_author(), "grikdotnet");
+        assert_eq!(ModelVariant::Fp16.size_mb(), 1220);
     }
 
     #[test]
@@ -705,11 +739,16 @@ mod tests {
     fn all_catalogs_include_tdt_variants() {
         let module = tempfile::tempdir().unwrap();
         let catalog = build_all_model_catalogs(module.path(), "parakeet_tdt", "int8");
-        assert_eq!(catalog.len(), 3);
+        assert_eq!(catalog.len(), 4);
         assert!(
             catalog
                 .iter()
                 .any(|e| e.family == "parakeet_tdt" && e.variant == "int8" && e.active)
+        );
+        assert!(
+            catalog
+                .iter()
+                .any(|e| e.family == "parakeet_tdt" && e.variant == "fp16")
         );
         assert!(
             catalog
@@ -765,10 +804,12 @@ mod tests {
     fn model_catalog_reports_install_state() {
         let dir = tempfile::tempdir().unwrap();
         let catalog = build_model_catalog(dir.path(), ModelFamily::ParakeetTdt.as_str(), "int8");
-        assert_eq!(catalog.len(), 3);
+        assert_eq!(catalog.len(), 4);
         assert!(!catalog[0].installed);
-        assert_eq!(catalog[2].variant, MODEL_VARIANT_INT8_SMOOTHQUANT);
-        assert_eq!(catalog[2].source_author, "Olicorne");
+        assert_eq!(catalog[1].variant, MODEL_VARIANT_FP16);
+        assert_eq!(catalog[1].source_author, "grikdotnet");
+        assert_eq!(catalog[3].variant, MODEL_VARIANT_INT8_SMOOTHQUANT);
+        assert_eq!(catalog[3].source_author, "Olicorne");
         let int8_dir = model_dir_for_family_variant(dir.path(), ModelFamily::ParakeetTdt, "int8");
         fs::create_dir_all(&int8_dir).unwrap();
         write_stub_files(&int8_dir, ModelVariant::Int8.required_files());

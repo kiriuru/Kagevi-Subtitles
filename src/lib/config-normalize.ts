@@ -328,30 +328,69 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
   if (rawOutputMode === "translation_5") {
     rawOutputMode = "translation_4";
   }
-  const outputMode = OBS_OUTPUT_MODES.includes(
+  let outputMode = OBS_OUTPUT_MODES.includes(
     rawOutputMode as (typeof OBS_OUTPUT_MODES)[number],
   )
     ? rawOutputMode
     : "disabled";
+  if (
+    CANONICAL_TRANSLATION_SLOTS.includes(
+      outputMode as (typeof CANONICAL_TRANSLATION_SLOTS)[number],
+    )
+  ) {
+    const enabledObsSlots = new Set(
+      (translation.lines || [])
+        .filter((line) => line.enabled !== false)
+        .map((line) => String(line.slot_id || "").trim().toLowerCase()),
+    );
+    if (!enabledObsSlots.has(outputMode)) {
+      outputMode = "disabled";
+    }
+  }
+  // Keep in sync with voicesub-config OBS_CC_DEFAULT_* constants.
+  const OBS_CC_DEFAULTS = {
+    host: "127.0.0.1",
+    port: 4455,
+    useSsl: false,
+    debugInput: "CC_DEBUG",
+    partialThrottleMs: 140,
+    minPartialDeltaChars: 1,
+    finalReplaceDelayMs: 0,
+    clearAfterMs: 2500,
+  } as const;
   config.obs_closed_captions = {
     enabled: obs.enabled === true,
     output_mode: outputMode,
     connection: {
-      host: String(connection.host || "127.0.0.1").trim() || "127.0.0.1",
-      port: Math.max(1, Math.min(65535, intOr(connection.port, 4455))),
+      host: String(connection.host || OBS_CC_DEFAULTS.host).trim() || OBS_CC_DEFAULTS.host,
+      port: Math.max(1, Math.min(65535, intOr(connection.port, OBS_CC_DEFAULTS.port))),
       password: String(connection.password || ""),
+      use_ssl: connection.use_ssl === true,
     },
     debug_mirror: {
       enabled: debugMirror.enabled === true,
-      input_name: String(debugMirror.input_name || "CC_DEBUG").trim() || "CC_DEBUG",
+      input_name:
+        String(debugMirror.input_name || OBS_CC_DEFAULTS.debugInput).trim() ||
+        OBS_CC_DEFAULTS.debugInput,
       send_partials: debugMirror.send_partials !== false,
     },
     timing: {
       send_partials: timing.send_partials !== false,
-      partial_throttle_ms: Math.max(0, intOr(timing.partial_throttle_ms, 140)),
-      min_partial_delta_chars: Math.max(0, intOr(timing.min_partial_delta_chars, 1)),
-      final_replace_delay_ms: Math.max(0, intOr(timing.final_replace_delay_ms, 0)),
-      clear_after_ms: Math.max(0, intOr(timing.clear_after_ms, 2500)),
+      // Keep in sync with OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS (default false).
+      send_translation_partials: timing.send_translation_partials === true,
+      partial_throttle_ms: Math.max(
+        0,
+        intOr(timing.partial_throttle_ms, OBS_CC_DEFAULTS.partialThrottleMs),
+      ),
+      min_partial_delta_chars: Math.max(
+        0,
+        intOr(timing.min_partial_delta_chars, OBS_CC_DEFAULTS.minPartialDeltaChars),
+      ),
+      final_replace_delay_ms: Math.max(
+        0,
+        intOr(timing.final_replace_delay_ms, OBS_CC_DEFAULTS.finalReplaceDelayMs),
+      ),
+      clear_after_ms: Math.max(0, intOr(timing.clear_after_ms, OBS_CC_DEFAULTS.clearAfterMs)),
       avoid_duplicate_text: timing.avoid_duplicate_text !== false,
     },
   };
@@ -387,6 +426,7 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
     config.logging = {};
   }
   config.logging.full_enabled = config.logging.full_enabled === true;
+  config.logging.runtime_metrics_enabled = config.logging.runtime_metrics_enabled === true;
 
   if (!config.ui || typeof config.ui !== "object") {
     config.ui = { language: "" };

@@ -112,7 +112,7 @@ Production Tauri dashboard and module windows use in-process `runtime-event` IPC
 | `crates/voicesub-subtitle/src/lifecycle.rs` | Subtitle FSM/TTL |
 | `crates/voicesub-translation/src/dispatcher.rs` | Translation queue + stale drop |
 | `src-tauri/src/lib.rs` | Tauri shell + IPC |
-| `bin/overlay/shared/js/subtitle-style.js` | Shared overlay renderer |
+| `bin/overlay/shared/js/subtitle-style/` | Shared overlay renderer (ESM modules; entry `index.js`) |
 
 ## 1. Purpose and System Boundaries
 
@@ -344,7 +344,7 @@ Embedded HTTP server: dedicated Tokio runtime in Tauri process; bind from `AppCo
 | `subtitle_output` | Source/translation display order |
 | `subtitle_lifecycle` | TTL, sync flags; deprecated timing keys normalized only |
 | `source_text_replacement` | Find/replace for ASR text (custom pairs + builtin stems/obfuscation normalize; applied in `TranscriptController` before subtitle/translation) |
-| `logging` | `full_enabled` — master switch for deep diagnostics |
+| `logging` | `full_enabled` — master switch for deep diagnostics; `runtime_metrics_enabled` — detailed Tools runtime metrics / Local ASR decode counters (default off; avoids high-churn `diagnostics_update` while recognition is active) |
 | `updates` | GitHub Releases check (`enabled`, `github_repo`, `check_interval_hours`, `latest_known_version`, …) |
 
 ### ASR mode (Kagevi Subtitles 0.6.0)
@@ -681,10 +681,10 @@ ZIP files are written under `user-data/exports/` as `diagnostics-{unix}_{ms}.zip
 - Isolated `--user-data-dir`: `{user-data}/browser-worker-profile-classic-{engine}/`
 - **Never** `--disable-extensions` / `--bwsi` / `--app=`
 - **No** hidden windows or in-tab worker
-- Anti-throttling Chrome flags + Windows EcoQoS opt-out (`launch_config.rs`, `ecoqos.rs`)
+- Anti-throttling Chrome flags + Windows EcoQoS opt-out (`launch_config.rs`, `ecoqos.rs`): occlusion/backgrounding switches, `IntensiveWakeUpThrottling` + `AllowAggressiveThrottlingWithWebSocket` + `BatterySaverModeAvailable` disabled, `--disable-field-trial-config`, `--audio-process-high-priority`, `--hide-crash-restore-bubble`
 - Detached process at **`ABOVE_NORMAL_PRIORITY_CLASS`** when `use_high_priority` (default true): keeps ASR responsive without `HIGH_PRIORITY_CLASS` preempting foreground apps and starving the rest of the system. Falls back to normal priority on `ERROR_ACCESS_DENIED`. Stop via `taskkill /T /F` (only when real `pid > 0`)
 - **Orphan reaping (`orphan_guard.rs`):** the live worker PID is persisted to `user-data/browser-worker.pid` on launch and cleared after a successful kill. `RuntimeService::start` reaps a leftover worker from a previous *crashed* session — but only if the persisted PID still maps to `chrome.exe`. Failed kills keep the PID file for retry.
-- **Launch stability (0.5.2+):** `launch_stability.rs` (flag profile), `profile_bloat_guard.rs` (profile dir hygiene), `process_affinity.rs` (opt-in Windows CPU affinity via `VOICESUB_BROWSER_AFFINITY`); contract tests in `crates/voicesub-browser/tests/chrome_launch_contract.rs`
+- **Launch stability (0.5.2+):** `launch_stability.rs` (flag profile), `profile_bloat_guard.rs` (profile dir hygiene + clear `exit_type`/`exited_cleanly` before spawn so force-kill does not show Chrome’s “Restore pages?” bubble; launch also includes `--hide-crash-restore-bubble`), `process_affinity.rs` (opt-in Windows CPU affinity via `VOICESUB_BROWSER_AFFINITY`); contract tests in `crates/voicesub-browser/tests/chrome_launch_contract.rs`
 
 ### Test harness (no Chrome spawn)
 
@@ -699,21 +699,25 @@ ZIP files are written under `user-data/exports/` as `diagnostics-{unix}_{ms}.zip
 | `worker-controller.ts` | Autostart, recognition lifecycle |
 | `socket-bridge.ts` | `/ws/asr_worker` connect, `browser_asr_control` |
 | `session-manager.ts` | Session age, reconnect, watchdog |
-| `long-segment-flush-logic.ts` | Post-monologue Web Speech buffer flush (≥200 chars) |
+| `long-segment-flush-logic.ts` | Post-monologue Web Speech buffer flush (≥450 chars) |
 | `web-speech-policy.ts` | Strip on-device hints, overlap policy |
 
 **Worker UI defaults:** lang `ru-RU`, interim/continuous on, force-finalization idle **1600 ms** (worker settings panel), max session age **180 s**.
 
+**Silence rearm (native continuous only):** with `continuous=true`, Chrome often waits ~8 s of silence before `no-speech`. The watchdog cycles recognition after **2500 ms** without start/result when `currentPartial` is empty. Overlap / `continuous=false` does **not** use silence_rearm. `no_speech` restart delay is fixed (`no_speech_restart_delay_ms`, default 150) without accumulating +800 ms backoff. `network` / `audio_capture` restart delay is also fixed (`network_reconnect_initial_ms`, default 500) — no exponential growth.
+
+**Overlap (dual-buffer):** with `continuous=false`, two `SpeechRecognition` slots alternate: **`preStartNextInstance`** on natural/forced final (immediate buddy `start()` while active lives, so the next phrase start is not lost); **`switchToNextInstance`** on active `onend` when the buddy is listening/warming; **`safeRestartRecognition`** (~50 ms in-generation flip+start) when no buddy is ready (capped empty restarts, then generation `scheduleRestart`). Idle slots are recreated before `start()`. Mid-speech buddy warm (onstart / sound-end / post-handoff) is **not** used — that chopped phrases into one-word finals. Hard errors (`network`, `audio_capture`) still force a global restart.
+
 ### Long-segment flush (Web Speech buffer)
 
-After a **committed** segment (natural or forced final) whose peak partial or final text reaches **≥200 characters**, the worker clears a bloated in-session `SpeechRecognition.results` buffer that otherwise causes the **next** utterances to finalize as many short fragments (observable in `pipeline-trace.jsonl` as rapid `asr_ingest_final_published` with small `text_len`).
+After a **committed** segment (natural or forced final) whose peak partial or final text reaches **≥450 characters**, the worker clears a bloated in-session `SpeechRecognition.results` buffer that otherwise causes the **next** utterances to finalize as many short fragments (observable in `pipeline-trace.jsonl` as rapid `asr_ingest_final_published` with small `text_len`).
 
 | Mode | Action |
 | --- | --- |
-| `native_continuous` (`continuous=true`, default) | `requestRecognitionFlush` → `recognition.stop()` → restart with reason `long_segment_flush` (~150 ms delay, same as `session_cycle`) |
-| Overlap (`continuous=false`) | `preStartNextOverlapInstance` first, then `stop()` on the **active** slot only → handoff to pre-warmed buddy |
+| `native_continuous` (`continuous=true`, default) | `requestRecognitionFlush` → `recognition.stop()` → restart with reason `long_segment_flush` (~100 ms delay) |
+| Overlap (`continuous=false`) | `preStartNextOverlapInstance` then `stop()` on the **active** slot → handoff to warming buddy |
 
-**Not configurable** (hardcoded threshold `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 200` in `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, counter `longSegmentFlushCount`. Does **not** replace session-age rotation (`max_browser_session_age_ms`) or idle forced-final (`force_finalization_timeout_ms`).
+**Not configurable** (hardcoded threshold `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` in `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, counter `longSegmentFlushCount`. Does **not** replace session-age rotation (`max_browser_session_age_ms`) or idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` after **12 s** without ASR results while mic is active; if a partial exists the watchdog **commits** it without restart (avoids multi-second gaps); empty stall still rearms (`watchdog_stall`, ~200 ms).
 
 ### Advanced Web Speech settings (dashboard)
 
@@ -725,7 +729,7 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 | --- | --- | --- |
 | Forced-final thresholds | `asr.browser.force_final_min_*` | Browser worker (`transcript-logic.ts`) |
 | Restart & recovery | `asr.browser.*_restart_delay_ms`, `minimum_reconnect_interval_ms`, `stuck_stopping_timeout_ms` | Worker session manager |
-| Network reconnect | `asr.browser.network_reconnect_*` | Worker backoff |
+| Network reconnect | `asr.browser.network_reconnect_*` | Worker fixed restart delay (`network` / `audio_capture`) |
 | Session rotation | `asr.browser.max_browser_session_age_ms`, `prepare_cycle_before_ms` | Worker session cycle |
 | Partial filtering (UI) | `asr.realtime.partial_min_delta_chars`, `partial_coalescing_ms` | Stored + shown in browser ASR **diagnostics**; **not** applied on browser ingest (`browser_event_builder` skips `should_emit`). Live Local ASR uses module `realtime` in `user-data/modules/local-asr/config.toml` via `voicesub-partial-emit` |
 
@@ -740,7 +744,7 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 | `no_speech_restart_delay_ms` | 150 |
 | `stuck_stopping_timeout_ms` | 2000 |
 | `network_reconnect_initial_ms` | 500 |
-| `network_reconnect_max_ms` | 30000 |
+| `network_reconnect_max_ms` | 30000 (legacy; unused — retries stay at `network_reconnect_initial_ms`) |
 | `max_browser_session_age_ms` | 180000 |
 | `prepare_cycle_before_ms` | 30000 |
 | `partial_min_delta_chars` | 0 |
@@ -853,7 +857,7 @@ Semantics: incremental **full-text** HTTP `translate()` on growing ASR text (Goo
 
 ### Backend config
 
-Subtitle style presets loaded via `/api/settings/load` together with config. Font catalog from `bin/fonts/` + `project-fonts.css`.
+Subtitle style presets loaded via `/api/settings/load` together with config. Font catalog from `bin/fonts/` + `project-fonts.css` (creative + dramatic/anime-title faces across Latin / Cyrillic / JP / CN / KR — e.g. Dela Gothic One, Rampart One, Metal Mania, Black Ops One, Stalinist One, Yeon Sung, Zhi Mang Xing); pickers show alphabet tags joined with ` · ` (`Latin`, `Cyrillic`, …). Presets that already had Cyrillic stacks include matching CJK fallbacks.
 
 ### Overlay presets
 
@@ -871,7 +875,7 @@ Query param override: `?preset=…&compact=1&profile=…&debug=…`
 
 ### Shared renderer
 
-`bin/overlay/shared/js/subtitle-style.js` — fast/slow path invariants. Dashboard preview uses the same payload **shape** via Tauri `runtime-event` / snapshot (not `/ws/events` in the production shell; not necessarily the same JS file).
+`bin/overlay/shared/js/subtitle-style/` (`index.js` + modules) — fast/slow path invariants. Dashboard preview uses the same payload **shape** via Tauri `runtime-event` / snapshot (not `/ws/events` in the production shell; not necessarily the same JS file).
 
 ### OBS overlay URL (Kagevi Subtitles 0.5.0)
 
@@ -883,7 +887,7 @@ http://127.0.0.1:8765/overlay
 
 ### Empty-state cleanup (caller responsibility)
 
-After fast-path optimizations the renderer keeps DOM/state across frames. On an empty payload (TTL expiry, Stop, `lifecycle_state: idle`) the caller **must** call `disposeRenderContainer`:
+After fast-path optimizations the renderer keeps DOM/state across frames. Shape-equal fast-path frames still refresh **stage/row layout CSS** (`--subtitle-text-align`, `--subtitle-justify`, `--subtitle-line-gap`) so idle dashboard preview picks up alignment / line-gap edits without a full reload. On an empty payload (TTL expiry, Stop, `lifecycle_state: idle`) the caller **must** call `disposeRenderContainer`:
 
 | Surface | Caller |
 | --- | --- |
@@ -900,11 +904,14 @@ Without cleanup the last subtitle frame can stick in OBS. Contract: `crates/voic
 - OBS WebSocket v5 client (`host`, `port`, `password`)
 - `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1`…`translation_4` | `first_visible_line`
 - `debug_mirror` — optional OBS Text Source mirror (`SetInputSettings`)
-- `timing` — partial throttle, final replace delay, clear after ms, dedup
+- `timing` — partial throttle, final replace delay, clear after ms, dedup; `send_partials` (source_live); optional `send_translation_partials` (default off) for live MT drafts on `translation_N`
 - Two inputs: ASR **source events** (`source_live` / `source_final_only`) and **subtitle payload** (`translation_*`, `first_visible_line`, debug mirror)
+- Translation live partials: when `send_translation_partials` is on, growing `is_live_draft` text for the selected slot is throttled like source_live; completed non-draft finals still send (fallback for LLM / providers without live partials)
 - Send/clear/dedup algorithm with 0.5.2 fixes (501 debug clear, supersede generation, partial native stop after 501)
 
-Enabled when `obs_closed_captions.enabled = true` and connection succeeds. Native `SendStreamCaption` only during an active stream.
+Enabled when `obs_closed_captions.enabled = true` and connection succeeds (`enabled` is the master gate for both native captions and the optional debug mirror). Native `SendStreamCaption` only during an active stream; `stream_not_running` (obs-websocket 501) is readiness, not a connection error. Debug-mirror `SetInputSettings` failures must not block native caption delivery or tear down the WebSocket. Stop/disable clears remote outputs with short retries; empty native clear accepts 501 (no active stream).
+
+**Twitch language / encoding note:** Twitch Live Closed Captions accept CEA-708/EIA-608 (CC1 / line 21) embedded in the stream or via RTMP `onCaptionInfo` ([Twitch Help](https://help.twitch.tv/s/article/guide-to-closed-captions)). OBS `SendStreamCaption` feeds that path; Latin-script text is reliable, while Cyrillic / CJK / Arabic and other non-Latin scripts usually fail or garble. Browser overlay and debug-mirror text sources are Unicode and are not limited by CEA-608.
 
 ## 17. TTS Module
 
@@ -1207,7 +1214,7 @@ Standard layout uses the same destinations via `NavRail` / `BottomNav`. Command 
 
 **Files:** `src/lib/preview-payload.ts`, `src/lib/components/SubtitleOutputPreview.svelte` (embedded from `OverviewSection.svelte`)
 
-While runtime is in `idle` phase, the dashboard shows **placeholder preview** (`preview.source_line`, translation labels) instead of live `overlay_update`. An empty `overlay_update` after Save **does not clear** the preview. When `running=true`, preview switches to live `overlay_update` (and `subtitle_payload_update` from Tauri snapshot on connect). Test: `src/lib/preview-payload.test.ts`.
+While runtime is in `idle` phase, the dashboard shows **placeholder preview** with native-script sample text (source line from `source_lang` or browser `recognition_language`; translation lines from each target lang — not UI-locale copy) instead of live `overlay_update`. An empty `overlay_update` after Save **does not clear** the preview. When `running=true`, preview switches to live `overlay_update` (and `subtitle_payload_update` from Tauri snapshot on connect). Test: `src/lib/preview-payload.test.ts`.
 
 ## 22. Frontend: Overlay (vanilla)
 
@@ -1218,14 +1225,14 @@ While runtime is in `idle` phase, the dashboard shows **placeholder preview** (`
 | `overlay.html` | Shell |
 | `overlay.js` | WS consumer, render loop; `disposeRenderContainer` on empty |
 | `overlay.css` | Styles |
-| `shared/js/subtitle-style.js` | Renderer |
+| `shared/js/subtitle-style/` | Renderer ESM (`index.js`; `source` + `translation_1`…`translation_4`) |
 | `shared/js/core/ws-stale-guard-logic.js` | Stale filter |
-| `shared/js/i18n/` | Overlay i18n bundle |
+| `shared/js/i18n/` | Minimal overlay locale bundle (`document.title.overlay` only) |
 
 **WS:** `ws(s)://{host}/ws/events` — **`overlay_update` only** (live subtitle frames + replay on connect). `transcript_update` is not consumed by OBS overlay (dashboard / external WS clients may still use it). Payloads are normalized in `overlay.js` (`normalizeOverlayPayload`, lifecycle allowlist aligned with `src/lib/overlay-normalizer.ts`).  
 **Reconnect:** exponential backoff 1s → 10s max; last frame preserved on disconnect (OBS UX).  
-**Debug:** `?debug=1` gates `writeDebug` buffer + `console.debug`; `?debug-subtitles=1` enables subtitle-effect trace ring. No production `console.log` on hot path.  
-**Empty payload:** `disposeRenderContainer(linesContainer)` when render returns `empty: true` (TTL / Stop / idle). Idle TTL also requires `hasVisibleRenderedFrame()` so state-only clear does not skip DOM teardown. Pending RAF frames are cancelled on explicit clear. Cache-bust: `overlay.html` → `overlay.js?v=20260621a`.
+**Debug:** `?debug=1` gates `writeDebug` → `console.debug`; `?debug-subtitles=1` enables subtitle-effect trace ring. No production `console.log` on hot path.  
+**Empty payload:** `disposeRenderContainer(linesContainer)` when render returns `empty: true` (TTL / Stop / idle). Idle TTL also requires `hasVisibleRenderedFrame()` so state-only clear does not skip DOM teardown. Pending RAF frames are cancelled on explicit clear. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260802c`.
 
 ## 23. Frontend: Browser Worker (Svelte)
 
@@ -1243,12 +1250,12 @@ Autostart: `?autostart=1` query param.
 | --- | --- |
 | Dashboard / Local ASR / worker | **Edit** `scripts/voicesub-locale-overrides.mjs` (+ `scripts/local-asr-locale-supplement.mjs` for ja/ko/zh Local ASR). **Generated:** `src/lib/i18n/locales/{locale}.json` via `npm run i18n:export` |
 | TTS module | Edit `src/lib/i18n/locales/tts-{locale}.json` directly |
-| Overlay | **Edit** `scripts/i18n-source/locales/*.js` → `npm run i18n:bundle` → `bin/overlay/shared/js/i18n/` |
+| Overlay | **Edit** `scripts/i18n-source/locales/*.js` → `npm run i18n:bundle` → `bin/overlay/shared/js/i18n/` (whitelist: `document.title.overlay` only) |
 | Worker locale | `locale` query param + worker i18n from dashboard catalogs |
 
 Merge at runtime: `src/lib/i18n/index.ts` — main + TTS catalogs per locale.  
 Export: `npm run i18n:export` → `scripts/export-i18n.mjs` (SST `scripts/i18n-source/locales/*.js` + extras, then **overrides win**).  
-Overlay bundle: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs`.  
+Overlay bundle: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (minimal CEF payload).  
 Config key: `ui.language` (empty = browser default).
 
 ## 25. Versioning and Update Checks

@@ -51,6 +51,9 @@ export interface FontCatalogEntry {
   family: string;
   source: string;
   url?: string;
+  filename?: string;
+  format?: string;
+  scripts?: Array<"latin" | "cyrillic" | "japanese" | "chinese" | "korean">;
 }
 
 export interface FontCatalog {
@@ -135,6 +138,8 @@ export interface ConfigPayload {
   obs_closed_captions?: Record<string, unknown>;
   logging?: {
     full_enabled?: boolean;
+    /** Detailed Tools metrics + high-churn Local ASR diagnostics fanout. Default off. */
+    runtime_metrics_enabled?: boolean;
   };
   [key: string]: unknown;
 }

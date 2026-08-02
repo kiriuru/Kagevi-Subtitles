@@ -13,6 +13,7 @@ import {
   preStartNextOverlapInstance,
   recoverGhostOverlapBuddy,
   shouldIgnoreOverlapBuddyError,
+  tryOverlapSoftRearmOnActiveEnd,
 } from "./overlap-logic";
 
 import type { AsrManagerHost, BrowserAsrState } from "./types";
@@ -54,29 +55,26 @@ function overlapState(activeSlot = 0, nowMs = 10_000): BrowserAsrState {
 
 
 function mockManager(state: BrowserAsrState, nowMs = 10_000): AsrManagerHost {
+  const SpeechRecognitionCtor = vi.fn(() => ({
+    start: vi.fn(),
+    abort: vi.fn(),
+    maxAlternatives: 1,
+  }));
 
   return {
-
     state,
-
+    SpeechRecognitionCtor,
     now: () => nowMs,
-
     appendLogInternal: vi.fn(),
-
     emitWorkerStatus: vi.fn(() => true),
-
     applyRecognitionSettings: vi.fn(),
-
     wireRecognitionHandlers: vi.fn(),
-
     setSupervisorStateInternal: vi.fn(),
-
     setRecognitionStateInternal: vi.fn(),
-
+    setStatusInternal: vi.fn(),
     clearForceFinalizeTimerInternal: vi.fn(),
-
+    scheduleRestartInternal: vi.fn(),
   } as unknown as AsrManagerHost;
-
 }
 
 
@@ -135,83 +133,52 @@ describe("overlap-logic", () => {
 
 
 
-  it("does not consume buddy onend when a global restart is pending", () => {
-
+  it("does not consume buddy onend when any restart is pending (0.5.5)", () => {
     const state = overlapState(0);
-
-    state.pendingRestartReason = "normal_onend";
-
+    state.pendingRestartReason = "network";
     const manager = mockManager(state);
-
     expect(handleInactiveOverlapBuddyEnded(manager, 1)).toBe(false);
-
     expect(state.recognitionOverlapSlotListening).toEqual([true, true]);
-
     expect(state.recognitionOverlapSlots![1].start).not.toHaveBeenCalled();
-
   });
 
-
-
-  it("consumes inactive buddy onend without touching active slot", () => {
-
+  it("consumes inactive buddy onend without auto-retry", () => {
     const state = overlapState(0);
-
+    state.recognitionOverlapPrestarted = true;
     const manager = mockManager(state);
 
     expect(handleInactiveOverlapBuddyEnded(manager, 1)).toBe(true);
-
     expect(state.recognitionOverlapSlotListening).toEqual([true, false]);
-
-    expect(state.recognitionOverlapPrestarted).toBe(true);
-
-    expect(state.recognitionOverlapSlots![1].start).toHaveBeenCalled();
-
+    expect(state.recognitionOverlapPrestarted).toBe(false);
+    expect(state.recognitionOverlapSlots![1].start).not.toHaveBeenCalled();
     expect(manager.emitWorkerStatus).toHaveBeenCalledWith("overlap-buddy-ended");
-
-    expect(handleInactiveOverlapBuddyEnded(manager, 0)).toBe(false);
-
   });
 
-
-
-  it("prestarts buddy only on segment final", () => {
+  it("prestarts buddy by recreating idle slot before start", () => {
     const state = overlapState(0, 0);
     state.recognitionOverlapPrestarted = false;
     state.recognitionOverlapSlotListening = [true, false];
-    state.recognitionGenerationId = 1;
     const manager = mockManager(state, 0);
+    const oldBuddy = state.recognitionOverlapSlots![1];
     preStartNextOverlapInstance(manager, "natural-final");
     expect(manager.clearForceFinalizeTimerInternal).toHaveBeenCalled();
+    expect(state.recognitionOverlapSlots![1]).not.toBe(oldBuddy);
     expect(state.recognitionOverlapSlots![1].start).toHaveBeenCalled();
     expect(state.recognitionOverlapPrestarted).toBe(true);
-    vi.mocked(state.recognitionOverlapSlots![1].start).mockClear();
-    preStartNextOverlapInstance(manager, "natural-final");
-    expect(state.recognitionOverlapSlots![1].start).not.toHaveBeenCalled();
   });
 
-
-
-  it("ignores buddy results during prestart warmup (only active slot publishes)", () => {
-
+  it("only active slot publishes results (0.5.5)", () => {
     const state = overlapState(0);
+    state.recognitionOverlapPrestarted = true;
+    state.recognitionOverlapSlotListening = [true, true];
 
     expect(overlapResultAllowed(state, 0)).toBe(true);
-
-    expect(overlapResultAllowed(state, 1)).toBe(false);
-
-    state.recognitionOverlapPrestarted = false;
-
     expect(overlapResultAllowed(state, 1)).toBe(false);
 
     state.recognitionOverlapActiveSlot = 1;
-
     expect(overlapResultAllowed(state, 1)).toBe(true);
-
     expect(overlapResultAllowed(state, 0)).toBe(false);
-
   });
-
 
 
   it("does not treat silent buddy as ghost while active slot is transcribing", () => {
@@ -272,146 +239,127 @@ describe("overlap-logic", () => {
 
 
 
-  it("handoff clears stale pending restart reason from active slot", () => {
-
+  it("handoff promotes a listening buddy", () => {
     const state = overlapState(0);
-
     state.pendingRestartReason = "no_speech";
-
     state.recognitionOverlapSlotListening = [true, true];
-
     const manager = mockManager(state, 10_000);
 
     expect(handleOverlapRecognitionEnded(manager, 0)).toBe(true);
-
     expect(state.recognitionOverlapActiveSlot).toBe(1);
-
     expect(state.pendingRestartReason).toBeNull();
-
-    expect(state.recognitionOverlapSlotListening).toEqual([false, true]);
-
     expect(manager.emitWorkerStatus).toHaveBeenCalledWith("recognition-ended");
-
+    expect(state.recognitionOverlapPrestarted).toBe(false);
+    expect(state.overlapPrestartTimerArmed).toBe(false);
   });
 
-
-
-  it("promotes a still-warming buddy on active onend instead of tearing down (race-safe handoff)", () => {
-
+  it("promotes a warming buddy that started but has no onstart yet (0.5.5)", () => {
     const state = overlapState(0);
-
     state.recognitionOverlapSlotListening = [true, false];
-
     state.recognitionOverlapPrestarted = true;
-
     state.pendingRestartReason = null;
-
     const manager = mockManager(state, 10_000);
 
     expect(handleOverlapRecognitionEnded(manager, 0)).toBe(true);
-
     expect(state.recognitionOverlapActiveSlot).toBe(1);
-
     expect(state.recognitionOverlapPrestarted).toBe(false);
-
-    expect(state.recognitionOverlapSlotListening).toEqual([false, false]);
-
-    expect(manager.setSupervisorStateInternal).toHaveBeenCalledWith("running");
-
-    expect(manager.emitWorkerStatus).toHaveBeenCalledWith("recognition-ended");
-
   });
 
-
-
-  it("does not promote a warming buddy when an error restart is pending", () => {
-
+  it("does not warm-promote when any restart reason is pending (0.5.5)", () => {
     const state = overlapState(0);
-
     state.recognitionOverlapSlotListening = [true, false];
-
     state.recognitionOverlapPrestarted = true;
-
-    state.pendingRestartReason = "network";
-
+    state.pendingRestartReason = "no_speech";
     const manager = mockManager(state, 10_000);
 
     expect(handleOverlapRecognitionEnded(manager, 0)).toBe(false);
-
     expect(state.recognitionOverlapActiveSlot).toBe(0);
-
   });
 
-
-
-  it("does not hand off when buddy is neither listening nor warming", () => {
-
+  it("safeRestart flips to next slot when no buddy is ready", () => {
     const state = overlapState(0);
-
     state.recognitionOverlapSlotListening = [true, false];
-
     state.recognitionOverlapPrestarted = false;
-
-    state.pendingRestartReason = null;
-
+    state.pendingRestartReason = "no_speech";
+    state.overlapSoftRearmEmptyCount = 0;
+    state.overlapSafeRestartInProgress = false;
     const manager = mockManager(state, 10_000);
+    const oldNext = state.recognitionOverlapSlots![1];
 
     expect(handleOverlapRecognitionEnded(manager, 0)).toBe(false);
+    expect(tryOverlapSoftRearmOnActiveEnd(manager, 0)).toBe(true);
+    expect(state.recognitionOverlapActiveSlot).toBe(1);
+    expect(state.recognitionOverlapSlots![1]).not.toBe(oldNext);
+    expect(manager.emitWorkerStatus).toHaveBeenCalledWith("overlap-safe-restart");
 
-    expect(state.recognitionOverlapActiveSlot).toBe(0);
-
+    vi.advanceTimersByTime(60);
+    expect(state.recognitionOverlapSlots![1].start).toHaveBeenCalled();
+    expect(state.overlapSafeRestartInProgress).toBe(false);
   });
 
+  it("does not safeRestart on hard network pending", () => {
+    const state = overlapState(0);
+    state.recognitionOverlapSlotListening = [true, false];
+    state.pendingRestartReason = "network";
+    const manager = mockManager(state, 10_000);
 
+    expect(tryOverlapSoftRearmOnActiveEnd(manager, 0)).toBe(false);
+    expect(state.recognitionOverlapActiveSlot).toBe(0);
+  });
+
+  it("caps empty safeRestarts before generation restart", () => {
+    const state = overlapState(0);
+    state.recognitionOverlapSlotListening = [true, false];
+    state.recognitionOverlapPrestarted = false;
+    state.pendingRestartReason = "no_speech";
+    state.overlapSoftRearmEmptyCount = 3;
+    const manager = mockManager(state, 10_000);
+
+    expect(tryOverlapSoftRearmOnActiveEnd(manager, 0)).toBe(false);
+  });
 
   it("builds overlap telemetry snapshot for browser trace", () => {
-
     const state = overlapState(0);
-
     state.effectiveContinuousMode = "segmented_restart";
 
     expect(buildOverlapTelemetrySnapshot(state)).toEqual({
-
       overlap_mode_desired: true,
-
       overlap_active: true,
-
       overlap_active_slot: 0,
-
       overlap_buddy_slot: 1,
-
       overlap_prestarted: true,
-
       overlap_active_listening: true,
-
       overlap_buddy_listening: true,
-
+      overlap_slot0_listening: true,
+      overlap_slot1_listening: true,
+      overlap_buddy_prestart_ok_count: 0,
+      overlap_buddy_prestart_fail_count: 0,
+      overlap_buddy_onstart_count: 0,
+      overlap_buddy_onend_count: 0,
+      overlap_last_prestart_reason: null,
+      overlap_last_prestart_error: null,
+      overlap_last_buddy_error: null,
+      overlap_prestart_timer_armed: false,
+      overlap_buddy_arm_attempts: 0,
     });
-
   });
 
-
-
-  it("recovers ghost buddy when both slots appear idle", () => {
-
+  it("recovers ghost buddy by aborting and retrying prestart on a fresh instance", () => {
     const state = overlapState(0, 20_000);
-
     state.lastResultAtMs = 0;
-
     state.lastMicActivityAt = 0;
-
     state.recognitionOverlapSlotActivityAtMs = [null, null];
-
+    state.recognitionOverlapPrestarted = true;
+    const oldBuddy = state.recognitionOverlapSlots![1];
     const manager = mockManager(state, 20_000);
 
     expect(recoverGhostOverlapBuddy(manager, 20_000)).toBe(true);
-
-    expect(state.recognitionOverlapSlots![1].abort).toHaveBeenCalled();
-
+    expect(oldBuddy.abort).toHaveBeenCalled();
+    expect(state.recognitionOverlapSlots![1]).not.toBe(oldBuddy);
+    expect(state.recognitionOverlapSlots![1].start).toHaveBeenCalled();
     expect(state.recognitionOverlapPrestarted).toBe(true);
-
-    expect(manager.emitWorkerStatus).toHaveBeenCalledWith("overlap-buddy-ghost-recovered");
-
+    expect(manager.emitWorkerStatus).toHaveBeenCalledWith(
+      "overlap-buddy-ghost-recovered",
+    );
   });
-
 });

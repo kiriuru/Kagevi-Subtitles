@@ -14,6 +14,49 @@
 
 ## [Unreleased]
 
+### Added
+
+- Почищен каталог `bin/fonts/`: убрано ~49 почти-дубликатов (~41 MB) — старые workhorse-близнецы (Roboto, JetBrains Mono, Source Code Pro, Bebas Neue, …) и creative-клоны (horror twins, Londrina/Bungee outline, огромные Stylish/QingKe, …); оставлен различимый creative/texture pack.
+- Восемь креативных built-in пресетов из нового пака: **Titan Gothic**, **Dirt Grunge**, **Spray Street**, **Glitch Neon**, **Pixel Arcade**, **Brush Ink**, **Military Stencil**, **Metal Horror**. Каталог пресетов теперь из `crates/voicesub-config/data/builtin_style_presets.json` через `include_str!`.
+- Креативные шрифты субтитров в `bin/fonts/`: латиница (**Press Start 2P**, **Silkscreen**, **Lobster**, **Pacifico**, **Righteous**, **Bungee**, **Fredoka**); латиница+кириллица (**Russo One**, **Caveat**, **Philosopher**, **Neucha**, **Yeseva One**, **Marck Script**, **Bad Script**, **Poetsen One**, **Rubik**, **Nunito**, **Manrope**, **Onest**, **Unbounded**); японский (**DotGothic16**, **Yusei Magic**, **Hachi Maru Pop**, **Stick**); китайский (**ZCOOL KuaiLe**, **Ma Shan Zheng**); корейский (**Do Hyeon**, **Gaegu**, **Single Day**, **Poor Story**).
+- Драматичные / anime-title шрифты (энергия «Атаки титанов»): JP+кириллица **Dela Gothic One**, **Rampart One**, **Reggae One**, **Train One**, **Zen Old Mincho Black**; JP **New Tegomin**, **Potta One**, **Chokokutai**; латиница horror/military **Metal Mania**, **Creepster**, **Nosifer**, **Eater**, **Butcherman**, **Pirata One**, **Black Ops One**, **Germania One**, **Cinzel Decorative**, **Keania One**, **Limelight**, **Unifraktur Cook**; кириллица display **Stalinist One**, **Kelly Slab**, **Poiret One**, **Ruslan Display**; KR **Gugi**, **Stylish**, **Yeon Sung**, **Dokdo**, **Song Myung**; CN кисть/display **Liu Jian Mao Cao**, **Zhi Mang Xing**, **Long Cang**, **ZCOOL QingKe HuangYou**.
+- Текстурные / distressed / stencil шрифты: латиница+кириллица **Rubik Dirt / Distressed / Burned / Glitch / Wet Paint / Spray Paint / Marker Hatch / Moonrocks / Beastly / Broken Fax / Vinyl / Iso / Puddles**; латиница outline/stencil **Londrina Sketch/Outline/Shadow**, **Bungee Shade/Inline/Outline**, **Stardos Stencil**, **Wallpoet**, **Big Shoulders Stencil**, **Rock Salt**, **Permanent Marker**; JP кисть **Yomogi**, **Zen Kurenaido**; KR кисть/текстура **Nanum Brush/Pen Script**, **East Sea Dokdo**, **Bagel Fat One**.
+- OBS CC: optional `timing.send_translation_partials` — live-partial переводы в режимах `translation_1…4` (throttle как у source); finals остаются fallback для LLM / провайдеров без partials.
+- OBS панель: хинт о языках Twitch native CC (CEA-608/708 — надёжна латиница; кириллица/CJK → browser overlay).
+- Шрифты CJK в `bin/fonts/`: **Zen Maru Gothic** (JP), **RocknRoll One** (JP display), **ZCOOL XiaoWei** (CN), **Black Han Sans** / **Jua** (KR); в списках шрифтов подписи алфавитов через ` · ` (`Oswald Bold · Latin`, `Noto Sans Regular · Latin · Cyrillic`, …).
+- Пресеты со стеком под кириллицу получили CJK-фолбеки (soft: Zen Maru / ZCOOL / Jua; bold/HUD: RocknRoll / ZCOOL / Black Han Sans; anime: ZCOOL / Jua поверх Mochiy).
+
+### Changed
+
+- Idle-превью субтитров: вместо тегов `RU`/`JA`/… на линиях перевода показываются короткие фразы на всех поддерживаемых языках перевода — чтобы было видно, как шрифты ложатся на кириллицу, CJK и остальные скрипты.
+- Стиль → оверрайды слотов: вкладки только для `source` и реально включённых линий перевода (как режимы `translation_*` в OBS), с языком в подписи.
+- OBS панель: режимы `translation_*` показывают только активные линии Translation (с языком в подписи); неактивный выбранный слот помечается и при normalize сбрасывается в `disabled`.
+- OBS overlay renderer разбит на ESM-модули: `bin/overlay/shared/js/subtitle-style/` (entry `index.js`) вместо монолита `subtitle-style.js`. Публичный API `window.SubtitleStyleRenderer` и fast/slow path без изменений поведения.
+- Слоты стиля субтитров выровнены с лимитом **4** линии перевода: убран мёртвый `translation_5` из JS/Rust `LINE_SLOT_NAMES` и built-in presets; clamp `inferStyleSlot` → 1…4.
+- Overlay i18n: `npm run i18n:bundle` пишет минимальный CEF-бандл (только `document.title.overlay`) вместо полного каталога dashboard (~193 KB → ~0.5 KB).
+
+### Fixed
+
+- Creative presets: **Pixel Arcade** — CC0 **Pixel Operator** (латиница) + **Press Start 2P** для кириллицы (исправлен unicode-range, из‑за которого RU пропускался); **Metal Horror** → **Rubik Wet Paint** (OFL, кириллица; Typodermic Shlop — только desktop / без кириллицы); у **Glitch Neon** / **Dirt Grunge** убраны пластины и снижена «насыщенность» эффектов; **Spray Street** → **Rubik Distressed**; у **Titan Gothic** облегчён stroke.
+- Overlay stacked: фон/рамка строки снова обтягивает текст (как в `single` / `dual-line`), а не растягивается на всю ширину сцены.
+- Idle-превью субтитров: смена выравнивания текста (и line gap) применяется сразу — fast-path обновляет CSS-переменные stage/row, а не только surface (без полной перезагрузки страницы).
+- Idle-превью субтитров: исходная строка берёт образец в письме языка распознавания (`asr.browser.recognition_language` / `source_lang`), а не UI-локали — при Japanese + русском UI больше не показывается «Предпросмотр исходной строки».
+- Browser Web Speech: убрано уведомление Chrome «Восстановить страницы?» / «Работа Chrome была завершена некорректно» на каждый перезапуск воркера — флаг `--hide-crash-restore-bubble` и сброс `exit_type`/`exited_cleanly` в изолированном профиле перед spawn (остановка воркера идёт через `taskkill /F`).
+- Browser Web Speech: усилен launch Chrome под актуальный Stable (133+) — отключены `AllowAggressiveThrottlingWithWebSocket` + `BatterySaverModeAvailable`, добавлены `--disable-field-trial-config`, `--disable-hang-monitor`, `--audio-process-high-priority`.
+- Browser Web Speech: задержка restart при `network` / `audio_capture` фиксированная (`network_reconnect_initial_ms`, по умолчанию 500 ms) — без экспоненциального роста до `network_reconnect_max_ms`.
+- Runtime Diagnostics (Tools): снова показывает метрики перевода (`jobs started`, latency, provider) — summarized `translation_diagnostics` больше не затирает ключи `translation_*` в `metrics`; для Local ASR — live decode/partial/final counters, capture/EP вместо ложного `worker: Disconnected`.
+- Runtime Diagnostics: опция `logging.runtime_metrics_enabled` (Tools, по умолчанию выкл.) — подробные метрики перевода/Local ASR и high-churn `diagnostics_update` только по запросу, чтобы не нагружать runtime при активном распознавании.
+- Local ASR: снова работает перевод на русский (и другие языки) — ingest больше не помечает текст Parakeet языком `asr.browser.recognition_language` (например `ru-RU`), из‑за чего EN→RU выглядел как копия английской строки. При `source_lang=auto` Local ASR оставляет `auto` для MT; TTS по-прежнему мапит `auto`→`en`.
+- Local ASR CUDA: при `int8` / `int8_smoothquant` decode остаётся на CPU (нет CUDA-ядер для integer-quant ops) — предупреждение в UI/логах; для GPU — **fp16** (~1.2 GB) или **fp32** (~2.5 GB). ORT `1.24.2` cuda13 при этом регистрируется нормально; обновление до 1.28 само по себе int8 на GPU не переносит.
+- Local ASR: в каталог добавлен вариант **fp16** (`grikdotnet/parakeet-tdt-0.6b-fp16`) — лёгкий floating-point аналог int8 для CUDA.
+- Local ASR: статус готовности модуля на главном дашборде (Modules badge + селектор на Эфире) обновляется сразу после setup / focus, без смены вкладки (`runtime_update` + refresh при фокусе).
+- OBS Closed Captions: чип Live больше не краснеет при `stream_not_running` (OBS подключён, стрим ещё не начат); статус учитывает `connection_state`.
+- OBS CC: сбой debug mirror (`SetInputSettings`) больше не блокирует native `SendStreamCaption`.
+- OBS CC: `enabled` — master-gate для debug mirror (без него WS не открывается); hot path не ставит в очередь события при выключенном OBS.
+- OBS CC: очередь не теряет `DelayedClear` при overflow; enqueue без гонки `try_lock`; быстрее опрос stream status (3 с), пока стрим неактивен.
+- OBS панель: `connection_state` через i18n; partial-throttle UI в `source_live` и `translation_*`.
+- Browser Web Speech continuous: при stall с orphan partial — commit без полного restart; grace stall 12 с; long-segment flush ≥450 символов; быстрее `watchdog_stall` / flush restart.
+
 ## [0.6.1] - 2026-07-30
 
 ### Added

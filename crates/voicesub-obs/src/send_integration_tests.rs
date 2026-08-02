@@ -129,6 +129,12 @@ fn translation_line_item(text: &str, slot: &str, lang: &str, label: &str) -> Sub
     }
 }
 
+fn translation_live_draft_item(text: &str, slot: &str, lang: &str, label: &str) -> SubtitleLineItem {
+    let mut item = translation_line_item(text, slot, lang, label);
+    item.is_live_draft = true;
+    item
+}
+
 fn source_line_item(text: &str) -> SubtitleLineItem {
     SubtitleLineItem {
         kind: "source".into(),
@@ -561,6 +567,80 @@ async fn debug_mirror_dedups_set_input_settings_on_source_final() {
 }
 
 #[tokio::test]
+async fn stop_retries_transient_clear_failures() {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    let fail_caption_remaining = std::sync::Arc::new(AtomicU32::new(0));
+    let fail_debug_remaining = std::sync::Arc::new(AtomicU32::new(0));
+    let (service, requests) = start_with_mock(
+        obs_source_live_config(true),
+        {
+            let mut mock = MockObsClient::new();
+            mock.fail_caption_remaining = fail_caption_remaining.clone();
+            mock.fail_debug_mirror_remaining = fail_debug_remaining.clone();
+            mock
+        },
+    )
+    .await;
+
+    service.publish_source("Sticky caption", true);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+    wait_for_requests(&requests, "SetInputSettings", 1).await;
+
+    // Inject transient failures only for the stop-time clear path.
+    fail_caption_remaining.store(2, Ordering::SeqCst);
+    fail_debug_remaining.store(1, Ordering::SeqCst);
+    service.stop().await;
+
+    let captions = stream_caption_texts(&requests);
+    assert!(
+        captions.iter().any(|text| text.is_empty()),
+        "stop must clear native captions after transient failures: {captions:?}"
+    );
+    let mirrors = debug_mirror_texts(&requests);
+    assert!(
+        mirrors.iter().any(|text| text.is_empty()),
+        "stop must clear debug mirror after transient failures: {mirrors:?}"
+    );
+    assert_eq!(fail_caption_remaining.load(Ordering::SeqCst), 0);
+    assert_eq!(fail_debug_remaining.load(Ordering::SeqCst), 0);
+
+    let diag = service.diagnostics().await;
+    assert_eq!(diag.get("last_caption_text").and_then(|v| v.as_str()), Some(""));
+    assert_eq!(diag.get("last_debug_text").and_then(|v| v.as_str()), Some(""));
+}
+
+#[tokio::test]
+async fn debug_mirror_failure_does_not_block_native_captions() {
+    let (service, requests) = start_with_mock(
+        obs_source_live_config(true),
+        {
+            let mut mock = MockObsClient::new();
+            mock.fail_debug_mirror = true;
+            mock
+        },
+    )
+    .await;
+
+    service.publish_source("Hello world", true);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello world".to_string()],
+        "native SendStreamCaption must still succeed when debug mirror SetInputSettings fails"
+    );
+    assert!(
+        requests
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|(kind, _)| kind == "SetInputSettings"),
+        "debug mirror should still be attempted before native captions"
+    );
+}
+
+#[tokio::test]
 async fn stream_inactive_schedules_debug_mirror_clear_after_501() {
     let (service, requests) = start_with_mock(
         obs_config_with_timing(
@@ -705,5 +785,209 @@ async fn partial_payload_does_not_cancel_pending_clear() {
         stream_caption_texts(&requests),
         vec!["Hello".to_string(), String::new()],
         "partial overlay payload must not cancel the pending clear timer"
+    );
+}
+
+#[tokio::test]
+async fn translation_live_partial_sends_when_flag_enabled() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let mut payload = payload_for_sequence(
+        1,
+        vec![
+            source_line_item("Привет"),
+            translation_live_draft_item("Hel", "translation_1", "en", "EN"),
+        ],
+    );
+    payload.completed_block_visible = false;
+    payload.lifecycle_state = LifecycleState::PartialOnly;
+
+    service.publish_payload(payload);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+    assert_eq!(stream_caption_texts(&requests), vec!["Hel".to_string()]);
+}
+
+#[tokio::test]
+async fn translation_live_partial_ignored_when_flag_disabled() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": false,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let mut payload = payload_for_sequence(
+        1,
+        vec![
+            source_line_item("Привет"),
+            translation_live_draft_item("Hel", "translation_1", "en", "EN"),
+        ],
+    );
+    payload.completed_block_visible = false;
+    payload.lifecycle_state = LifecycleState::PartialOnly;
+
+    service.publish_payload(payload);
+    tokio::time::sleep(Duration::from_millis(120)).await;
+    assert!(
+        stream_caption_texts(&requests).is_empty(),
+        "live drafts must not send when send_translation_partials is off"
+    );
+}
+
+#[tokio::test]
+async fn translation_final_still_sends_with_partials_flag_as_llm_fallback() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    // No live draft — only completed final (LLM / no-partial provider path).
+    service.publish_payload(payload_for_sequence(
+        3,
+        vec![
+            source_line_item("Привет"),
+            translation_line_item("Hello", "translation_1", "en", "EN"),
+        ],
+    ));
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+    assert_eq!(stream_caption_texts(&requests), vec!["Hello".to_string()]);
+}
+
+#[tokio::test]
+async fn translation_final_after_identical_partial_still_schedules_clear() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 50,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let mut draft = payload_for_sequence(
+        9,
+        vec![
+            source_line_item("Привет"),
+            translation_live_draft_item("Hello", "translation_1", "en", "EN"),
+        ],
+    );
+    draft.completed_block_visible = false;
+    draft.lifecycle_state = LifecycleState::PartialOnly;
+    service.publish_payload(draft);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    service.publish_payload(payload_for_sequence(
+        9,
+        vec![
+            source_line_item("Привет"),
+            translation_line_item("Hello", "translation_1", "en", "EN"),
+        ],
+    ));
+    wait_for_requests(&requests, "SendStreamCaption", 2).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello".to_string(), String::new()],
+        "identical final after live partial must still schedule clear_after"
+    );
+}
+
+#[tokio::test]
+async fn translation_live_partial_throttle_skips_small_growth() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 1000,
+                "min_partial_delta_chars": 4,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let mut first = payload_for_sequence(
+        1,
+        vec![
+            source_line_item("Привет"),
+            translation_live_draft_item("Hello", "translation_1", "en", "EN"),
+        ],
+    );
+    first.completed_block_visible = false;
+    first.lifecycle_state = LifecycleState::PartialOnly;
+    service.publish_payload(first);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    let mut second = payload_for_sequence(
+        1,
+        vec![
+            source_line_item("Привет"),
+            translation_live_draft_item("Hello!", "translation_1", "en", "EN"),
+        ],
+    );
+    second.completed_block_visible = false;
+    second.lifecycle_state = LifecycleState::PartialOnly;
+    service.publish_payload(second);
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello".to_string()],
+        "small growth within throttle window must be suppressed"
     );
 }

@@ -261,21 +261,68 @@ impl RuntimeMetricsCollector {
         }
 
         let stored_translation = inner.as_ref().map(|v| v.translation_metrics.clone());
-        let merge_source = if translation_metrics
-            .as_object()
-            .is_some_and(|obj| !obj.is_empty())
-        {
-            translation_metrics.clone()
-        } else {
-            stored_translation.unwrap_or(Value::Null)
-        };
-        if let Some(obj) = merge_source.as_object() {
-            for (key, value) in obj {
+        merge_translation_metrics_into(&mut map, stored_translation.as_ref(), translation_metrics);
+
+        Value::Object(map)
+    }
+}
+
+/// Merge dispatcher metrics into the runtime metrics map.
+///
+/// Prefer `translation_*` keys from the live argument when present; otherwise keep
+/// callback-stored dispatcher metrics. Short diagnostic aliases (`jobs_started`, …) are
+/// mapped onto the prefixed names the Tools panel reads so summarized diagnostics cannot
+/// wipe counters by replacing the whole object.
+fn merge_translation_metrics_into(
+    map: &mut serde_json::Map<String, Value>,
+    stored: Option<&Value>,
+    incoming: &Value,
+) {
+    if let Some(obj) = stored.and_then(|v| v.as_object()) {
+        for (key, value) in obj {
+            if key.starts_with("translation_") {
                 map.insert(key.clone(), value.clone());
             }
         }
+    }
 
-        Value::Object(map)
+    let Some(incoming_obj) = incoming.as_object() else {
+        return;
+    };
+
+    let has_prefixed = incoming_obj.keys().any(|key| key.starts_with("translation_"));
+    if has_prefixed {
+        for (key, value) in incoming_obj {
+            if key.starts_with("translation_") {
+                map.insert(key.clone(), value.clone());
+            }
+        }
+        return;
+    }
+
+    // Summarized diagnostics use short names — project them onto translation_* keys.
+    const ALIASES: &[(&str, &str)] = &[
+        ("queue_depth", "translation_queue_depth"),
+        ("jobs_started", "translation_jobs_started"),
+        ("jobs_cancelled", "translation_jobs_cancelled"),
+        ("stale_results_dropped", "translation_stale_results_dropped"),
+        ("last_queue_latency_ms", "translation_queue_latency_ms"),
+        ("last_provider_latency_ms", "translation_provider_latency_ms"),
+        ("last_runtime_reason", "translation_last_runtime_reason"),
+        ("last_slot_id", "translation_last_slot_id"),
+        ("last_target_lang", "translation_last_target_lang"),
+        ("last_provider", "translation_last_provider"),
+        ("last_timeout_ms", "translation_last_timeout_ms"),
+        ("provider_skipped_before_call", "translation_provider_skipped_before_call"),
+    ];
+    for (short, prefixed) in ALIASES {
+        if let Some(value) = incoming_obj.get(*short) {
+            // Do not clobber a fresher stored prefixed value with null/empty short aliases.
+            if value.is_null() && map.contains_key(*prefixed) {
+                continue;
+            }
+            map.insert((*prefixed).into(), value.clone());
+        }
     }
 }
 
@@ -283,6 +330,32 @@ impl RuntimeMetricsCollector {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn translation_metrics_keep_prefixed_keys_when_diagnostics_use_short_names() {
+        let metrics = RuntimeMetricsCollector::new();
+        metrics.record_translation_metrics(json!({
+            "translation_jobs_started": 7,
+            "translation_queue_depth": 2,
+            "translation_last_provider": "google_translate_v2",
+            "translation_queue_latency_ms": 15,
+        }));
+        let diagnostics = json!({
+            "enabled": true,
+            "status": "ready",
+            "jobs_started": 7,
+            "queue_depth": 2,
+            "last_provider": "google_translate_v2",
+            "last_queue_latency_ms": 15,
+        });
+        let snapshot = metrics.snapshot(&EventsHubDiagnostics::default(), 0, &diagnostics);
+        assert_eq!(snapshot["translation_jobs_started"], 7);
+        assert_eq!(snapshot["translation_queue_depth"], 2);
+        assert_eq!(snapshot["translation_last_provider"], "google_translate_v2");
+        assert_eq!(snapshot["translation_queue_latency_ms"], 15);
+        // Readiness noise must not replace metric keys.
+        assert!(snapshot.get("enabled").is_none());
+    }
 
     #[test]
     fn ipc_fanout_metrics_record_lag_and_coalesce() {

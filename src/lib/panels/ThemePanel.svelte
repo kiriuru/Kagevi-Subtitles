@@ -1,6 +1,6 @@
 <script lang="ts">
   import { locale, t } from "../i18n";
-  import { fontOptions } from "../font-catalog";
+  import { fontOptions, formatFontOptionLabel } from "../font-catalog";
   import { UI_THEME_PRESETS } from "../ui-theme-presets";
   import {
     applyUiColorSchemeToDocument,
@@ -115,7 +115,7 @@
     >
       <option value="">{tr("style.ui_theme.font.default")}</option>
       {#each fonts as font}
-        <option value={font.family}>{font.label}</option>
+        <option value={font.family}>{formatFontOptionLabel(font, tr)}</option>
       {/each}
     </select>
   </label>

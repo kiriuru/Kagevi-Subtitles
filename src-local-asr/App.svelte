@@ -439,6 +439,11 @@
     return provider.toUpperCase();
   }
 
+  function isCudaCpuBoundVariant(variant: string): boolean {
+    const v = String(variant || "").trim().toLowerCase();
+    return v === "int8" || v === "int8_smoothquant";
+  }
+
   function micLabel(device: InputDeviceInfo): string {
     return device.label || tr("local_asr.test.mic_default");
   }
@@ -552,6 +557,9 @@
         <button class="btn btn-primary" disabled={busy} onclick={() => void onSaveProvider()}>{tr("local_asr.ep.save")}</button>
       </div>
       <p class="status-line section-note">{tr("local_asr.ep.note")}</p>
+      {#if moduleConfig.inference.executionProvider === "cuda" && isCudaCpuBoundVariant(moduleConfig.model.variant)}
+        <p class="status-line section-note warn-line" role="status">{tr("local_asr.ep.cuda_int8_warning")}</p>
+      {/if}
     </section>
 
     <RealtimeTuning

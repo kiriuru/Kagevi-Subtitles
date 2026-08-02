@@ -624,7 +624,7 @@ mod tests {
                 .iter()
                 .filter(|entry| entry.family == "parakeet_tdt")
                 .count(),
-            3
+            4
         );
     }
 }

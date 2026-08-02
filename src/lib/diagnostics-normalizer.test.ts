@@ -25,4 +25,34 @@ describe("normalizeDiagnosticsPayload", () => {
     );
     expect(next.local_module).toEqual({ ready: false, phase: "loading" });
   });
+
+  it("preserves browser_worker and Local ASR counters across partial updates", () => {
+    const previous = {
+      provider: "local_parakeet",
+      active_mode: "local_parakeet",
+      browser_worker: { worker_connected: false },
+      decode_count: 4,
+      partial_emits: 4,
+      final_emits: 1,
+      selected_execution_provider: "cuda",
+    };
+    const next = normalizeDiagnosticsPayload(
+      {
+        provider: "local_parakeet",
+        decode_count: 9,
+        partial_emits: 8,
+        final_emits: 2,
+        last_decode_wall_ms: 42,
+        runtime_initialized: true,
+      },
+      previous,
+    );
+    expect(next.browser_worker).toEqual({ worker_connected: false });
+    expect(next.decode_count).toBe(9);
+    expect(next.partial_emits).toBe(8);
+    expect(next.final_emits).toBe(2);
+    expect(next.last_decode_wall_ms).toBe(42);
+    expect(next.selected_execution_provider).toBe("cuda");
+    expect(next.runtime_initialized).toBe(true);
+  });
 });

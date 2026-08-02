@@ -132,3 +132,34 @@ export function formatObsOutputMode(mode: string | undefined | null, tr: Transla
   const translated = tr(i18nKey);
   return translated === i18nKey ? key : translated;
 }
+
+/**
+ * Short OBS CC chip text for the Live strip / mini strip.
+ * Full advisory copy belongs in Details / OBS panel — long errors must not reflow Start/Stop.
+ */
+export function formatObsChipLabel(
+  labelKind: string | undefined | null,
+  labelCode: string | undefined | null,
+  tr: TranslateFn,
+): string {
+  const kind = String(labelKind || "disabled");
+  const code = String(labelCode || "");
+  switch (kind) {
+    case "mode":
+      return formatObsOutputMode(code, tr);
+    case "connection":
+      return formatObsConnectionState(code, tr);
+    case "error": {
+      const resolved = resolveObsErrorCode(code) || code;
+      if (resolved === "auth_failed" || resolved === "password_required") {
+        return formatObsConnectionState("auth_failed", tr);
+      }
+      return formatObsConnectionState("error", tr);
+    }
+    case "no_stream":
+      return tr("runtime.chip.obs_no_stream");
+    case "disabled":
+    default:
+      return formatObsConnectionState("disabled", tr);
+  }
+}

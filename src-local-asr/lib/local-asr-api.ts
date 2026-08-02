@@ -774,6 +774,14 @@ export function defaultModelCatalog(_family: ModelFamily = "parakeet_tdt"): Mode
     },
     {
       family: "parakeet_tdt",
+      variant: "fp16",
+      installed: false,
+      sizeMb: 1220,
+      active: false,
+      sourceAuthor: "grikdotnet",
+    },
+    {
+      family: "parakeet_tdt",
       variant: "fp32",
       installed: false,
       sizeMb: 2500,

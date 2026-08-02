@@ -27,7 +27,6 @@ export type SubtitleStyleRenderer = {
     slotEffect: string,
     options: Record<string, unknown> | undefined,
     deltaLength: number,
-    totalLength: number,
   ) => string;
   disposeRenderContainer: (container: HTMLElement) => void;
   normalizeBaseStyle?: (raw: Record<string, unknown>) => Record<string, unknown>;

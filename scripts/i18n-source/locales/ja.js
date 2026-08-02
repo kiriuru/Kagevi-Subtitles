@@ -165,7 +165,6 @@
   "obs.output.translation_2": "翻訳 2",
   "obs.output.translation_3": "翻訳 3",
   "obs.output.translation_4": "翻訳 4",
-  "obs.output.translation_5": "翻訳 5",
   "obs.partial_throttle": "部分送信間の最小ギャップ",
   "obs.password": "パスワード",
   "obs.password.placeholder": "OBS Webソケットのパスワード",

@@ -52,7 +52,8 @@
     "connection": {
       "host": "127.0.0.1",
       "port": 4455,
-      "password": ""
+      "password": "",
+      "use_ssl": false
     },
     "debug_mirror": {
       "enabled": false,
@@ -61,6 +62,7 @@
     },
     "timing": {
       "send_partials": true,
+      "send_translation_partials": false,
       "partial_throttle_ms": 140,
       "min_partial_delta_chars": 1,
       "final_replace_delay_ms": 0,
@@ -118,7 +120,8 @@
     "pairs": []
   },
   "logging": {
-    "full_enabled": false
+    "full_enabled": false,
+    "runtime_metrics_enabled": false
   },
   "updates": {
     "enabled": true,

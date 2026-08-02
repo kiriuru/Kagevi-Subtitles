@@ -26,7 +26,7 @@ use crate::http::{
     RuntimeMetricsCollector, RuntimeOrchestrator, RuntimeStatusBroadcaster, StylePresetsFn,
     build_router, spawn_runtime_heartbeat, spawn_startup_check,
 };
-use voicesub_config::read_full_logging_enabled;
+use voicesub_config::{read_full_logging_enabled, read_runtime_metrics_enabled};
 use voicesub_config::{AppConfig, ConfigStore, ProjectPaths, default_config_payload};
 use voicesub_export::ExportService;
 use voicesub_logging::{
@@ -465,7 +465,9 @@ impl RuntimeService {
         let obs_for_publish = obs_captions.clone();
         let base_publish = publish.clone();
         let publish_with_obs: PublishCallback = Arc::new(move |payload| {
-            obs_for_publish.publish_payload(payload.clone());
+            if obs_for_publish.is_accepting_events() {
+                obs_for_publish.publish_payload(payload.clone());
+            }
             base_publish(payload);
         });
 
@@ -825,6 +827,7 @@ impl RuntimeService {
             apply_logging_preferences(
                 &self.paths.logs_dir,
                 read_full_logging_enabled(store.payload()),
+                read_runtime_metrics_enabled(store.payload()),
             );
         }
 

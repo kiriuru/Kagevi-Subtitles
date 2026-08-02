@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { extractPrimaryFontFamily, replacePrimaryFontFamily } from "../font-catalog";
+  import {
+    extractPrimaryFontFamily,
+    formatFontOptionLabel,
+    replacePrimaryFontFamily,
+  } from "../font-catalog";
+  import type { FontCatalogEntry } from "../font-catalog";
   import {
     clampStrokeWidthPx,
     STROKE_WIDTH_MAX,
@@ -22,7 +27,7 @@
   const TEXT_ALIGNS = ["left", "center", "right"] as const;
 
   export let tr: (key: string) => string;
-  export let fonts: Array<{ family: string; label: string }>;
+  export let fonts: FontCatalogEntry[];
   export let read: (field: string, fallback?: string | number) => string | number;
   export let write: (field: string, value: string | number) => void;
   export let disabled = false;
@@ -63,7 +68,7 @@
         <option value="">{tr("style.slots.inherit_base")}</option>
       {/if}
       {#each fonts as font}
-        <option value={font.family}>{font.label}</option>
+        <option value={font.family}>{formatFontOptionLabel(font, tr)}</option>
       {/each}
     </select>
   </label>

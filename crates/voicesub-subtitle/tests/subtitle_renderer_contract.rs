@@ -1,12 +1,11 @@
 mod common;
 
 use common::{
-    assert_contains, assert_not_contains, count_innerhtml_wipe_statements, read_workspace_file,
-    slice_from_function,
+    assert_contains, assert_not_contains, count_innerhtml_wipe_statements, slice_from_function,
 };
 
 fn subtitle_style_js() -> String {
-    read_workspace_file("bin/overlay/shared/js/subtitle-style.js")
+    common::read_workspace_js_dir("bin/overlay/shared/js/subtitle-style")
 }
 
 #[test]
@@ -88,8 +87,8 @@ fn renderer_exposes_partial_transition_classifier() {
 fn renderer_has_shape_signature_fast_path() {
     let source = subtitle_style_js();
     for needle in [
-        "function _shapeSignatureForEntry",
-        "function _shapeSignatureForRows",
+        "export function _shapeSignatureForEntry",
+        "export function _shapeSignatureForRows",
         "_shapeSignatureForRows,",
         "_shapeSignatureForEntry,",
         "shapeSignature",
@@ -113,7 +112,7 @@ fn slow_path_uses_replace_children_for_container_swap() {
     assert_eq!(
         count_innerhtml_wipe_statements(&source),
         0,
-        "subtitle-style.js must not use container.innerHTML wipe after replaceChildren migration"
+        "subtitle-style modules must not use container.innerHTML wipe after replaceChildren migration"
     );
 }
 
@@ -201,8 +200,8 @@ fn renderer_emits_structured_debug_trace_events() {
 #[test]
 fn renderer_persists_dom_refs_as_weakref_when_supported() {
     let source = subtitle_style_js();
-    assert_contains(&source, "function _surfaceRefFor", "weakref helper");
-    assert_contains(&source, "function _derefSurfaceRef", "weakref helper");
+    assert_contains(&source, "export function _surfaceRefFor", "weakref helper");
+    assert_contains(&source, "export function _derefSurfaceRef", "weakref helper");
     assert_contains(
         &source,
         "typeof WeakRef === \"function\"",
@@ -226,7 +225,7 @@ fn slow_path_releases_orphaned_surfaces_before_innerhtml_wipe() {
     let source = subtitle_style_js();
     assert_contains(
         &source,
-        "function _releaseOrphanedSurfaces",
+        "export function _releaseOrphanedSurfaces",
         "orphan cleanup",
     );
     assert_contains(
@@ -272,8 +271,8 @@ fn slow_path_can_reuse_completed_source_surface() {
 fn renderer_exports_finalization_fast_path_helpers() {
     let source = subtitle_style_js();
     for needle in [
-        "function _canFastPathFinalize",
-        "function _finalizeTransientSurfaceInPlace",
+        "export function _canFastPathFinalize",
+        "export function _finalizeTransientSurfaceInPlace",
         "_canFastPathFinalize,",
         "_finalizeTransientSurfaceInPlace,",
         "exactShapeMatch || finalizationCompatible",

@@ -3,6 +3,7 @@ import { createBrowserAsrStateSeed } from "./session-state";
 import {
   ensureClientSegmentId,
   normalizeTranscriptText,
+  canForceFinalizeOnInterruption,
   shouldSuppressDuplicatePartial,
   shouldSuppressFinal,
 } from "./transcript-logic";
@@ -32,5 +33,18 @@ describe("transcript-logic", () => {
     state.currentSegmentLastFinalText = "done";
     expect(shouldSuppressFinal(state, "done")).toBe(true);
     expect(state.duplicateFinalSuppressed).toBe(1);
+  });
+
+  it("rejects interruption force-finalize for short interim (minChars gate)", () => {
+    const state = createBrowserAsrStateSeed({
+      forceFinalOnInterruption: true,
+      forceFinalMinChars: 8,
+      forceFinalMinStableMs: 0,
+      currentPartial: "Text",
+      currentPartialStableSinceMs: Date.now() - 2000,
+    });
+    expect(canForceFinalizeOnInterruption(state, true)).toBe(false);
+    state.currentPartial = "longer text";
+    expect(canForceFinalizeOnInterruption(state, true)).toBe(true);
   });
 });

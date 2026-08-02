@@ -46,6 +46,16 @@ export function computeHealthDegradedReason(ctx: {
   ) {
     return "voice_below_recognition_threshold";
   }
+  // Overlap/segmented sessions are intentionally short; silence rearm recovers them.
+  // Do not surface web_speech_stalled — it falsely marks healthy ping-pong as degraded.
+  if (
+    state.effectiveContinuousMode === "segmented_restart" ||
+    (Array.isArray(state.recognitionOverlapSlots) &&
+      state.recognitionOverlapSlots.length === 2)
+  ) {
+    return null;
+  }
+
   if (
     !ctx.documentHidden &&
     state.browserSupervisorState === "running" &&

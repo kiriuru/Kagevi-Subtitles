@@ -5,7 +5,23 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-function buildBundle(localesDir, outPath) {
+/** OBS overlay only needs the document title; keep the CEF payload tiny. */
+const OVERLAY_LOCALE_KEYS = ["document.title.overlay"];
+
+function filterMessages(messages, keys) {
+  if (!keys) {
+    return messages;
+  }
+  const out = {};
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(messages, key)) {
+      out[key] = messages[key];
+    }
+  }
+  return out;
+}
+
+function buildBundle(localesDir, outPath, keyAllowlist) {
   const locales = fs
     .readdirSync(localesDir)
     .filter((f) => f.endsWith(".js"))
@@ -17,7 +33,8 @@ function buildBundle(localesDir, outPath) {
     vm.runInNewContext(code, sandbox);
     const messages = sandbox.window.__SST_I18N_LOCALES[locale];
     if (!messages) continue;
-    out += `  window.__SST_I18N_LOCALES.${locale} = ${JSON.stringify(messages, null, 2)};\n`;
+    const filtered = filterMessages(messages, keyAllowlist);
+    out += `  window.__SST_I18N_LOCALES.${locale} = ${JSON.stringify(filtered, null, 2)};\n`;
   }
   out += "})();\n";
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -26,11 +43,14 @@ function buildBundle(localesDir, outPath) {
 }
 
 const sourceLocalesDir = path.join(root, "scripts", "i18n-source", "locales");
-const bundleTargets = [
-  path.join(root, "scripts", "i18n-source", "locales-bundle.js"),
-  path.join(root, "bin", "overlay", "shared", "js", "i18n", "locales-bundle.js"),
-];
+const overlayBundle = path.join(
+  root,
+  "bin",
+  "overlay",
+  "shared",
+  "js",
+  "i18n",
+  "locales-bundle.js",
+);
 
-for (const outPath of bundleTargets) {
-  buildBundle(sourceLocalesDir, outPath);
-}
+buildBundle(sourceLocalesDir, overlayBundle, OVERLAY_LOCALE_KEYS);

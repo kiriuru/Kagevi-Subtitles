@@ -17,10 +17,7 @@ pub fn select_payload_text(payload: &SubtitlePayloadEvent, mode: &str) -> String
         .filter(|item| !item.is_live_draft && !item.text.trim().is_empty())
         .collect();
     if mode == "first_visible_line" {
-        return visible
-            .first()
-            .map(|item| item.text.clone())
-            .unwrap_or_default();
+        return select_first_visible_text(payload);
     }
     if let Some(index_str) = mode.strip_prefix("translation_")
         && let Ok(index) = index_str.parse::<usize>()
@@ -35,6 +32,34 @@ pub fn select_payload_text(payload: &SubtitlePayloadEvent, mode: &str) -> String
             .unwrap_or_default();
     }
     String::new()
+}
+
+/// Live-draft text for `translation_N` modes (empty for other modes / missing draft).
+pub fn select_payload_live_draft_text(payload: &SubtitlePayloadEvent, mode: &str) -> String {
+    let Some(index_str) = mode.strip_prefix("translation_") else {
+        return String::new();
+    };
+    let Ok(index) = index_str.parse::<usize>() else {
+        return String::new();
+    };
+    if let Some(item) = payload.visible_items.iter().find(|item| {
+        item.kind == "translation"
+            && item.is_live_draft
+            && !item.text.trim().is_empty()
+            && (item.slot_id.as_deref() == Some(mode) || item.style_slot.as_deref() == Some(mode))
+    }) {
+        return item.text.clone();
+    }
+    let translations: Vec<_> = payload
+        .visible_items
+        .iter()
+        .filter(|item| item.kind == "translation" && !item.text.trim().is_empty())
+        .collect();
+    translations
+        .get(index.saturating_sub(1))
+        .filter(|item| item.is_live_draft)
+        .map(|item| item.text.clone())
+        .unwrap_or_default()
 }
 
 /// Returns `true` when a partial update should be suppressed by throttle settings.
@@ -169,5 +194,33 @@ mod tests {
         };
         assert_eq!(select_payload_text(&payload, "translation_1"), "");
         assert_eq!(select_first_visible_text(&payload), "");
+    }
+
+    #[test]
+    fn selects_live_draft_translation_for_partial_captions() {
+        let payload = SubtitlePayloadEvent {
+            visible_items: vec![SubtitleLineItem {
+                kind: "translation".into(),
+                lang: "en".into(),
+                label: "EN".into(),
+                text: "growing draft".into(),
+                style_slot: None,
+                slot_id: Some("translation_1".into()),
+                target_lang: Some("en".into()),
+                provider: None,
+                visible: true,
+                success: true,
+                error: None,
+                is_live_draft: true,
+            }],
+            lifecycle_state: LifecycleState::PartialOnly,
+            completed_block_visible: false,
+            ..SubtitlePayloadEvent::default()
+        };
+        assert_eq!(
+            select_payload_live_draft_text(&payload, "translation_1"),
+            "growing draft"
+        );
+        assert_eq!(select_payload_live_draft_text(&payload, "source_live"), "");
     }
 }

@@ -3,6 +3,33 @@ use voicesub_browser::BrowserAsrDiagnostics;
 
 use super::partial_emit::PartialEmitSettings;
 
+/// High-churn Local ASR / emit counters omitted when `logging.runtime_metrics_enabled` is off.
+const RUNTIME_METRICS_ASR_KEYS: &[&str] = &[
+    "decode_count",
+    "finalized_segments",
+    "partial_emits",
+    "final_emits",
+    "revision_emits",
+    "revision_rate",
+    "last_paced_decode_interval_ms",
+    "last_decode_wall_ms",
+    "last_first_partial_ms",
+    "last_final_ms",
+    "last_decode_timing",
+];
+
+/// Drop live decode/emit counters so `diagnostics_update` stays quiet while recognition runs.
+pub fn slim_asr_diagnostics(diagnostics: Value) -> Value {
+    let Some(mut obj) = diagnostics.as_object().cloned() else {
+        return diagnostics;
+    };
+    for key in RUNTIME_METRICS_ASR_KEYS {
+        obj.remove(*key);
+    }
+    obj.insert("runtime_metrics_enabled".into(), json!(false));
+    Value::Object(obj)
+}
+
 /// Browser Web Speech diagnostics snapshot for dashboard/runtime API.
 pub fn assemble_browser_asr_diagnostics(
     asr_mode: &str,
@@ -152,6 +179,27 @@ fn model_status_body(
 mod tests {
     use super::*;
     use voicesub_browser::BrowserAsrDiagnostics;
+
+    #[test]
+    fn slim_asr_diagnostics_drops_high_churn_counters() {
+        let full = json!({
+            "provider": "local_parakeet",
+            "provider_phase": "running",
+            "decode_count": 9,
+            "partial_emits": 8,
+            "final_emits": 2,
+            "last_decode_wall_ms": 40,
+            "selected_execution_provider": "cuda"
+        });
+        let slim = slim_asr_diagnostics(full);
+        assert_eq!(slim["provider"], "local_parakeet");
+        assert_eq!(slim["selected_execution_provider"], "cuda");
+        assert_eq!(slim["runtime_metrics_enabled"], false);
+        assert!(slim.get("decode_count").is_none());
+        assert!(slim.get("partial_emits").is_none());
+        assert!(slim.get("final_emits").is_none());
+        assert!(slim.get("last_decode_wall_ms").is_none());
+    }
 
     #[test]
     fn browser_diagnostics_include_partial_emit_fields() {

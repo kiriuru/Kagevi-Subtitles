@@ -40,8 +40,10 @@ export function mergeLocalModuleBadgeSnapshots(
     runtime.executionProvider !== "cpu"
       ? runtime.executionProvider
       : api.executionProvider;
+  // Prefer runtime for readiness/phase (pushed via runtime_update). API snapshot is a
+  // focus/mount fallback for model labels — do not OR-sticky a stale api.ready.
   return {
-    ready: runtime.ready || api.ready,
+    ready: runtime.ready,
     phase: runtime.phase || api.phase,
     executionProvider,
     activeModelFamily: api.activeModelFamily || runtime.activeModelFamily,

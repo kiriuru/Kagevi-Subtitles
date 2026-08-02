@@ -1,5 +1,7 @@
 import { readMigratedLocalStorage, writeBrandLocalStorage } from "./brand";
 
+export type FontScriptTag = "latin" | "cyrillic" | "japanese" | "chinese" | "korean";
+
 export interface FontCatalogEntry {
   id: string;
   label: string;
@@ -8,6 +10,8 @@ export interface FontCatalogEntry {
   url?: string;
   filename?: string;
   format?: string;
+  /** Alphabet tags for the picker label (`style.font.script.*`). */
+  scripts?: FontScriptTag[];
 }
 
 export interface FontCatalog {
@@ -89,6 +93,32 @@ export function fontOptions(catalog: FontCatalog | null): FontCatalogEntry[] {
     ...(catalog.system || []),
     ...(catalog.fallback || []),
   ];
+}
+
+const FONT_SCRIPT_KEY: Record<FontScriptTag, string> = {
+  latin: "style.font.script.latin",
+  cyrillic: "style.font.script.cyrillic",
+  japanese: "style.font.script.japanese",
+  chinese: "style.font.script.chinese",
+  korean: "style.font.script.korean",
+};
+
+/** e.g. `Oswald Bold · Latin` / `Noto Sans Regular · Latin · Cyrillic` (same ` · ` as OBS translation modes). */
+export function formatFontOptionLabel(
+  font: Pick<FontCatalogEntry, "label" | "scripts">,
+  tr: (key: string) => string,
+): string {
+  const label = String(font.label || "").trim();
+  if (!label) return "";
+  const scripts = Array.isArray(font.scripts)
+    ? font.scripts
+        .map((tag) => FONT_SCRIPT_KEY[tag as FontScriptTag])
+        .filter(Boolean)
+        .map((key) => tr(key))
+        .filter(Boolean)
+    : [];
+  if (!scripts.length) return label;
+  return `${label} · ${scripts.join(" · ")}`;
 }
 
 export function extractPrimaryFontFamily(chain: string): string {

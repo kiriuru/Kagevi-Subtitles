@@ -11,7 +11,25 @@ pub fn read_full_logging_enabled(payload: &Value) -> bool {
         .unwrap_or(false)
 }
 
+/// Detailed Tools / runtime metrics (Local ASR decode counters, translation dispatcher stats).
+/// Default off — avoids high-churn `diagnostics_update` fanout while recognition is active.
+pub fn read_runtime_metrics_enabled(payload: &Value) -> bool {
+    payload
+        .get("logging")
+        .and_then(|section| section.get("runtime_metrics_enabled"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+}
+
 pub fn read_full_logging_enabled_from_config_path(config_path: &Path) -> bool {
+    read_logging_bool_from_config_path(config_path, "full_enabled")
+}
+
+pub fn read_runtime_metrics_enabled_from_config_path(config_path: &Path) -> bool {
+    read_logging_bool_from_config_path(config_path, "runtime_metrics_enabled")
+}
+
+fn read_logging_bool_from_config_path(config_path: &Path, key: &str) -> bool {
     if !config_path.is_file() {
         return false;
     }
@@ -38,18 +56,30 @@ pub fn read_full_logging_enabled_from_config_path(config_path: &Path) -> bool {
             Err(_) => return false,
         }
     };
-    read_full_logging_enabled(&payload)
+    payload
+        .get("logging")
+        .and_then(|section| section.get(key))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
 }
 
 /// Read logging preferences before `config.toml` exists (SST `config.json` import path).
 pub fn read_full_logging_enabled_from_user_data(user_data_dir: &Path) -> bool {
+    read_logging_bool_from_user_data(user_data_dir, "full_enabled")
+}
+
+pub fn read_runtime_metrics_enabled_from_user_data(user_data_dir: &Path) -> bool {
+    read_logging_bool_from_user_data(user_data_dir, "runtime_metrics_enabled")
+}
+
+fn read_logging_bool_from_user_data(user_data_dir: &Path, key: &str) -> bool {
     let toml_path = user_data_dir.join(crate::paths::RUNTIME_CONFIG_TOML);
     if toml_path.is_file() {
-        return read_full_logging_enabled_from_config_path(&toml_path);
+        return read_logging_bool_from_config_path(&toml_path, key);
     }
     let json_path = user_data_dir.join(crate::paths::LEGACY_SST_CONFIG_JSON);
     if json_path.is_file() {
-        return read_full_logging_enabled_from_config_path(&json_path);
+        return read_logging_bool_from_config_path(&json_path, key);
     }
     false
 }
@@ -62,6 +92,10 @@ pub fn normalize_logging_config(payload: &Value) -> Value {
         .unwrap_or_default();
     serde_json::json!({
         "full_enabled": current.get("full_enabled").and_then(|v| v.as_bool()).unwrap_or(false),
+        "runtime_metrics_enabled": current
+            .get("runtime_metrics_enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
     })
 }
 
@@ -71,17 +105,24 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn defaults_full_logging_to_false() {
+    fn defaults_logging_flags_to_false() {
         assert!(!read_full_logging_enabled(&json!({})));
+        assert!(!read_runtime_metrics_enabled(&json!({})));
         assert_eq!(
             normalize_logging_config(&json!({})),
-            json!({ "full_enabled": false })
+            json!({ "full_enabled": false, "runtime_metrics_enabled": false })
         );
     }
 
     #[test]
-    fn reads_true_flag() {
-        let payload = json!({ "logging": { "full_enabled": true } });
+    fn reads_true_flags() {
+        let payload = json!({
+            "logging": {
+                "full_enabled": true,
+                "runtime_metrics_enabled": true
+            }
+        });
         assert!(read_full_logging_enabled(&payload));
+        assert!(read_runtime_metrics_enabled(&payload));
     }
 }

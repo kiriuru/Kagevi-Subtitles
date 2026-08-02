@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const source = readFileSync(join(root, "bin/overlay/shared/js/subtitle-style.js"), "utf8");
+const entryUrl = pathToFileURL(
+  join(root, "bin/overlay/shared/js/subtitle-style/index.js"),
+).href;
 
-// subtitle-style.js is a browser IIFE that attaches to window.SubtitleStyleRenderer.
-new Function(source)();
+// ESM entry attaches window.SubtitleStyleRenderer (same public API as the old IIFE).
+await import(entryUrl);

@@ -254,6 +254,28 @@ export function isTranslationLineEnabled(line: Pick<TranslationLine, "enabled"> 
   return line?.enabled !== false;
 }
 
+/**
+ * Style override tabs: always `source`, plus enabled translation lines only
+ * (same visibility rule as OBS `translation_*` output modes).
+ */
+export function getActiveStyleLineSlots(config: ConfigPayload): string[] {
+  const slots: string[] = ["source"];
+  if (config.subtitle_output?.show_translations === false) {
+    return slots;
+  }
+  for (const line of getLineCards(config)) {
+    if (!isTranslationLineEnabled(line)) continue;
+    const slotId = String(line.slot_id || "").trim().toLowerCase();
+    if (
+      CANONICAL_TRANSLATION_SLOTS.includes(slotId as (typeof CANONICAL_TRANSLATION_SLOTS)[number]) &&
+      !slots.includes(slotId)
+    ) {
+      slots.push(slotId);
+    }
+  }
+  return slots;
+}
+
 export function getLineCards(config: ConfigPayload): TranslationLine[] {
   const lineMap = getLineMap(config.translation?.lines);
   const configured = [...lineMap.values()].map((line) => String(line.slot_id).toLowerCase());

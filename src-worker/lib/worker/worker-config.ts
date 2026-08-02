@@ -132,6 +132,13 @@ export function resolveBrowserLifecycleConfig(
         10
       ) || browserLifecycleDefaults.overlapBuddyGhostActiveMicMs
     ),
+    overlapPrestartAfterStartMs: Math.max(
+      200,
+      Number.parseInt(
+        String(backend.overlap_prestart_after_start_ms || browserLifecycleDefaults.overlapPrestartAfterStartMs),
+        10
+      ) || browserLifecycleDefaults.overlapPrestartAfterStartMs
+    ),
   };
 }
 

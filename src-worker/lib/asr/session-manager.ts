@@ -47,9 +47,9 @@ import {
 } from "./recognition-lifecycle";
 import { wireRecognitionHandlers } from "./recognition-handlers";
 import {
-  preStartNextOverlapInstance,
   recognitionOverlapActive,
   recoverGhostOverlapBuddy,
+  preStartNextOverlapInstance,
 } from "./overlap-logic";
 import { maybeFlushAfterCommittedLongSegment } from "./long-segment-flush-logic";
 import { webSpeechRecognitionPolicy } from "./web-speech-policy";
@@ -346,50 +346,66 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     }
   }
 
+  /**
+   * Commit orphan interim as forced final. Used by the force-finalize timer and by
+   * overlap active onend — Chrome continuous=false often ends with interim only, and
+   * soft-rearm used to clear the timer before it could fire (dropping the phrase).
+   * No minChars/stableMs gate (unlike forceFinalizeOnInterruptionInternal).
+   */
+  commitForcedPartialInternal(reason: string): boolean {
+    if (!this.state.currentPartial || !this.state.desiredRunning) {
+      return false;
+    }
+    const finalText = this.state.currentPartial;
+    const clientSegmentId = this.ensureClientSegmentIdInternal();
+    if (this.shouldSuppressFinalInternal(finalText, { forcedFinal: true })) {
+      this.state.currentPartial = "";
+      this.options.setPartialText?.("");
+      return false;
+    }
+    this.clearForceFinalizeTimerInternal();
+    this.state.missingFinalCount = Number(this.state.missingFinalCount || 0) + 1;
+    this.state.forcedCount = Number(this.state.forcedCount || 0) + 1;
+    this.sendUpdateInternal({
+      partial: finalText,
+      final: finalText,
+      is_final: true,
+      source_lang: this.state.sourceLang,
+      client_segment_id: clientSegmentId,
+      forced_final: true,
+      forced_final_reason: String(reason || "force-finalize"),
+    });
+    this.state.currentSegmentLastFinalText = this.normalizeTranscriptTextInternal(finalText);
+    this.state.currentSegmentForcedFinalized = true;
+    this.state.lastForcedFinal = {
+      generation_id: this.currentGenerationIdInternal(),
+      client_segment_id: clientSegmentId,
+      text: finalText,
+      reason: String(reason || "force-finalize"),
+      at_ms: this.now(),
+    };
+    this.state.currentPartial = "";
+    this.options.setFinalText?.(finalText);
+    this.options.setPartialText?.("");
+    this.setStatusInternal("forced-finalized");
+    // 0.5.5: force-finalize commits text AND prestarts buddy while active still lives.
+    if (recognitionOverlapActive(this.state)) {
+      preStartNextOverlapInstance(this, reason || "force-finalize");
+    }
+    maybeFlushAfterCommittedLongSegment(this, finalText, reason || "force-finalize");
+    this.updateCountersInternal();
+    return true;
+  }
+
   scheduleForceFinalizeInternal(): void {
     this.clearForceFinalizeTimerInternal();
     if (!this.isForceFinalizationEnabled() || !this.state.currentPartial) {
       return;
     }
+    const timeoutMs = Number(this.state.forceFinalizationTimeoutMs || 1600);
     this.state.forceFinalizeTimer = window.setTimeout(() => {
-      if (!this.state.currentPartial || !this.state.desiredRunning) {
-        return;
-      }
-      const finalText = this.state.currentPartial;
-      const clientSegmentId = this.ensureClientSegmentIdInternal();
-      if (this.shouldSuppressFinalInternal(finalText, { forcedFinal: true })) {
-        this.state.currentPartial = "";
-        this.options.setPartialText?.("");
-        return;
-      }
-      this.state.missingFinalCount = Number(this.state.missingFinalCount || 0) + 1;
-      this.state.forcedCount = Number(this.state.forcedCount || 0) + 1;
-      this.sendUpdateInternal({
-        partial: finalText,
-        final: finalText,
-        is_final: true,
-        source_lang: this.state.sourceLang,
-        client_segment_id: clientSegmentId,
-        forced_final: true,
-      });
-      this.state.currentSegmentLastFinalText = this.normalizeTranscriptTextInternal(finalText);
-      this.state.currentSegmentForcedFinalized = true;
-      this.state.lastForcedFinal = {
-        generation_id: this.currentGenerationIdInternal(),
-        client_segment_id: clientSegmentId,
-        text: finalText,
-        at_ms: this.now(),
-      };
-      this.state.currentPartial = "";
-      this.options.setFinalText?.(finalText);
-      this.options.setPartialText?.("");
-      this.setStatusInternal("forced-finalized");
-      if (recognitionOverlapActive(this.state)) {
-        preStartNextOverlapInstance(this, "force-finalize");
-      }
-      maybeFlushAfterCommittedLongSegment(this, finalText, "force-finalize");
-      this.updateCountersInternal();
-    }, Number(this.state.forceFinalizationTimeoutMs || 1600));
+      this.commitForcedPartialInternal("force-finalize");
+    }, timeoutMs);
   }
 
   clearForceFinalizeTimerInternal(): void {
@@ -839,10 +855,35 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     }
     const now = this.now();
     this.refreshHealthSignalsInternal();
+    // Stall-rearm is for native continuous only. Overlap uses dual-buffer
+    // handoff (prestart on final) instead of aborting quiet slots every ~2.5s.
     if (
       this.state.healthDegradedReason === "web_speech_stalled" &&
-      this.state.browserSupervisorState === "running"
+      this.state.browserSupervisorState === "running" &&
+      !this.recognitionOverlapActiveInternal() &&
+      this.state.effectiveContinuousMode !== "segmented_restart"
     ) {
+      const orphanPartial = String(this.state.currentPartial || "").trim();
+      if (orphanPartial) {
+        // Prefer committing the live draft over killing the session — the old path
+        // force-finalized AND restarted, causing multi-second recognition gaps.
+        if (this.commitForcedPartialInternal("watchdog-stall-commit")) {
+          this.markActivityInternal("result");
+          this.refreshHealthSignalsInternal();
+          this.appendLogInternal(
+            "watchdog: committed stalled partial without recognition restart",
+          );
+          this.emitWorkerStatus("watchdog-stall-commit");
+          return;
+        }
+      }
+      const lastForcedAt = Number(this.state.lastForcedFinal?.at_ms || 0);
+      if (lastForcedAt > 0 && now - lastForcedAt < 2500) {
+        this.appendLogInternal(
+          "watchdog: skip stall rearm (recent forced final; give Chrome settle time)",
+        );
+        return;
+      }
       this.state.pendingStart = true;
       this.state.pendingRestartReason = "watchdog_stall";
       this.appendLogInternal("watchdog rearm: web speech stalled with active mic");

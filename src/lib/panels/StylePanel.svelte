@@ -1,6 +1,7 @@
 <script lang="ts">
   import StyleFieldGroup from "../components/StyleFieldGroup.svelte";
   import SubtitleOutputPreview from "../components/SubtitleOutputPreview.svelte";
+  import { LANGUAGES } from "../constants";
   import { locale, t } from "../i18n";
   import { fontOptions } from "../font-catalog";
   import { CONTAINER_ONLY_STYLE_FIELDS } from "../style-field-utils";
@@ -15,15 +16,13 @@
     saveCustomPreset,
     seedSlotOverrideFromBase,
   } from "../style-presets";
+  import {
+    getActiveStyleLineSlots,
+    getLineCards,
+    getSlotNumber,
+    isTranslationLineEnabled,
+  } from "../translation-helpers";
   import type { ConfigPayload, FontCatalog, RuntimeStatus, StylePresetCatalog } from "../types";
-
-  const LINE_SLOTS = [
-    "source",
-    "translation_1",
-    "translation_2",
-    "translation_3",
-    "translation_4",
-  ] as const;
 
   export let config: ConfigPayload;
   export let subtitleStylePresets: StylePresetCatalog;
@@ -32,12 +31,12 @@
   export let overlayPayload: Record<string, unknown> | null = null;
   export let onChange: (next: ConfigPayload) => void;
 
-  let activeSlot: (typeof LINE_SLOTS)[number] = "source";
+  let activeSlot = "source";
   let customPresetName = "";
   let slotPresetPick = "";
 
   $: loc = $locale;
-  $: tr = (key: string) => t(key, undefined, loc);
+  $: tr = (key: string, vars?: Record<string, string>) => t(key, vars, loc);
 
   $: style = (config.subtitle_style || {}) as Record<string, Record<string, unknown>>;
   $: presetCatalog = mergeStylePresetCatalog(subtitleStylePresets || {}, style);
@@ -46,6 +45,11 @@
   $: fonts = fontOptions(fontCatalog);
   $: baseStyle = (style.base || style.source || {}) as Record<string, unknown>;
   $: lineSlots = (style.line_slots || {}) as Record<string, Record<string, unknown>>;
+  $: enabledTranslationLines = getLineCards(config).filter((line) => isTranslationLineEnabled(line));
+  $: visibleSlots = getActiveStyleLineSlots(config);
+  $: if (visibleSlots.length > 0 && !visibleSlots.includes(activeSlot)) {
+    activeSlot = visibleSlots[0] || "source";
+  }
   $: slotOverride = (lineSlots[activeSlot] || {}) as Record<string, unknown>;
   $: slotEnabled = Boolean(slotOverride.enabled);
   $: slotHint = slotEnabled
@@ -124,8 +128,23 @@
     patchStyle(deleteCustomPreset(style, name));
   }
 
+  function languageLabel(code: string): string {
+    const normalized = String(code || "").trim().toLowerCase();
+    const entry = LANGUAGES.find((item) => item.code === normalized);
+    return entry ? tr(entry.labelKey) : normalized.toUpperCase() || "?";
+  }
+
   function slotLabel(slot: string): string {
     if (slot === "source") return tr("common.source");
+    if (/^translation_[1-4]$/.test(slot)) {
+      const line =
+        enabledTranslationLines.find((entry) => entry.slot_id === slot) ||
+        getLineCards(config).find((entry) => entry.slot_id === slot);
+      return tr("obs.output.translation_active", {
+        number: String(getSlotNumber(slot) || "?"),
+        lang: languageLabel(String(line?.target_lang || line?.label || "")),
+      });
+    }
     return tr(`obs.output.${slot}`);
   }
 </script>
@@ -189,7 +208,7 @@
     </div>
 
     <div class="badges">
-      {#each LINE_SLOTS as slot}
+      {#each visibleSlots as slot}
         <button type="button" class="tab-btn" class:active={activeSlot === slot} on:click={() => (activeSlot = slot)}>
           {slotLabel(slot)}
         </button>

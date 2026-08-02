@@ -6,11 +6,24 @@ use thiserror::Error;
 use tokio::time::timeout;
 use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::connect_async;
+use tokio_tungstenite::connect_async_tls_with_config;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::{Connector, MaybeTlsStream};
 use tracing::warn;
 
 use crate::auth::build_auth_response;
+
+/// Build obs-websocket URL (`ws` / `wss`), wrapping IPv6 literals.
+pub fn format_obs_ws_url(host: &str, port: u16, use_ssl: bool) -> String {
+    let scheme = if use_ssl { "wss" } else { "ws" };
+    let host_part = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
+    } else {
+        host.to_string()
+    };
+    format!("{scheme}://{host_part}:{port}")
+}
 
 #[derive(Debug, Error)]
 pub enum ObsClientError {
@@ -27,13 +40,13 @@ pub enum ObsClientError {
 }
 
 pub struct ObsWsClient {
-    socket: WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+    socket: WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
     obs_studio_version: Option<String>,
     obs_websocket_version: Option<String>,
 }
 
 async fn send_message(
-    socket: &mut WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+    socket: &mut WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
     payload: String,
     seconds: u64,
 ) -> Result<(), ObsClientError> {
@@ -47,7 +60,7 @@ async fn send_message(
 }
 
 async fn recv_message(
-    socket: &mut WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+    socket: &mut WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>,
     seconds: u64,
 ) -> Result<String, ObsClientError> {
     loop {
@@ -68,8 +81,13 @@ async fn recv_message(
 }
 
 impl ObsWsClient {
-    pub async fn connect(host: &str, port: u16, password: &str) -> Result<Self, ObsClientError> {
-        let url = format!("ws://{host}:{port}");
+    pub async fn connect(
+        host: &str,
+        port: u16,
+        password: &str,
+        use_ssl: bool,
+    ) -> Result<Self, ObsClientError> {
+        let url = format_obs_ws_url(host, port, use_ssl);
         let mut request = url
             .into_client_request()
             .map_err(|err| ObsClientError::Protocol(err.to_string()))?;
@@ -78,9 +96,28 @@ impl ObsWsClient {
             "obswebsocket.json".parse().unwrap(),
         );
 
-        let (mut socket, _) = timeout(Duration::from_secs(3), connect_async(request))
-            .await
-            .map_err(|_| ObsClientError::Protocol("connect timeout".into()))??;
+        let (mut socket, _) = timeout(Duration::from_secs(3), async {
+            if use_ssl {
+                // OBS WebSocket SSL commonly uses a self-signed cert on localhost.
+                let tls = native_tls::TlsConnector::builder()
+                    .danger_accept_invalid_certs(true)
+                    .danger_accept_invalid_hostnames(true)
+                    .build()
+                    .map_err(|err| ObsClientError::Protocol(err.to_string()))?;
+                connect_async_tls_with_config(
+                    request,
+                    None,
+                    false,
+                    Some(Connector::NativeTls(tls)),
+                )
+                .await
+                .map_err(ObsClientError::from)
+            } else {
+                connect_async(request).await.map_err(ObsClientError::from)
+            }
+        })
+        .await
+        .map_err(|_| ObsClientError::Protocol("connect timeout".into()))??;
 
         let hello_raw = recv_message(&mut socket, 3).await?;
         let hello: Value = serde_json::from_str(&hello_raw)
@@ -282,6 +319,10 @@ pub struct MockObsClient {
     pub requests: std::sync::Arc<std::sync::Mutex<Vec<(String, Value)>>>,
     pub fail_caption: bool,
     pub fail_caption_inactive: bool,
+    pub fail_debug_mirror: bool,
+    /// Transient failures before success (shared across clones for retry tests).
+    pub fail_caption_remaining: std::sync::Arc<std::sync::atomic::AtomicU32>,
+    pub fail_debug_mirror_remaining: std::sync::Arc<std::sync::atomic::AtomicU32>,
     pub fail_ping: bool,
 }
 
@@ -300,10 +341,23 @@ impl MockObsClient {
         request_type: &str,
         request_data: Value,
     ) -> Result<Value, ObsClientError> {
+        use std::sync::atomic::Ordering;
+
         self.requests
             .lock()
             .unwrap()
             .push((request_type.to_string(), request_data));
+        if request_type == "SendStreamCaption" {
+            let remaining = self.fail_caption_remaining.load(Ordering::SeqCst);
+            if remaining > 0 {
+                self.fail_caption_remaining
+                    .fetch_sub(1, Ordering::SeqCst);
+                return Err(ObsClientError::RequestFailed {
+                    comment: "mock caption transient failure".into(),
+                    code: None,
+                });
+            }
+        }
         if request_type == "SendStreamCaption" && self.fail_caption {
             return Err(ObsClientError::RequestFailed {
                 comment: "mock caption failure".into(),
@@ -314,6 +368,23 @@ impl MockObsClient {
             return Err(ObsClientError::RequestFailed {
                 comment: "mock stream inactive".into(),
                 code: Some(501),
+            });
+        }
+        if request_type == "SetInputSettings" {
+            let remaining = self.fail_debug_mirror_remaining.load(Ordering::SeqCst);
+            if remaining > 0 {
+                self.fail_debug_mirror_remaining
+                    .fetch_sub(1, Ordering::SeqCst);
+                return Err(ObsClientError::RequestFailed {
+                    comment: "mock debug mirror transient failure".into(),
+                    code: Some(600),
+                });
+            }
+        }
+        if request_type == "SetInputSettings" && self.fail_debug_mirror {
+            return Err(ObsClientError::RequestFailed {
+                comment: "mock debug mirror failure".into(),
+                code: Some(600),
             });
         }
         if request_type == "GetStreamStatus" {
@@ -345,6 +416,22 @@ mod tests {
     use tokio_tungstenite::{accept_async, tungstenite::Message};
 
     use super::*;
+
+    #[test]
+    fn formats_ws_and_wss_urls() {
+        assert_eq!(
+            format_obs_ws_url("127.0.0.1", 4455, false),
+            "ws://127.0.0.1:4455"
+        );
+        assert_eq!(
+            format_obs_ws_url("127.0.0.1", 4455, true),
+            "wss://127.0.0.1:4455"
+        );
+        assert_eq!(
+            format_obs_ws_url("::1", 4455, false),
+            "ws://[::1]:4455"
+        );
+    }
 
     async fn spawn_pong_server() -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

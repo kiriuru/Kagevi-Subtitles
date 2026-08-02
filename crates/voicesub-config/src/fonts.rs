@@ -78,29 +78,161 @@ const UNICODE_RANGE_LATIN: &str = "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC
 /// Latin + Japanese — for Mochiy Pop One (JP primary, Cyrillic via Comfortaa).
 const UNICODE_RANGE_LATIN_JP: &str = "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+3040-30FF, U+31F0-31FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF, U+FEFF, U+FFFD";
 
-/// Shipped `bin/fonts` files without a Cyrillic cmap (verified offline).
+/// Latin + Simplified Chinese Han / CJK punctuation — ZCOOL XiaoWei.
+/// Safe as a stack fallback: earlier Inter/Oswald still win for Latin codepoints.
+const UNICODE_RANGE_LATIN_SC: &str = "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+3000-303F, U+3200-32FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF, U+FEFF, U+FFFD";
+
+/// Latin + Korean Hangul (+ jamo / compatibility) — Black Han Sans / Jua.
+const UNICODE_RANGE_LATIN_KR: &str = "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+1100-11FF, U+3130-318F, U+3200-32FF, U+A960-A97F, U+AC00-D7AF, U+D7B0-D7FF, U+FF00-FFEF, U+FEFF, U+FFFD";
+/// Shipped `bin/fonts` files with restricted unicode-range (verified offline).
 fn unicode_range_for_font_filename(filename: &str) -> Option<&'static str> {
     let stem = filename
         .rsplit_once('.')
         .map(|(stem, _)| stem)
         .unwrap_or(filename);
     match stem {
+        // Latin-only — Cyrillic falls through the stack.
         "Bangers-Regular"
-        | "BebasNeue-Regular"
-        | "CutiveMono-Regular"
-        | "Lato-Bold"
+        | "BigShouldersStencilDisplay-Regular"
+        | "BlackOpsOne-Regular"
+        | "Bungee-Regular"
+        | "BungeeShade-Regular"
+        | "CinzelDecorative-Bold"
+        | "Creepster-Regular"
+        | "GermaniaOne-Regular"
         | "Lato-Regular"
+        | "Lobster-Regular"
+        | "LondrinaSketch-Regular"
+        | "MetalMania-Regular"
+        | "Nosifer-Regular"
         | "Orbitron-Black"
         | "Orbitron-Regular"
         | "Oswald-Bold"
         | "Oswald-Regular"
+        | "PermanentMarker-Regular"
+        | "PixelOperator"
+        | "PlayfairDisplay-Bold"
+        | "PlayfairDisplay-Regular"
         | "Poppins-Bold"
         | "Poppins-Regular"
         | "ShareTechMono-Regular"
         | "SpecialElite-Regular"
+        | "StardosStencil-Bold"
         | "VT323-Regular" => Some(UNICODE_RANGE_LATIN),
-        "MochiyPopOne-Regular" => Some(UNICODE_RANGE_LATIN_JP),
+        // Japanese (+ Latin), no Cyrillic cmap.
+        "Chokokutai-Regular"
+        | "DotGothic16-Regular"
+        | "HachiMaruPop-Regular"
+        | "MochiyPopOne-Regular"
+        | "NewTegomin-Regular"
+        | "PottaOne-Regular"
+        | "RocknRollOne-Regular"
+        | "Stick-Regular"
+        | "YuseiMagic-Regular"
+        | "ZenMaruGothic-Bold" => Some(UNICODE_RANGE_LATIN_JP),
+        // Simplified Chinese (+ Latin)
+        "LiuJianMaoCao-Regular"
+        | "MaShanZheng-Regular"
+        | "ZCOOLKuaiLe-Regular"
+        | "ZCOOLXiaoWei-Regular" => Some(UNICODE_RANGE_LATIN_SC),
+        // Korean Hangul (+ Latin)
+        "BlackHanSans-Regular"
+        | "DoHyeon-Regular"
+        | "Dokdo-Regular"
+        | "Gaegu-Bold"
+        | "Gugi-Regular"
+        | "Jua-Regular"
+        | "NanumBrushScript-Regular"
+        | "PoorStory-Regular"
+        | "SingleDay-Regular"
+        | "SongMyung-Regular"
+        | "YeonSung-Regular" => Some(UNICODE_RANGE_LATIN_KR),
+        // Multi-script JP/Cyrillic and Latin+Cyrillic faces stay unrestricted.
         _ => None,
+    }
+}
+
+/// Script tags shown in the font picker (`style.font.script.*` i18n keys).
+fn scripts_for_font_filename(filename: &str) -> Vec<&'static str> {
+    let stem = filename
+        .rsplit_once('.')
+        .map(|(stem, _)| stem)
+        .unwrap_or(filename);
+    match stem {
+        "Bangers-Regular"
+        | "BigShouldersStencilDisplay-Regular"
+        | "BlackOpsOne-Regular"
+        | "Bungee-Regular"
+        | "BungeeShade-Regular"
+        | "CinzelDecorative-Bold"
+        | "Creepster-Regular"
+        | "GermaniaOne-Regular"
+        | "Lato-Regular"
+        | "Lobster-Regular"
+        | "LondrinaSketch-Regular"
+        | "MetalMania-Regular"
+        | "Nosifer-Regular"
+        | "Orbitron-Black"
+        | "Orbitron-Regular"
+        | "Oswald-Bold"
+        | "Oswald-Regular"
+        | "PermanentMarker-Regular"
+        | "PixelOperator"
+        | "PlayfairDisplay-Bold"
+        | "PlayfairDisplay-Regular"
+        | "Poppins-Bold"
+        | "Poppins-Regular"
+        | "ShareTechMono-Regular"
+        | "SpecialElite-Regular"
+        | "StardosStencil-Bold"
+        | "VT323-Regular" => vec!["latin"],
+        // Pixel arcade faces with Cyrillic cmap (Press Start 2P ships full RU glyphs).
+        "PressStart2P-Regular" => vec!["latin", "cyrillic"],
+        "DelaGothicOne-Regular"
+        | "RampartOne-Regular"
+        | "ReggaeOne-Regular"
+        | "TrainOne-Regular"
+        | "Yomogi-Regular"
+        | "ZenKurenaido-Regular"
+        | "ZenOldMincho-Black" => vec!["latin", "cyrillic", "japanese"],
+        "Chokokutai-Regular"
+        | "DotGothic16-Regular"
+        | "HachiMaruPop-Regular"
+        | "MochiyPopOne-Regular"
+        | "NewTegomin-Regular"
+        | "PottaOne-Regular"
+        | "RocknRollOne-Regular"
+        | "Stick-Regular"
+        | "YuseiMagic-Regular"
+        | "ZenMaruGothic-Bold" => vec!["latin", "japanese"],
+        "LiuJianMaoCao-Regular"
+        | "MaShanZheng-Regular"
+        | "ZCOOLKuaiLe-Regular"
+        | "ZCOOLXiaoWei-Regular" => vec!["latin", "chinese"],
+        "BlackHanSans-Regular"
+        | "DoHyeon-Regular"
+        | "Dokdo-Regular"
+        | "Gaegu-Bold"
+        | "Gugi-Regular"
+        | "Jua-Regular"
+        | "NanumBrushScript-Regular"
+        | "PoorStory-Regular"
+        | "SingleDay-Regular"
+        | "SongMyung-Regular"
+        | "YeonSung-Regular" => vec!["latin", "korean"],
+        _ => vec!["latin", "cyrillic"],
+    }
+}
+
+
+fn scripts_for_fallback_id(id: &str) -> Vec<&'static str> {
+    match id {
+        "fallback-yu-gothic-ui" | "fallback-biz-udpgothic" | "fallback-meiryo" | "fallback-ud-digi" => {
+            vec!["latin", "japanese"]
+        }
+        "fallback-microsoft-yahei" => vec!["latin", "chinese"],
+        "fallback-malgun-gothic" => vec!["latin", "korean"],
+        _ => vec!["latin", "cyrillic"],
     }
 }
 
@@ -145,6 +277,7 @@ pub fn list_project_font_entries(project_fonts_dir: &Path) -> Vec<Value> {
         let label = project_font_family_name(&path);
         let family = format!("\"{label}\"");
         let url = format!("/project-fonts/{}", percent_encode_filename(filename));
+        let scripts = scripts_for_font_filename(filename);
 
         entries.push(json!({
             "id": format!("project-{}", stem.to_ascii_lowercase()),
@@ -154,63 +287,76 @@ pub fn list_project_font_entries(project_fonts_dir: &Path) -> Vec<Value> {
             "url": url,
             "filename": filename,
             "format": format,
+            "scripts": scripts,
         }));
     }
 
     entries
 }
 
+fn fallback_entry(id: &str, label: &str, family: &str) -> Value {
+    json!({
+        "id": id,
+        "label": label,
+        "family": family,
+        "source": "fallback",
+        "scripts": scripts_for_fallback_id(id),
+    })
+}
+
 pub fn build_font_catalog(project_fonts_dir: &Path) -> Value {
     // Port of SST/Python `backend/core/font_catalog.py` fallback entries.
     let fallback = vec![
-        json!({
-            "id": "fallback-segoe-ui",
-            "label": "Segoe UI",
-            "family": "\"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-yu-gothic-ui",
-            "label": "Yu Gothic UI",
-            "family": "\"Yu Gothic UI\", \"Yu Gothic\", Meiryo, sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-biz-udpgothic",
-            "label": "BIZ UDPGothic",
-            "family": "\"BIZ UDPGothic\", \"Yu Gothic UI\", Meiryo, sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-meiryo",
-            "label": "Meiryo",
-            "family": "\"Meiryo\", \"Yu Gothic UI\", sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-arial",
-            "label": "Arial",
-            "family": "Arial, \"Segoe UI\", sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-verdana",
-            "label": "Verdana",
-            "family": "Verdana, \"Segoe UI\", sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-trebuchet",
-            "label": "Trebuchet MS",
-            "family": "\"Trebuchet MS\", \"Segoe UI\", sans-serif",
-            "source": "fallback",
-        }),
-        json!({
-            "id": "fallback-ud-digi",
-            "label": "UD Digi Kyokasho",
-            "family": "\"UD Digi Kyokasho NK-R\", \"Yu Gothic UI\", Meiryo, sans-serif",
-            "source": "fallback",
-        }),
+        fallback_entry(
+            "fallback-segoe-ui",
+            "Segoe UI",
+            "\"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif",
+        ),
+        fallback_entry(
+            "fallback-yu-gothic-ui",
+            "Yu Gothic UI",
+            "\"Yu Gothic UI\", \"Yu Gothic\", Meiryo, sans-serif",
+        ),
+        fallback_entry(
+            "fallback-biz-udpgothic",
+            "BIZ UDPGothic",
+            "\"BIZ UDPGothic\", \"Yu Gothic UI\", Meiryo, sans-serif",
+        ),
+        fallback_entry(
+            "fallback-meiryo",
+            "Meiryo",
+            "\"Meiryo\", \"Yu Gothic UI\", sans-serif",
+        ),
+        fallback_entry(
+            "fallback-microsoft-yahei",
+            "Microsoft YaHei",
+            "\"Microsoft YaHei\", \"Segoe UI\", sans-serif",
+        ),
+        fallback_entry(
+            "fallback-malgun-gothic",
+            "Malgun Gothic",
+            "\"Malgun Gothic\", \"Segoe UI\", sans-serif",
+        ),
+        fallback_entry(
+            "fallback-arial",
+            "Arial",
+            "Arial, \"Segoe UI\", sans-serif",
+        ),
+        fallback_entry(
+            "fallback-verdana",
+            "Verdana",
+            "Verdana, \"Segoe UI\", sans-serif",
+        ),
+        fallback_entry(
+            "fallback-trebuchet",
+            "Trebuchet MS",
+            "\"Trebuchet MS\", \"Segoe UI\", sans-serif",
+        ),
+        fallback_entry(
+            "fallback-ud-digi",
+            "UD Digi Kyokasho",
+            "\"UD Digi Kyokasho NK-R\", \"Yu Gothic UI\", Meiryo, sans-serif",
+        ),
     ];
 
     json!({
@@ -311,6 +457,216 @@ mod tests {
         std::fs::write(dir.join("JetBrainsMono-Regular.ttf"), b"x").unwrap();
         let entries = list_project_font_entries(&dir);
         assert_eq!(entries[0]["label"], "Jet Brains Mono Regular");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cjk_faces_keep_latin_so_primary_selection_still_paints_ascii() {
+        assert_eq!(
+            unicode_range_for_font_filename("ZenMaruGothic-Bold.ttf"),
+            Some(UNICODE_RANGE_LATIN_JP)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("RocknRollOne-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_JP)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("DotGothic16-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_JP)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("YuseiMagic-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_JP)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("NewTegomin-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_JP)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("Chokokutai-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_JP)
+        );
+        // Anime-title faces with Cyrillic cmap stay unrestricted.
+        assert_eq!(unicode_range_for_font_filename("DelaGothicOne-Regular.ttf"), None);
+        assert_eq!(unicode_range_for_font_filename("RampartOne-Regular.ttf"), None);
+        assert_eq!(unicode_range_for_font_filename("ReggaeOne-Regular.ttf"), None);
+        assert_eq!(unicode_range_for_font_filename("TrainOne-Regular.ttf"), None);
+        assert_eq!(unicode_range_for_font_filename("ZenOldMincho-Black.ttf"), None);
+        assert_eq!(
+            unicode_range_for_font_filename("ZCOOLXiaoWei-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_SC)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("ZCOOLKuaiLe-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_SC)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("MaShanZheng-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_SC)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("LiuJianMaoCao-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_SC)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("BlackHanSans-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_KR)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("DoHyeon-Regular.ttf"),
+            Some(UNICODE_RANGE_LATIN_KR)
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("Gaegu-Bold.ttf"),
+            Some(UNICODE_RANGE_LATIN_KR)
+        );
+        // Latin included (safe as fallback: earlier Inter/Oswald still win for ASCII).
+        assert!(UNICODE_RANGE_LATIN_JP.contains("U+0000-00FF"));
+        assert!(UNICODE_RANGE_LATIN_SC.contains("U+0000-00FF"));
+        assert!(UNICODE_RANGE_LATIN_KR.contains("U+0000-00FF"));
+        // Still exclude Cyrillic blocks so RU falls through to Noto/Comfortaa/etc.
+        assert!(!UNICODE_RANGE_LATIN_JP.contains("U+0400"));
+        assert!(!UNICODE_RANGE_LATIN_SC.contains("U+0400"));
+        assert!(!UNICODE_RANGE_LATIN_KR.contains("U+0400"));
+    }
+
+    #[test]
+    fn creative_latin_only_faces_get_unicode_range() {
+        for name in [
+            "PixelOperator.ttf",
+            "Lobster-Regular.ttf",
+            "Bungee-Regular.ttf",
+            "MetalMania-Regular.ttf",
+            "Creepster-Regular.ttf",
+            "BlackOpsOne-Regular.ttf",
+            "GermaniaOne-Regular.ttf",
+            "Nosifer-Regular.ttf",
+            "LondrinaSketch-Regular.ttf",
+            "BungeeShade-Regular.ttf",
+            "StardosStencil-Bold.ttf",
+            "PermanentMarker-Regular.ttf",
+        ] {
+            assert_eq!(
+                unicode_range_for_font_filename(name),
+                Some(UNICODE_RANGE_LATIN),
+                "{name}"
+            );
+        }
+        // Dual-script creative faces stay unrestricted for Cyrillic.
+        for name in [
+            "PressStart2P-Regular.ttf",
+            "RussoOne-Regular.ttf",
+            "Caveat-Bold.ttf",
+            "Neucha-Regular.ttf",
+            "YesevaOne-Regular.ttf",
+            "Rubik-Regular.ttf",
+            "RubikDirt-Regular.ttf",
+            "RubikDistressed-Regular.ttf",
+            "RubikSprayPaint-Regular.ttf",
+            "RubikWetPaint-Regular.ttf",
+            "Unbounded-Regular.ttf",
+            "StalinistOne-Regular.ttf",
+            "KellySlab-Regular.ttf",
+            "PoiretOne-Regular.ttf",
+            "RuslanDisplay-Regular.ttf",
+            "DelaGothicOne-Regular.ttf",
+            "RampartOne-Regular.ttf",
+            "Yomogi-Regular.ttf",
+            "ZenKurenaido-Regular.ttf",
+        ] {
+            assert_eq!(unicode_range_for_font_filename(name), None, "{name}");
+        }
+    }
+
+    #[test]
+    fn catalog_entries_expose_script_tags_for_picker_labels() {
+        let dir =
+            std::env::temp_dir().join(format!("voicesub-fonts-scripts-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        std::fs::write(dir.join("Oswald-Bold.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("NotoSans-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("ZenMaruGothic-Bold.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("ZCOOLXiaoWei-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("BlackHanSans-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("DoHyeon-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("RussoOne-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("PressStart2P-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("YuseiMagic-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("ZCOOLKuaiLe-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("DelaGothicOne-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("MetalMania-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("YeonSung-Regular.ttf"), b"x").unwrap();
+        std::fs::write(dir.join("LiuJianMaoCao-Regular.ttf"), b"x").unwrap();
+
+        let catalog = build_font_catalog(&dir);
+        let project = catalog["project_local"].as_array().unwrap();
+        let by_file = |name: &str| {
+            project
+                .iter()
+                .find(|e| e["filename"] == name)
+                .unwrap_or_else(|| panic!("missing {name}"))
+                .clone()
+        };
+        assert_eq!(by_file("Oswald-Bold.ttf")["scripts"], json!(["latin"]));
+        assert_eq!(
+            by_file("NotoSans-Regular.ttf")["scripts"],
+            json!(["latin", "cyrillic"])
+        );
+        assert_eq!(
+            by_file("ZenMaruGothic-Bold.ttf")["scripts"],
+            json!(["latin", "japanese"])
+        );
+        assert_eq!(
+            by_file("ZCOOLXiaoWei-Regular.ttf")["scripts"],
+            json!(["latin", "chinese"])
+        );
+        assert_eq!(
+            by_file("BlackHanSans-Regular.ttf")["scripts"],
+            json!(["latin", "korean"])
+        );
+        assert_eq!(
+            by_file("DoHyeon-Regular.ttf")["scripts"],
+            json!(["latin", "korean"])
+        );
+        assert_eq!(
+            by_file("RussoOne-Regular.ttf")["scripts"],
+            json!(["latin", "cyrillic"])
+        );
+        assert_eq!(
+            by_file("PressStart2P-Regular.ttf")["scripts"],
+            json!(["latin", "cyrillic"])
+        );
+        assert_eq!(
+            by_file("YuseiMagic-Regular.ttf")["scripts"],
+            json!(["latin", "japanese"])
+        );
+        assert_eq!(
+            by_file("ZCOOLKuaiLe-Regular.ttf")["scripts"],
+            json!(["latin", "chinese"])
+        );
+        assert_eq!(
+            by_file("DelaGothicOne-Regular.ttf")["scripts"],
+            json!(["latin", "cyrillic", "japanese"])
+        );
+        assert_eq!(
+            by_file("MetalMania-Regular.ttf")["scripts"],
+            json!(["latin"])
+        );
+        assert_eq!(
+            by_file("YeonSung-Regular.ttf")["scripts"],
+            json!(["latin", "korean"])
+        );
+        assert_eq!(
+            by_file("LiuJianMaoCao-Regular.ttf")["scripts"],
+            json!(["latin", "chinese"])
+        );
+        let yahei = catalog["fallback"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| e["id"] == "fallback-microsoft-yahei")
+            .expect("YaHei fallback");
+        assert_eq!(yahei["scripts"], json!(["latin", "chinese"]));
         let _ = std::fs::remove_dir_all(dir);
     }
 

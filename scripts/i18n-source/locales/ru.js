@@ -118,7 +118,6 @@
   "obs.output.translation_2": "Перевод 2",
   "obs.output.translation_3": "Перевод 3",
   "obs.output.translation_4": "Перевод 4",
-  "obs.output.translation_5": "Перевод 5",
   "obs.partial_throttle": "Минимальный интервал между partial-обновлениями",
   "obs.password": "Пароль",
   "obs.password.placeholder": "Пароль OBS websocket",

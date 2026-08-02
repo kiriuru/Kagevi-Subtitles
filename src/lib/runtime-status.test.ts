@@ -13,9 +13,46 @@ describe("runtime-status", () => {
   });
 
   it("maps OBS diagnostics to chip status", () => {
-    expect(resolveObsChipStatus({ enabled: true, output_mode: "native" }, {}).status).toBe("ready");
-    expect(resolveObsChipStatus({ last_error: "auth failed" }, {}).status).toBe("error");
+    expect(
+      resolveObsChipStatus({ enabled: true, connection_state: "connected", output_mode: "source_live" }, {})
+        .status,
+    ).toBe("ready");
+    expect(
+      resolveObsChipStatus(
+        { enabled: true, last_error: "auth_failed", connection_state: "auth_failed" },
+        {},
+      ).status,
+    ).toBe("error");
     expect(resolveObsChipStatus({}, {}).status).toBe("disabled");
+  });
+
+  it("treats stream_not_running as warn while connected", () => {
+    const chip = resolveObsChipStatus(
+      {
+        enabled: true,
+        connected: true,
+        connection_state: "connected",
+        stream_output_active: false,
+        native_caption_status: "stream_not_running",
+        last_error: "stream_not_running",
+        output_mode: "source_live",
+      },
+      {},
+    );
+    expect(chip.status).toBe("warn");
+    expect(chip.labelKind).toBe("no_stream");
+  });
+
+  it("shows waiting when enabled but not yet connected", () => {
+    const chip = resolveObsChipStatus(
+      {
+        enabled: true,
+        connection_state: "connecting",
+        output_mode: "source_live",
+      },
+      {},
+    );
+    expect(chip.status).toBe("waiting");
   });
 
   it("builds connection chips for live strip", () => {
@@ -27,12 +64,18 @@ describe("runtime-status", () => {
         diagnostics: { browser_worker: { worker_connected: true } },
       },
     };
-    const chips = buildRuntimeConnectionChips(runtime, true, { enabled: true, output_mode: "overlay" });
+    const chips = buildRuntimeConnectionChips(runtime, true, {
+      enabled: true,
+      connection_state: "connected",
+      connected: true,
+      stream_output_active: true,
+      output_mode: "source_live",
+    });
     expect(chips.workerConnected).toBe(true);
     expect(chips.showBrowserWorkerChip).toBe(true);
     expect(chips.showLocalAsrChip).toBe(false);
     expect(chips.obsStatus).toBe("ready");
-    expect(chips.obsLabel).toBe("overlay");
+    expect(chips.obsLabel).toBe("source_live");
   });
 
   it("uses local ASR chips and status message when active mode is local_parakeet", () => {

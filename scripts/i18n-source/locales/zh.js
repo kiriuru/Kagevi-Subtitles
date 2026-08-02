@@ -165,7 +165,6 @@
   "obs.output.translation_2": "翻译2",
   "obs.output.translation_3": "翻译3",
   "obs.output.translation_4": "翻译4",
-  "obs.output.translation_5": "翻译5",
   "obs.partial_throttle": "部分发送之间的最小间隙",
   "obs.password": "密码",
   "obs.password.placeholder": "OBS WebSocket 密码",

@@ -25,9 +25,17 @@ pub use fonts::{build_font_catalog, build_project_fonts_stylesheet, list_project
 pub use logging_preferences::{
     normalize_logging_config, read_full_logging_enabled,
     read_full_logging_enabled_from_config_path, read_full_logging_enabled_from_user_data,
+    read_runtime_metrics_enabled, read_runtime_metrics_enabled_from_config_path,
+    read_runtime_metrics_enabled_from_user_data,
 };
 pub use migrate::{apply_voicesub_import_rules, import_sst_json_value, migrate_sst_payload};
 pub use normalize::{normalize_config_payload, repair_legacy_keep_completed_false};
+pub use obs_normalize::{
+    OBS_CC_DEFAULT_CLEAR_AFTER_MS, OBS_CC_DEFAULT_DEBUG_INPUT, OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS,
+    OBS_CC_DEFAULT_HOST, OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS, OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS,
+    OBS_CC_DEFAULT_PORT, OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS, OBS_CC_DEFAULT_USE_SSL,
+    OBS_CC_OUTPUT_MODES,
+};
 pub use paths::{
     AppConfig, HttpBindConfig, LEGACY_SST_CONFIG_JSON, ProjectPaths, RUNTIME_CONFIG_TOML,
     WORKER_PATH, base_url_from_socket, discover_project_root, ensure_runtime_data_dirs,

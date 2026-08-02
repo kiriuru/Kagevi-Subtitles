@@ -252,7 +252,7 @@ fn overlay_throttles_long_text_repaints() {
 
 #[test]
 fn overlay_renderer_uses_append_only_partial_merge() {
-    let source = read_workspace_file("bin/overlay/shared/js/subtitle-style.js");
+    let source = common::read_workspace_js_dir("bin/overlay/shared/js/subtitle-style");
     assert_contains(
         &source,
         "OVERLAY_DENSE_PARTIAL_CHARS",

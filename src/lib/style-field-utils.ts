@@ -1,4 +1,4 @@
-/** Defaults for subtitle style base — keep in sync with subtitle-style.js DEFAULT_BASE_STYLE. */
+/** Defaults for subtitle style base — keep in sync with subtitle-style/constants.js DEFAULT_BASE_STYLE. */
 export const STYLE_BASE_DEFAULTS: Record<string, string | number> = {
   font_family: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
   font_size_px: 30,

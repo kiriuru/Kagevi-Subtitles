@@ -589,6 +589,7 @@ body.kagevi-subtitles-layout-compact .scroll-to-top-fab {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
+  max-width: 100%;
   padding: 0 10px;
   border-radius: 999px;
   border: 1px solid var(--glass-border);
@@ -596,6 +597,9 @@ body.kagevi-subtitles-layout-compact .scroll-to-top-fab {
   font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .filter-chip.ok {
