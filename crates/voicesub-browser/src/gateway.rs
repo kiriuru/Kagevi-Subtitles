@@ -537,9 +537,12 @@ fn apply_status_payload(state: &mut GatewayDiagnostics, payload: &serde_json::Ma
     apply_u64(state, payload, "overlap_buddy_prestart_ok_count", |s, v| {
         s.overlap_buddy_prestart_ok_count = v
     });
-    apply_u64(state, payload, "overlap_buddy_prestart_fail_count", |s, v| {
-        s.overlap_buddy_prestart_fail_count = v
-    });
+    apply_u64(
+        state,
+        payload,
+        "overlap_buddy_prestart_fail_count",
+        |s, v| s.overlap_buddy_prestart_fail_count = v,
+    );
     apply_u64(state, payload, "overlap_buddy_onstart_count", |s, v| {
         s.overlap_buddy_onstart_count = v
     });

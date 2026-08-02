@@ -229,9 +229,7 @@ mod tests {
             "decoder_joint-model.fp16.onnx"
         );
         assert_eq!(hf_remote_file_name(spec, "nemo128.onnx"), "nemo128.onnx");
-        assert!(
-            hf_file_url(spec, "encoder-model.onnx").ends_with("encoder-model.fp16.onnx")
-        );
+        assert!(hf_file_url(spec, "encoder-model.onnx").ends_with("encoder-model.fp16.onnx"));
     }
 
     #[test]

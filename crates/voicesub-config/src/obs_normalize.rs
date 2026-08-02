@@ -70,7 +70,8 @@ fn enabled_translation_slot_ids(root: &Map<String, Value>) -> Vec<String> {
                         return None;
                     }
                     let slot = obj.get("slot_id")?.as_str()?.trim().to_ascii_lowercase();
-                    if OBS_CC_OUTPUT_MODES.contains(&slot.as_str()) && slot.starts_with("translation_")
+                    if OBS_CC_OUTPUT_MODES.contains(&slot.as_str())
+                        && slot.starts_with("translation_")
                     {
                         Some(slot)
                     } else {
@@ -134,7 +135,11 @@ pub fn normalize_obs_closed_captions(root: &mut Map<String, Value>) {
         .get("connection")
         .and_then(|value| value.get("host"))
         .and_then(|value| value.as_str())
-        .unwrap_or(default_connection["host"].as_str().unwrap_or(OBS_CC_DEFAULT_HOST))
+        .unwrap_or(
+            default_connection["host"]
+                .as_str()
+                .unwrap_or(OBS_CC_DEFAULT_HOST),
+        )
         .trim()
         .to_string();
     let connection_port = section
@@ -275,10 +280,7 @@ mod tests {
         let mut root = Map::new();
         root.insert("obs_closed_captions".into(), json!({ "connection": {} }));
         normalize_obs_closed_captions(&mut root);
-        assert_eq!(
-            root["obs_closed_captions"]["connection"]["use_ssl"],
-            false
-        );
+        assert_eq!(root["obs_closed_captions"]["connection"]["use_ssl"], false);
     }
 
     #[test]

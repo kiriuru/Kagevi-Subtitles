@@ -26,8 +26,8 @@ use crate::http::{
     RuntimeMetricsCollector, RuntimeOrchestrator, RuntimeStatusBroadcaster, StylePresetsFn,
     build_router, spawn_runtime_heartbeat, spawn_startup_check,
 };
-use voicesub_config::{read_full_logging_enabled, read_runtime_metrics_enabled};
 use voicesub_config::{AppConfig, ConfigStore, ProjectPaths, default_config_payload};
+use voicesub_config::{read_full_logging_enabled, read_runtime_metrics_enabled};
 use voicesub_export::ExportService;
 use voicesub_logging::{
     SessionLogManager, StructuredRuntimeLogger, apply_logging_preferences, ensure_logs_dir,

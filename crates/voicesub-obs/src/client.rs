@@ -104,14 +104,9 @@ impl ObsWsClient {
                     .danger_accept_invalid_hostnames(true)
                     .build()
                     .map_err(|err| ObsClientError::Protocol(err.to_string()))?;
-                connect_async_tls_with_config(
-                    request,
-                    None,
-                    false,
-                    Some(Connector::NativeTls(tls)),
-                )
-                .await
-                .map_err(ObsClientError::from)
+                connect_async_tls_with_config(request, None, false, Some(Connector::NativeTls(tls)))
+                    .await
+                    .map_err(ObsClientError::from)
             } else {
                 connect_async(request).await.map_err(ObsClientError::from)
             }
@@ -350,8 +345,7 @@ impl MockObsClient {
         if request_type == "SendStreamCaption" {
             let remaining = self.fail_caption_remaining.load(Ordering::SeqCst);
             if remaining > 0 {
-                self.fail_caption_remaining
-                    .fetch_sub(1, Ordering::SeqCst);
+                self.fail_caption_remaining.fetch_sub(1, Ordering::SeqCst);
                 return Err(ObsClientError::RequestFailed {
                     comment: "mock caption transient failure".into(),
                     code: None,
@@ -427,10 +421,7 @@ mod tests {
             format_obs_ws_url("127.0.0.1", 4455, true),
             "wss://127.0.0.1:4455"
         );
-        assert_eq!(
-            format_obs_ws_url("::1", 4455, false),
-            "ws://[::1]:4455"
-        );
+        assert_eq!(format_obs_ws_url("::1", 4455, false), "ws://[::1]:4455");
     }
 
     async fn spawn_pong_server() -> SocketAddr {

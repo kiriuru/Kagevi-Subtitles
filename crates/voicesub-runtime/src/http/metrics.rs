@@ -290,7 +290,9 @@ fn merge_translation_metrics_into(
         return;
     };
 
-    let has_prefixed = incoming_obj.keys().any(|key| key.starts_with("translation_"));
+    let has_prefixed = incoming_obj
+        .keys()
+        .any(|key| key.starts_with("translation_"));
     if has_prefixed {
         for (key, value) in incoming_obj {
             if key.starts_with("translation_") {
@@ -307,13 +309,19 @@ fn merge_translation_metrics_into(
         ("jobs_cancelled", "translation_jobs_cancelled"),
         ("stale_results_dropped", "translation_stale_results_dropped"),
         ("last_queue_latency_ms", "translation_queue_latency_ms"),
-        ("last_provider_latency_ms", "translation_provider_latency_ms"),
+        (
+            "last_provider_latency_ms",
+            "translation_provider_latency_ms",
+        ),
         ("last_runtime_reason", "translation_last_runtime_reason"),
         ("last_slot_id", "translation_last_slot_id"),
         ("last_target_lang", "translation_last_target_lang"),
         ("last_provider", "translation_last_provider"),
         ("last_timeout_ms", "translation_last_timeout_ms"),
-        ("provider_skipped_before_call", "translation_provider_skipped_before_call"),
+        (
+            "provider_skipped_before_call",
+            "translation_provider_skipped_before_call",
+        ),
     ];
     for (short, prefixed) in ALIASES {
         if let Some(value) = incoming_obj.get(*short) {

@@ -285,12 +285,7 @@ fn diagnostics_material_snapshot(payload: &Value) -> Vec<Value> {
     // otherwise diagnostics_update would fan out on every decode while recognition runs.
     if is_config_runtime_metrics_enabled() {
         fields.push(payload.get("decode_count").cloned().unwrap_or(Value::Null));
-        fields.push(
-            payload
-                .get("partial_emits")
-                .cloned()
-                .unwrap_or(Value::Null),
-        );
+        fields.push(payload.get("partial_emits").cloned().unwrap_or(Value::Null));
         fields.push(payload.get("final_emits").cloned().unwrap_or(Value::Null));
         fields.push(
             payload

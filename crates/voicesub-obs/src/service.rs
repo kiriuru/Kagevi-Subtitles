@@ -148,7 +148,8 @@ impl ObsCaptionService {
 
     fn refresh_accepting_events(&self) {
         let settings = ObsCaptionSettings::from_config(&(self.config_getter)());
-        let accepting = self.inner.worker_running.load(Ordering::Relaxed) && settings.should_connect();
+        let accepting =
+            self.inner.worker_running.load(Ordering::Relaxed) && settings.should_connect();
         self.inner
             .accepting_events
             .store(accepting, Ordering::SeqCst);
@@ -220,7 +221,10 @@ impl ObsCaptionService {
         let diag = self.inner.diagnostics.lock().await;
         let should_clear_native = (settings.enabled
             && CONNECTABLE_OUTPUT_MODES.contains(&settings.output_mode.as_str()))
-            || diag.last_caption_text.as_ref().is_some_and(|text| !text.is_empty());
+            || diag
+                .last_caption_text
+                .as_ref()
+                .is_some_and(|text| !text.is_empty());
         let debug_input_name = if settings.debug_text_input_enabled() {
             Some(settings.debug_input_name.clone())
         } else {
@@ -560,9 +564,7 @@ async fn refresh_stream_status(
         native_status::STREAM_INACTIVE.into()
     });
     // Stream inactivity is readiness, not a connection failure — clear sticky 501 error.
-    if output_active
-        && diag.last_error.as_deref() == Some(error_codes::error::STREAM_NOT_RUNNING)
-    {
+    if output_active && diag.last_error.as_deref() == Some(error_codes::error::STREAM_NOT_RUNNING) {
         diag.last_error = None;
     }
     Ok(())
@@ -952,7 +954,9 @@ async fn send_text(
                     diag.last_error = Some(error_codes::error::REQUEST_FAILED.into());
                 }
                 debug!(error = %detail, "obs debug mirror SetInputSettings failed");
-                inner.log.caption_send_failed(&format!("debug_mirror: {detail}"));
+                inner
+                    .log
+                    .caption_send_failed(&format!("debug_mirror: {detail}"));
             }
         }
     }

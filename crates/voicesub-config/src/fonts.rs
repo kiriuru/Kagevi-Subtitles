@@ -234,10 +234,12 @@ fn scripts_for_font_filename(filename: &str) -> Vec<&'static str> {
     }
 }
 
-
 fn scripts_for_fallback_id(id: &str) -> Vec<&'static str> {
     match id {
-        "fallback-yu-gothic-ui" | "fallback-biz-udpgothic" | "fallback-meiryo" | "fallback-ud-digi" => {
+        "fallback-yu-gothic-ui"
+        | "fallback-biz-udpgothic"
+        | "fallback-meiryo"
+        | "fallback-ud-digi" => {
             vec!["latin", "japanese"]
         }
         "fallback-microsoft-yahei" => vec!["latin", "chinese"],
@@ -347,11 +349,7 @@ pub fn build_font_catalog(project_fonts_dir: &Path) -> Value {
             "Malgun Gothic",
             "\"Malgun Gothic\", \"Segoe UI\", sans-serif",
         ),
-        fallback_entry(
-            "fallback-arial",
-            "Arial",
-            "Arial, \"Segoe UI\", sans-serif",
-        ),
+        fallback_entry("fallback-arial", "Arial", "Arial, \"Segoe UI\", sans-serif"),
         fallback_entry(
             "fallback-verdana",
             "Verdana",
@@ -497,11 +495,26 @@ mod tests {
             Some(UNICODE_RANGE_LATIN_JP)
         );
         // Anime-title faces with Cyrillic cmap stay unrestricted.
-        assert_eq!(unicode_range_for_font_filename("DelaGothicOne-Regular.ttf"), None);
-        assert_eq!(unicode_range_for_font_filename("RampartOne-Regular.ttf"), None);
-        assert_eq!(unicode_range_for_font_filename("ReggaeOne-Regular.ttf"), None);
-        assert_eq!(unicode_range_for_font_filename("TrainOne-Regular.ttf"), None);
-        assert_eq!(unicode_range_for_font_filename("ZenOldMincho-Black.ttf"), None);
+        assert_eq!(
+            unicode_range_for_font_filename("DelaGothicOne-Regular.ttf"),
+            None
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("RampartOne-Regular.ttf"),
+            None
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("ReggaeOne-Regular.ttf"),
+            None
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("TrainOne-Regular.ttf"),
+            None
+        );
+        assert_eq!(
+            unicode_range_for_font_filename("ZenOldMincho-Black.ttf"),
+            None
+        );
         assert_eq!(
             unicode_range_for_font_filename("ZCOOLXiaoWei-Regular.ttf"),
             Some(UNICODE_RANGE_LATIN_SC)

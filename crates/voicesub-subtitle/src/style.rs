@@ -7,7 +7,7 @@ const LINE_SLOT_NAMES: [&str; 5] = [
     "translation_1",
     "translation_2",
     "translation_3",
-    "translation_4"
+    "translation_4",
 ];
 
 const EFFECT_IDS: [&str; 9] = [
@@ -19,7 +19,7 @@ const EFFECT_IDS: [&str; 9] = [
     "blur_in",
     "glow",
     "pulse",
-    "reveal"
+    "reveal",
 ];
 
 fn parse_i64(raw: &Value) -> Option<i64> {
@@ -309,7 +309,7 @@ fn merge_line_style(base: &Value, override_style: &Value) -> Value {
             let should_override = match raw_override {
                 Value::Null => false,
                 Value::String(s) => !s.trim().is_empty(),
-                _ => true
+                _ => true,
             };
             if should_override {
                 merged.insert(
@@ -370,7 +370,7 @@ fn clone_slot_overrides(overrides: Option<&Value>) -> Value {
 fn merge_style_presets_with_custom(custom_presets: Option<&Value>) -> Value {
     let mut catalog = match built_in_preset_catalog().as_object() {
         Some(obj) => obj.clone(),
-        None => Map::new()
+        None => Map::new(),
     };
 
     let Some(custom_obj) = custom_presets.and_then(|v| v.as_object()) else {
@@ -434,7 +434,7 @@ fn migrate_unknown_preset_name(name: &str, catalog: &Value) -> String {
         "minimal_mono" => "glass_frost",
         "editorial_news" => "dark_cinema",
         "beat_saber" => "streamer_bold",
-        _ => return "clean_default".to_string()
+        _ => return "clean_default".to_string(),
     };
     if obj.contains_key(migrated) {
         migrated.to_string()
@@ -619,7 +619,7 @@ mod tests {
             "subtle_pop",
             "pulse",
             "reveal",
-            "none"
+            "none",
         ] {
             let payload = json!({
                 "preset": "clean_default",
@@ -678,7 +678,7 @@ mod tests {
             ("1.2", 1.2),
             ("1.25", 1.3),
             ("4.5", 4.0),
-            ("12", 4.0)
+            ("12", 4.0),
         ] {
             let payload = json!({
                 "preset": "clean_default",
@@ -792,7 +792,12 @@ mod tests {
             assert!(catalog.get(key).is_some(), "missing preset {key}");
             assert_eq!(catalog[key]["built_in"], true);
         }
-        for removed in ["sakura_soft", "minimal_mono", "editorial_news", "beat_saber"] {
+        for removed in [
+            "sakura_soft",
+            "minimal_mono",
+            "editorial_news",
+            "beat_saber",
+        ] {
             assert!(
                 catalog.get(removed).is_none(),
                 "collapsed plate preset {removed} should be removed"
@@ -876,7 +881,7 @@ mod tests {
             ("cyberpunk_neon", "Orbitron"),
             ("noir_typewriter", "Special Elite"),
             ("dark_cinema", "Playfair Display"),
-            ("accessibility_high_contrast", "Montserrat")
+            ("accessibility_high_contrast", "Montserrat"),
         ] {
             let family = catalog[preset]["base"]["font_family"]
                 .as_str()
@@ -905,7 +910,7 @@ mod tests {
             ("compact_overlay", "Noto Sans"),
             ("meeting_soft", "Noto Sans"),
             ("glass_frost", "Noto Sans"),
-            ("twitch_lower_third", "Noto Sans")
+            ("twitch_lower_third", "Noto Sans"),
         ] {
             let family = catalog[preset]["base"]["font_family"]
                 .as_str()
@@ -932,7 +937,7 @@ mod tests {
             "warm_amber",
             "dual_caption_modern",
             "accessibility_high_contrast",
-            "dark_cinema"
+            "dark_cinema",
         ] {
             let family = catalog[preset]["base"]["font_family"]
                 .as_str()
@@ -940,14 +945,16 @@ mod tests {
             for token in [
                 "Zen Maru Gothic Bold",
                 "ZCOOL Xiao Wei Regular",
-                "Jua Regular"
+                "Jua Regular",
             ] {
                 assert!(
                     family.contains(token),
                     "preset {preset} missing soft CJK face {token} in {family}"
                 );
             }
-            let noto_at = family.find("Noto Sans").or_else(|| family.find("Merriweather"));
+            let noto_at = family
+                .find("Noto Sans")
+                .or_else(|| family.find("Merriweather"));
             let jp_at = family.find("Zen Maru Gothic Bold").expect("jp");
             if let Some(cyr_at) = noto_at {
                 assert!(
@@ -965,7 +972,7 @@ mod tests {
             "cyberpunk_neon",
             "noir_typewriter",
             "twitch_lower_third",
-            "esports_hud"
+            "esports_hud",
         ] {
             let family = catalog[preset]["base"]["font_family"]
                 .as_str()
@@ -973,7 +980,7 @@ mod tests {
             for token in [
                 "Rockn Roll One Regular",
                 "ZCOOL Xiao Wei Regular",
-                "Black Han Sans Regular"
+                "Black Han Sans Regular",
             ] {
                 assert!(
                     family.contains(token),
@@ -1018,7 +1025,7 @@ mod tests {
             ("cyberpunk_neon", "Orbitron Black", "Exo 2"),
             ("anime_stream", "Mochiy Pop One Regular", "Comfortaa Bold"),
             ("dual_tone", "Lato Regular", "Noto Sans"),
-            ("vlog_pastel", "Poppins Regular", "Noto Sans")
+            ("vlog_pastel", "Poppins Regular", "Noto Sans"),
         ];
         for (preset, primary, cyr_face) in cases {
             let family = catalog[preset]["base"]["font_family"]
@@ -1035,7 +1042,7 @@ mod tests {
                 "Segoe UI",
                 "Courier New",
                 "sans-serif",
-                "monospace"
+                "monospace",
             ] {
                 if let Some(sys_at) = family.find(system) {
                     assert!(

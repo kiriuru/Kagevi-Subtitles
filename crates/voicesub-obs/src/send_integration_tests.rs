@@ -129,7 +129,12 @@ fn translation_line_item(text: &str, slot: &str, lang: &str, label: &str) -> Sub
     }
 }
 
-fn translation_live_draft_item(text: &str, slot: &str, lang: &str, label: &str) -> SubtitleLineItem {
+fn translation_live_draft_item(
+    text: &str,
+    slot: &str,
+    lang: &str,
+    label: &str,
+) -> SubtitleLineItem {
     let mut item = translation_line_item(text, slot, lang, label);
     item.is_live_draft = true;
     item
@@ -572,15 +577,12 @@ async fn stop_retries_transient_clear_failures() {
 
     let fail_caption_remaining = std::sync::Arc::new(AtomicU32::new(0));
     let fail_debug_remaining = std::sync::Arc::new(AtomicU32::new(0));
-    let (service, requests) = start_with_mock(
-        obs_source_live_config(true),
-        {
-            let mut mock = MockObsClient::new();
-            mock.fail_caption_remaining = fail_caption_remaining.clone();
-            mock.fail_debug_mirror_remaining = fail_debug_remaining.clone();
-            mock
-        },
-    )
+    let (service, requests) = start_with_mock(obs_source_live_config(true), {
+        let mut mock = MockObsClient::new();
+        mock.fail_caption_remaining = fail_caption_remaining.clone();
+        mock.fail_debug_mirror_remaining = fail_debug_remaining.clone();
+        mock
+    })
     .await;
 
     service.publish_source("Sticky caption", true);
@@ -606,20 +608,23 @@ async fn stop_retries_transient_clear_failures() {
     assert_eq!(fail_debug_remaining.load(Ordering::SeqCst), 0);
 
     let diag = service.diagnostics().await;
-    assert_eq!(diag.get("last_caption_text").and_then(|v| v.as_str()), Some(""));
-    assert_eq!(diag.get("last_debug_text").and_then(|v| v.as_str()), Some(""));
+    assert_eq!(
+        diag.get("last_caption_text").and_then(|v| v.as_str()),
+        Some("")
+    );
+    assert_eq!(
+        diag.get("last_debug_text").and_then(|v| v.as_str()),
+        Some("")
+    );
 }
 
 #[tokio::test]
 async fn debug_mirror_failure_does_not_block_native_captions() {
-    let (service, requests) = start_with_mock(
-        obs_source_live_config(true),
-        {
-            let mut mock = MockObsClient::new();
-            mock.fail_debug_mirror = true;
-            mock
-        },
-    )
+    let (service, requests) = start_with_mock(obs_source_live_config(true), {
+        let mut mock = MockObsClient::new();
+        mock.fail_debug_mirror = true;
+        mock
+    })
     .await;
 
     service.publish_source("Hello world", true);

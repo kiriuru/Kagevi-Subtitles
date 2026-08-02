@@ -243,7 +243,10 @@ fn maps_overlap_telemetry_events() {
         ("overlap-buddy-prestart", "browser_overlap_buddy_prestart"),
         ("overlap-buddy-started", "browser_overlap_buddy_started"),
         ("overlap-soft-rearm", "browser_overlap_soft_rearm"),
-        ("overlap-soft-rearm-scheduled", "browser_overlap_soft_rearm_scheduled"),
+        (
+            "overlap-soft-rearm-scheduled",
+            "browser_overlap_soft_rearm_scheduled",
+        ),
         ("overlap-silence-rearm", "browser_overlap_silence_rearm"),
         ("overlap-buddy-ended", "browser_overlap_buddy_ended"),
         ("overlap-buddy-error", "browser_overlap_buddy_error"),

@@ -46,7 +46,9 @@ pub async fn local_asr_config_save(
             publish_local_module_runtime(&state).await;
             match state.local_asr.load_config() {
                 Ok(config) => Json(json!({ "ok": true, "config": config })).into_response(),
-                Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),
+                Err(err) => {
+                    Json(json!({ "ok": false, "message": err.to_string() })).into_response()
+                }
             }
         }
         Err(err) => Json(json!({ "ok": false, "message": err.to_string() })).into_response(),

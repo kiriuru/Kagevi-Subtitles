@@ -58,11 +58,10 @@ pub use model_family::{
 };
 pub use model_manager::{
     MODEL_VARIANT_FP16, MODEL_VARIANT_FP32, MODEL_VARIANT_INT8, MODEL_VARIANT_INT8_SMOOTHQUANT,
-    ModelCatalogEntry,
+    ModelCatalogEntry, ModelError, ModelManifest, ModelVariant, build_all_model_catalogs,
+    delete_model_variant, download_model, is_model_installed_at, load_manifest,
+    model_dir_for_family_variant, model_dir_for_variant, resolve_model_dir,
     variant_cpu_bound_under_cuda,
-    ModelError, ModelManifest, ModelVariant, build_all_model_catalogs, delete_model_variant,
-    download_model, is_model_installed_at, load_manifest, model_dir_for_family_variant,
-    model_dir_for_variant, resolve_model_dir,
 };
 pub use pipeline::PipelineEmit;
 pub use runtime_session::{LocalAsrRuntimeSession, RuntimeEmitCallback, RuntimeSessionError};

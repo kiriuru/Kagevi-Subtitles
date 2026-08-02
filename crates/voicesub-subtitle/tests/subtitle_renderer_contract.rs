@@ -201,7 +201,11 @@ fn renderer_emits_structured_debug_trace_events() {
 fn renderer_persists_dom_refs_as_weakref_when_supported() {
     let source = subtitle_style_js();
     assert_contains(&source, "export function _surfaceRefFor", "weakref helper");
-    assert_contains(&source, "export function _derefSurfaceRef", "weakref helper");
+    assert_contains(
+        &source,
+        "export function _derefSurfaceRef",
+        "weakref helper",
+    );
     assert_contains(
         &source,
         "typeof WeakRef === \"function\"",
