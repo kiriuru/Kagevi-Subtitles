@@ -635,7 +635,7 @@ ACL webview: только `get_loopback_api_token` + `open_external_https_url`. 
 | `timestamp_utc` | `session-latest.jsonl`, deep JSONL traces | Внешние скрипты должны принимать оба формата |
 | `finalized_at_utc`, `completed_expires_at_utc` | Subtitle lifecycle payload | Overlay/dashboard не парсят их как числа |
 
-Helpers: `voicesub_types::utc_now_rfc3339()`, `epoch_secs_to_rfc3339()`. Пример: `tools/_analyze_tts_session.py` (`ts()` принимает epoch и RFC 3339).
+Helpers: `voicesub_types::utc_now_rfc3339()`, `epoch_secs_to_rfc3339()`.
 
 При deep diagnostics записи ASR ingest в `pipeline-trace.jsonl` могут включать `ingest_latency_ms` (`trace.rs` + `transcript_controller.rs`).
 

@@ -635,7 +635,7 @@ Several log and subtitle lifecycle fields that previously held **Unix epoch seco
 | `timestamp_utc` | `session-latest.jsonl`, deep JSONL traces (`session.rs`, `jsonl_trace.rs`) | External tooling should accept both formats during transition |
 | `finalized_at_utc`, `completed_expires_at_utc` | Subtitle lifecycle payload (`voicesub-subtitle/lifecycle.rs`) | Not parsed as numbers by overlay or dashboard render paths |
 
-Helpers: `voicesub_types::utc_now_rfc3339()`, `epoch_secs_to_rfc3339()`. Example diagnostic script: `tools/_analyze_tts_session.py` (`ts()` accepts epoch and RFC 3339).
+Helpers: `voicesub_types::utc_now_rfc3339()`, `epoch_secs_to_rfc3339()`.
 
 With deep diagnostics, `pipeline-trace.jsonl` ASR ingest records may include `ingest_latency_ms` (`trace.rs` + `transcript_controller.rs`).
 
