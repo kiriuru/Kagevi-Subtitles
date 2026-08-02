@@ -14,6 +14,8 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-02
+
 ### Added
 
 - Neon-style display fonts (OFL): **Tilt Neon**, **Audiowide**, **Monoton**, **Neonderthaw** in `bin/fonts/` (Latin). **Neon Tubes** (FontStruct) is non-commercial — not shipped; use Tilt Neon as the tube-lettering stand-in. Cyrillic/CJK neon stacks already covered by **Unbounded** / **Exo 2**, **Reggae One** / **Mochiy Pop One** / **Yusei Magic**, **ZCOOL KuaiLe**, **Gugi**.
@@ -413,7 +415,8 @@ First VoiceSub release (successor to SST Desktop `0.4.4`). Stack and delivery ar
 
 Earlier `0.2.9.*` SST Desktop history lives in archived GitHub release notes and is not expanded here.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0
 [0.5.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.4...v0.5.5

@@ -2404,7 +2404,7 @@ dependencies = [
 
 [[package]]
 name = "kagevi-subtitles"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "open",
  "reqwest 0.12.28",
@@ -5971,7 +5971,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "voicesub-asr-local"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "cpal",
  "futures-util",
@@ -5995,7 +5995,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-audio"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "cc",
  "cpal",
@@ -6012,7 +6012,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-browser"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6029,7 +6029,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-config"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6041,7 +6041,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-export"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6054,7 +6054,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-http"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "futures-util",
  "reqwest 0.12.28",
@@ -6070,7 +6070,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-logging"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "chrono",
  "serde",
@@ -6082,7 +6082,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-obs"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "base64 0.22.1",
  "futures-util",
@@ -6103,7 +6103,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-partial-emit"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6111,7 +6111,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-runtime"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "axum",
  "chrono",
@@ -6145,7 +6145,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-subtitle"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6158,7 +6158,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-translation"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "async-trait",
  "hex",
@@ -6180,7 +6180,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-tts"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "base64 0.22.1",
  "reqwest 0.12.28",
@@ -6199,7 +6199,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-twitch"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "aho-corasick",
  "emojis",
@@ -6220,7 +6220,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-types"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -6229,7 +6229,7 @@ dependencies = [
 
 [[package]]
 name = "voicesub-ws"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "axum",
  "futures-util",

@@ -14,6 +14,8 @@
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-02
+
 ### Added
 
 - Neon-стиль (OFL) в `bin/fonts/`: **Tilt Neon**, **Audiowide**, **Monoton**, **Neonderthaw** (латиница). **Neon Tubes** (FontStruct) — non-commercial, в продукт не кладём; трубчатый аналог — Tilt Neon. Для кириллицы/CJK neon-стеки уже закрывают **Unbounded** / **Exo 2**, **Reggae One** / **Mochiy Pop One** / **Yusei Magic**, **ZCOOL KuaiLe**, **Gugi**.
@@ -413,7 +415,8 @@
 
 Более ранняя история `0.2.9.*` SST Desktop остаётся в архивных GitHub release notes и здесь не развёрнута.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0
 [0.5.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.4...v0.5.5

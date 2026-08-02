@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 /// Canonical product version — edit here only, then run `npm run version:sync`
 /// (also runs from `npm run build`) to update Cargo / package.json / tauri.conf.json /
 /// `src/lib/project-version.ts`.
-pub const PROJECT_VERSION: &str = "0.6.1";
+pub const PROJECT_VERSION: &str = "0.6.2";
 pub const RELEASE_TRACK: &str = "stable";
 pub const DEFAULT_UPDATE_PROVIDER: &str = "github_releases";
 pub const DEFAULT_RELEASE_CHANNEL: &str = "stable";
@@ -328,8 +328,8 @@ mod tests {
             "https://github.com/kiriuru/Kagevi-Subtitles"
         );
         assert_eq!(
-            release_url_for(DEFAULT_GITHUB_REPO, "0.6.1"),
-            "https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.6.1"
+            release_url_for(DEFAULT_GITHUB_REPO, "0.6.2"),
+            "https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.6.2"
         );
     }
 
@@ -357,17 +357,17 @@ mod tests {
                 "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.5.0")
             },
             {
-                "tag_name": "v0.6.2",
+                "tag_name": "v0.6.3",
                 "draft": false,
                 "prerelease": false,
-                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.2")
+                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.3")
             }
         ]);
         let (latest, _, url) = extract_latest_github_release(&releases, "stable");
-        assert_eq!(latest.as_deref(), Some("0.6.2"));
+        assert_eq!(latest.as_deref(), Some("0.6.3"));
         assert_eq!(
             url.as_deref(),
-            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.2").as_str())
+            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.3").as_str())
         );
         assert!(is_remote_version_newer(
             PROJECT_VERSION,
@@ -385,7 +385,7 @@ mod tests {
         assert_eq!(payload["sync"]["update_available"], true);
         assert_eq!(
             payload["sync"]["release_url"],
-            release_url_for(DEFAULT_GITHUB_REPO, "0.6.2")
+            release_url_for(DEFAULT_GITHUB_REPO, "0.6.3")
         );
     }
 
@@ -396,7 +396,7 @@ mod tests {
                 "enabled": true,
                 "provider": "github_releases",
                 "github_repo": "example/repo",
-                "latest_known_version": "0.6.2"
+                "latest_known_version": "0.6.3"
             }
         })));
         assert_eq!(payload["current_version"], PROJECT_VERSION);

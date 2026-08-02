@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.1 — Технический документ
+# Kagevi Subtitles 0.6.2 — Технический документ
 
-Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.1"`.
+Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.2"`.
 
 Этот документ описывает layout проекта Kagevi Subtitles, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
 

@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.1 — Technical Architecture Document
+# Kagevi Subtitles 0.6.2 — Technical Architecture Document
 
-Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.6.1"`.
+Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.6.2"`.
 
 This document describes the Kagevi Subtitles project layout, HTTP/WebSocket/Tauri IPC contracts, configuration schema, data flow through the Rust runtime, and frontend surfaces. It is the **canonical technical reference** for active development. README is a short product overview; CHANGELOG is release history; agent policy is `AGENTS.md`.
 
