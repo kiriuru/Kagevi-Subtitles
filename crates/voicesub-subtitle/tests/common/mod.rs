@@ -40,9 +40,7 @@ pub fn read_workspace_js_dir(rel_dir: &str) -> String {
         }));
         out.push('\n');
     }
-    if out.is_empty() {
-        panic!("no .js files under `{rel_dir}`");
-    }
+    assert!(!out.is_empty(), "no .js files under `{rel_dir}`");
     out
 }
 
