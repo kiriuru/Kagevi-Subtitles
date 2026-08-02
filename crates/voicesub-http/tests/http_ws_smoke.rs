@@ -555,10 +555,55 @@ async fn runtime_status_starts_idle() {
     assert!(body.get("translation_diagnostics").is_some());
     assert!(body.get("asr_diagnostics").is_some());
     let metrics = &body["metrics"];
+    assert_eq!(body["runtime_metrics_enabled"], false);
+    assert_eq!(metrics["runtime_metrics_enabled"], false);
     assert_eq!(metrics["partial_updates_emitted"], 0);
     assert_eq!(metrics["finals_emitted"], 0);
     assert_eq!(metrics["browser_transcripts_received"], 0);
     assert_eq!(metrics["ws_events_connections_active"], 0);
+    // Detailed bus/task diagnostics are gated on logging.runtime_metrics_enabled (default off).
+    assert!(metrics.get("event_bus_subscribers").is_none());
+    assert!(metrics.get("background_tasks").is_none());
+
+    handle.shutdown().await;
+}
+
+#[tokio::test]
+async fn runtime_status_includes_event_bus_when_metrics_enabled() {
+    let _guard = integration_lock();
+    let runtime = EphemeralRuntime::new();
+    let handle = runtime.start().await;
+    let addr = handle.bind_addr;
+    let client = reqwest::Client::new();
+
+    let mut payload = voicesub_config::default_config_payload();
+    payload["logging"]["runtime_metrics_enabled"] = serde_json::json!(true);
+    let save = runtime
+        .authed(&client)
+        .post(format!("http://{addr}/api/settings/save"))
+        .json(&serde_json::json!({ "payload": payload }))
+        .timeout(Duration::from_secs(5))
+        .send()
+        .await
+        .expect("settings save");
+    assert!(
+        save.status().is_success(),
+        "settings save failed: {}",
+        save.status()
+    );
+
+    let body: serde_json::Value = runtime
+        .authed(&client)
+        .get(format!("http://{addr}/api/runtime/status"))
+        .send()
+        .await
+        .expect("runtime status")
+        .json()
+        .await
+        .expect("json");
+    assert_eq!(body["runtime_metrics_enabled"], true);
+    let metrics = &body["metrics"];
+    assert_eq!(metrics["runtime_metrics_enabled"], true);
     assert!(metrics.get("event_bus_subscribers").is_some());
     assert!(metrics.get("background_tasks").is_some());
 
