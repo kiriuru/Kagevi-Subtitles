@@ -66,7 +66,7 @@ fn session_manager_supports_overlap_and_watchdog_defaults() {
     let policy = read_policy_ts();
     assert_contains(&manager, "createOverlapRecognitionPair", "overlap");
     assert_contains(&policy, "shouldEnableRecognitionOverlap", "overlap policy");
-    assert_contains(&manager, "watchdog_stall: 750", "watchdog timing");
+    assert_contains(&manager, "watchdog_stall: 200", "watchdog timing");
     assert_contains(&manager, "maxBrowserSessionAgeMs", "session age");
     assert_contains(&manager, "180000", "session age limit");
     assert_contains(&manager, "acquireWakeLock", "wake lock");

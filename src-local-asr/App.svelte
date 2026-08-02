@@ -439,7 +439,7 @@
     return provider.toUpperCase();
   }
 
-  function isCudaCpuBoundVariant(variant: string): boolean {
+  function isCudaCpuBoundVariant(variant: string | undefined): boolean {
     const v = String(variant || "").trim().toLowerCase();
     return v === "int8" || v === "int8_smoothquant";
   }
@@ -557,7 +557,7 @@
         <button class="btn btn-primary" disabled={busy} onclick={() => void onSaveProvider()}>{tr("local_asr.ep.save")}</button>
       </div>
       <p class="status-line section-note">{tr("local_asr.ep.note")}</p>
-      {#if moduleConfig.inference.executionProvider === "cuda" && isCudaCpuBoundVariant(moduleConfig.model.variant)}
+      {#if moduleConfig.inference.executionProvider === "cuda" && isCudaCpuBoundVariant(moduleConfig.model?.variant)}
         <p class="status-line section-note warn-line" role="status">{tr("local_asr.ep.cuda_int8_warning")}</p>
       {/if}
     </section>
