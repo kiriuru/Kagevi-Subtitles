@@ -38,7 +38,10 @@
     "@tauri-apps/plugin-updater": "^2.10.1"
   },
   "overrides": {
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "fast-uri": "^3.1.5",
+    "js-yaml": "^4.3.1",
+    "postcss": "^8.5.23"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
