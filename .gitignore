@@ -26,11 +26,10 @@ scripts/_nemotron_restore/
 scripts/_nemotron_transcript_extract.txt
 
 # Local-only scripts (installer/release/git helpers). Tracked: sync-version, i18n export/bundle,
-# locale overrides/supplement, i18n-source/, build-site (npm run build / pages:build).
+# prune-asr-orphan-i18n (imported by export-i18n), locale overrides/supplement, i18n-source/, build-site.
 scripts/bump-version.mjs
 scripts/clean-workspace.ps1
 scripts/generate-updater-manifest.mjs
-scripts/prune-asr-orphan-i18n.mjs
 scripts/publish-github-release.mjs
 scripts/release.mjs
 scripts/safe-push.mjs

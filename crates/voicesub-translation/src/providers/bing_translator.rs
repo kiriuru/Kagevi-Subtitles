@@ -208,7 +208,10 @@ impl BingTranslatorProvider {
         Ok(session)
     }
 
-    async fn ensure_session(&self, timeout_secs: Option<f64>) -> Result<BingSession, ProviderError> {
+    async fn ensure_session(
+        &self,
+        timeout_secs: Option<f64>,
+    ) -> Result<BingSession, ProviderError> {
         if let Some(session) = self.cached_session() {
             return Ok(session);
         }

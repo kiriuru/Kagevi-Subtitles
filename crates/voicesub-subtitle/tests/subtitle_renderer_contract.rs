@@ -142,7 +142,11 @@ fn compose_render_rows_marks_completed_with_partial_source_as_transient() {
 #[test]
 fn compose_render_rows_marks_live_draft_translations_as_transient() {
     let source = subtitle_style_js();
-    assert_contains(&source, "isLiveDraftTranslation", "live draft translation gate");
+    assert_contains(
+        &source,
+        "isLiveDraftTranslation",
+        "live draft translation gate",
+    );
     assert_contains(&source, "item.is_live_draft === true", "is_live_draft flag");
     assert_contains(
         &source,

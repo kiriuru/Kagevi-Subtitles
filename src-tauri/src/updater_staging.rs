@@ -114,10 +114,7 @@ pub fn prepare_updater_staging(project_root: &Path) -> Result<PathBuf, String> {
         .lock()
         .map_err(|_| "updater staging env lock poisoned".to_string())?;
     if guard.is_none() {
-        *guard = Some((
-            std::env::var_os("TEMP"),
-            std::env::var_os("TMP"),
-        ));
+        *guard = Some((std::env::var_os("TEMP"), std::env::var_os("TMP")));
     }
     drop(guard);
 
