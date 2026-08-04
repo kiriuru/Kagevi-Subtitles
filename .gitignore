@@ -56,6 +56,9 @@ backend/
 # --- Local runtime / secrets ---
 .env
 !.env.example
+# Tauri updater minisign keys (private — never commit)
+secrets/tauri-updater.key
+secrets/tauri-updater.key.pub
 logs/
 user-data/
 *.log
@@ -65,6 +68,11 @@ user-data/
 .cache/
 .tmp/
 .tmp-fonts/
+
+# Leftover in-app updater staging (tauri tempfile redirected to project/install root)
+/*-updater-*/
+/*-installer.exe
+/*-installer.msi
 
 # Release scripts output dir (local-only tooling)
 build/

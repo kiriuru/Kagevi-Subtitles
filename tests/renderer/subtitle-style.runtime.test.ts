@@ -312,6 +312,29 @@ describe("SubtitleStyleRenderer runtime", () => {
     expect(translation?.transient).toBeFalsy();
   });
 
+  it("marks is_live_draft translation as transient under completed_only", () => {
+    const rows = renderer().composeRenderRows({
+      preset: "stacked",
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      show_source: true,
+      show_translations: true,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola draft",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: true,
+        },
+      ],
+    });
+    const translation = rows.flatMap((row) => row.entries).find((e) => e.kind === "translation");
+    expect(translation?.transient).toBe(true);
+  });
+
   it("renders live partial translation rows during partial_only", () => {
     const rows = renderer().composeRenderRows({
       preset: "stacked",
@@ -337,6 +360,191 @@ describe("SubtitleStyleRenderer runtime", () => {
     expect(source?.text).toBe("растущая фраза");
     expect(source?.transient).toBe(true);
     expect(translation?.text).toBe("a growing phrase");
+    expect(translation?.transient).toBe(true);
+  });
+
+  it("keeps live draft translation on fast path when draft text grows", () => {
+    const R = renderer();
+    const style = minimalStyle();
+    const base = {
+      preset: "stacked",
+      compact: false,
+      show_source: true,
+      show_translations: true,
+      style,
+      lifecycle_state: "partial_only",
+      completed_block_visible: false,
+      active_partial_text: "Hello",
+    };
+    const draftA = {
+      ...base,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Ho",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: true,
+        },
+      ],
+    };
+    R.render(container, draftA, { overlay: true });
+    const wrapper = container.firstElementChild;
+    const translationSurface = container.querySelector('[data-slot="translation_1"]');
+
+    const traces = collectTrace(container, {
+      ...draftA,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: true,
+        },
+      ],
+    });
+
+    expect(container.firstElementChild).toBe(wrapper);
+    expect(container.querySelector('[data-slot="translation_1"]')).toBe(translationSurface);
+    const summary = traces.find((event) => event.type === "render_summary");
+    expect(summary?.fast_path).toBe(true);
+    expect(container.textContent).toContain("Hola");
+  });
+
+  it("patches completed translation text in place without slow path", () => {
+    const R = renderer();
+    const style = minimalStyle();
+    const first = {
+      preset: "stacked",
+      compact: false,
+      show_source: true,
+      show_translations: true,
+      style,
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola",
+          style_slot: "translation_1",
+          lang: "es",
+        },
+      ],
+    };
+    R.render(container, first, { overlay: true });
+    const wrapper = container.firstElementChild;
+    const translationSurface = container.querySelector('[data-slot="translation_1"]');
+
+    const traces = collectTrace(container, {
+      ...first,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "¡Hola!",
+          style_slot: "translation_1",
+          lang: "es",
+        },
+      ],
+    });
+
+    expect(container.firstElementChild).toBe(wrapper);
+    expect(container.querySelector('[data-slot="translation_1"]')).toBe(translationSurface);
+    const summary = traces.find((event) => event.type === "render_summary");
+    expect(summary?.fast_path).toBe(true);
+    const completed = traces.find(
+      (event) => event.type === "completed_frame" && event.kind === "translation",
+    );
+    expect(completed?.animated).toBe(false);
+    expect(completed?.text_patched).toBe(true);
+    expect(container.textContent).toContain("¡Hola!");
+  });
+
+  it("finalizes matching live draft translation in place", () => {
+    const R = renderer();
+    const style = minimalStyle();
+    const draft = {
+      preset: "stacked",
+      compact: false,
+      show_source: true,
+      show_translations: true,
+      style,
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: true,
+        },
+      ],
+    };
+    R.render(container, draft, { overlay: true });
+    const wrapper = container.firstElementChild;
+    const translationSurface = container.querySelector('[data-slot="translation_1"]');
+    expect(translationSurface?.querySelector(".subtitle-fragment-static")).toBeTruthy();
+
+    const traces = collectTrace(container, {
+      ...draft,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: false,
+        },
+      ],
+    });
+
+    expect(container.firstElementChild).toBe(wrapper);
+    expect(container.querySelector('[data-slot="translation_1"]')).toBe(translationSurface);
+    expect(translationSurface?.querySelector(".subtitle-fragment-fresh")).toBeNull();
+    const summary = traces.find((event) => event.type === "render_summary");
+    expect(summary?.fast_path).toBe(true);
+    expect(Number(summary?.finalized_in_place || 0)).toBeGreaterThan(0);
+  });
+
+  it("does not mark completed MT transient under completed_with_partial without draft flag", () => {
+    const rows = renderer().composeRenderRows({
+      preset: "stacked",
+      lifecycle_state: "completed_with_partial",
+      completed_block_visible: true,
+      active_partial_text: "next",
+      show_source: true,
+      show_translations: true,
+      visible_items: [
+        { kind: "source", text: "next", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "prev mt",
+          style_slot: "translation_1",
+          lang: "en",
+          is_live_draft: false,
+        },
+      ],
+    });
+    const translation = rows.flatMap((r) => r.entries).find((e) => e.kind === "translation");
+    expect(translation?.transient).toBeFalsy();
+  });
+
+  it("obsPaintPolicy downgrades blur without overlay shell class", () => {
+    const R = renderer();
+    expect(R.usesObsPaintPolicy?.({ obsPaintPolicy: true })).toBe(true);
+    expect(R.usesObsPaintPolicy?.({ overlay: true })).toBe(true);
+    expect(R.usesObsPaintPolicy?.({})).toBe(false);
+    expect(R.resolveFreshFragmentEffect("blur_in", { obsPaintPolicy: true }, 3)).toBe("fade");
+    expect(R.resolveFreshFragmentEffect("blur_in", { surface: "dashboard" }, 3)).toBe("blur_in");
   });
 
   it("keeps the source-only shortcut for partial_only without translations", () => {

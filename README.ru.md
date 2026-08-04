@@ -45,7 +45,7 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
 | Область | Что даёт |
 | --- | --- |
 | **Речь** | Google Chrome Web Speech worker или офлайн Local ASR (Parakeet / ONNX, CPU или CUDA) |
-| **Перевод** | 17 провайдеров (в т.ч. Baidu / Youdao / Tencent / Caiyun), до **4** линий перевода (исходник отдельно). Опциональный **realtime**-перевод для классического MT (по умолчанию выкл.). Три работают **без API key**: Google Web, Free Web Translate и Microsoft Edge Translate |
+| **Перевод** | 18 провайдеров (в т.ч. Baidu / Youdao / Tencent / Caiyun), до **4** линий перевода (исходник отдельно). Опциональный **realtime**-перевод для классического MT (по умолчанию выкл.). Четыре работают **без API key**: Google Web, Free Web Translate, Microsoft Edge Translate и Bing Translator |
 | **OBS** | Browser Source overlay + опциональные Closed Captions через OBS WebSocket (в основном для Twitch) |
 | **Стиль** | Анимированные пресеты, стили по слотам, палитра темы |
 | **TTS** | Native / Sonic playback; озвучка субтитров + Twitch chat TTS (до 5 каналов) |

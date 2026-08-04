@@ -417,6 +417,15 @@ export const voicesubNewKeysEn = {
   "updates.banner.message": "Kagevi Subtitles {latest} is available — you are on {current}.",
   "updates.banner.close": "Close",
   "updates.banner.download": "Download",
+  "updates.banner.install": "Install update",
+  "updates.banner.installing": "Installing…",
+  "updates.banner.status.checking": "Checking for the installer…",
+  "updates.banner.status.downloading": "Downloading update…",
+  "updates.banner.status.downloading_pct": "Downloading update… {progress}",
+  "updates.banner.status.installing": "Installing update — the app will restart…",
+  "updates.banner.status.restarting": "Restarting…",
+  "updates.banner.status.error": "Update failed. Open the release page to install manually.",
+  "updates.banner.status.error_detail": "Update failed: {error}",
   "translation.target_lang.ar": "Arabic",
   "translation.target_lang.de": "German",
   "translation.target_lang.en": "English",
@@ -547,6 +556,10 @@ export const voicesubNewKeysEn = {
     "Also: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0), and others.",
   "credits.support": "Support",
   "credits.website": "Open website",
+  "provider.bing_translator.hint":
+    "No API key required. Uses the Bing Translator web session (page token → ttranslatev3).",
+  "provider.bing_translator.status":
+    "Experimental keyless provider. Availability can change without notice.",
 };
 
 const voicesubExtrasLocalized = {
@@ -567,6 +580,15 @@ const voicesubExtrasLocalized = {
     "updates.banner.message": "Доступна Kagevi Subtitles {latest} — у вас {current}.",
     "updates.banner.close": "Закрыть",
     "updates.banner.download": "Скачать",
+    "updates.banner.install": "Установить обновление",
+    "updates.banner.installing": "Установка…",
+    "updates.banner.status.checking": "Проверка установщика…",
+    "updates.banner.status.downloading": "Скачивание обновления…",
+    "updates.banner.status.downloading_pct": "Скачивание обновления… {progress}",
+    "updates.banner.status.installing": "Установка — приложение перезапустится…",
+    "updates.banner.status.restarting": "Перезапуск…",
+    "updates.banner.status.error": "Не удалось обновить. Откройте страницу релиза и установите вручную.",
+    "updates.banner.status.error_detail": "Не удалось обновить: {error}",
     "save.status.saved": "Настройки сохранены.",
     "obs.overlay.instructions":
       "Добавьте этот URL как OBS Browser Source. Обновите URL при смене bind-адреса Kagevi Subtitles.",
@@ -1134,6 +1156,10 @@ const voicesubExtrasLocalized = {
       "Также: ONNX Runtime (MIT), Silero VAD (MIT), Sonic/libsonic (Apache-2.0) и др.",
     "credits.support": "Поддержать",
     "credits.website": "Открыть сайт",
+    "provider.bing_translator.hint":
+      "API key не нужен. Используется web-сессия Bing Translator (токен со страницы → ttranslatev3).",
+    "provider.bing_translator.status":
+      "Экспериментальный провайдер без ключа. Доступность может меняться без предупреждения.",
   },
   ja: {
     "style.font.script.latin": "ラテン",
@@ -1161,6 +1187,15 @@ const voicesubExtrasLocalized = {
     "updates.banner.message": "Kagevi Subtitles {latest} が利用可能です（現在 {current}）。",
     "updates.banner.close": "閉じる",
     "updates.banner.download": "ダウンロード",
+    "updates.banner.install": "アップデートをインストール",
+    "updates.banner.installing": "インストール中…",
+    "updates.banner.status.checking": "インストーラーを確認しています…",
+    "updates.banner.status.downloading": "アップデートをダウンロード中…",
+    "updates.banner.status.downloading_pct": "アップデートをダウンロード中… {progress}",
+    "updates.banner.status.installing": "インストール中 — アプリが再起動します…",
+    "updates.banner.status.restarting": "再起動中…",
+    "updates.banner.status.error": "アップデートに失敗しました。リリースページから手動でインストールしてください。",
+    "updates.banner.status.error_detail": "アップデートに失敗しました: {error}",
     "save.status.saved": "設定を保存しました。",
     "obs.overlay.instructions":
       "この URL を OBS Browser Source として追加してください。Kagevi Subtitles の bind アドレスが変わったら URL を更新してください。",
@@ -1569,6 +1604,10 @@ const voicesubExtrasLocalized = {
       "ほか: ONNX Runtime（MIT）、Silero VAD（MIT）、Sonic/libsonic（Apache-2.0）など。",
     "credits.support": "支援する",
     "credits.website": "ウェブサイトを開く",
+    "provider.bing_translator.hint":
+      "API キーは不要です。Bing Translator の Web セッション（ページのトークン → ttranslatev3）を使用します。",
+    "provider.bing_translator.status":
+      "キー不要の実験的プロバイダー。可用性は予告なく変更される場合があります。",
   },
   ko: {
     "style.font.script.latin": "라틴",
@@ -1596,6 +1635,15 @@ const voicesubExtrasLocalized = {
     "updates.banner.message": "Kagevi Subtitles {latest}을(를) 사용할 수 있습니다(현재 {current}).",
     "updates.banner.close": "닫기",
     "updates.banner.download": "다운로드",
+    "updates.banner.install": "업데이트 설치",
+    "updates.banner.installing": "설치 중…",
+    "updates.banner.status.checking": "설치 프로그램을 확인하는 중…",
+    "updates.banner.status.downloading": "업데이트를 다운로드하는 중…",
+    "updates.banner.status.downloading_pct": "업데이트를 다운로드하는 중… {progress}",
+    "updates.banner.status.installing": "설치 중 — 앱이 다시 시작됩니다…",
+    "updates.banner.status.restarting": "다시 시작하는 중…",
+    "updates.banner.status.error": "업데이트에 실패했습니다. 릴리스 페이지에서 수동으로 설치하세요.",
+    "updates.banner.status.error_detail": "업데이트 실패: {error}",
     "save.status.saved": "설정을 저장했습니다.",
     "obs.overlay.instructions":
       "이 URL을 OBS Browser Source로 추가하세요. Kagevi Subtitles bind 주소가 바뀌면 URL을 업데이트하세요.",
@@ -2003,6 +2051,10 @@ const voicesubExtrasLocalized = {
       "또한: ONNX Runtime(MIT), Silero VAD(MIT), Sonic/libsonic(Apache-2.0) 등.",
     "credits.support": "후원하기",
     "credits.website": "웹사이트 열기",
+    "provider.bing_translator.hint":
+      "API 키가 필요하지 않습니다. Bing Translator 웹 세션(페이지 토큰 → ttranslatev3)을 사용합니다.",
+    "provider.bing_translator.status":
+      "키가 필요 없는 실험적 공급자. 이용 가능 여부는 예고 없이 변경될 수 있습니다.",
   },
   zh: {
     "style.font.script.latin": "拉丁",
@@ -2030,6 +2082,15 @@ const voicesubExtrasLocalized = {
     "updates.banner.message": "Kagevi Subtitles {latest} 已可用（当前 {current}）。",
     "updates.banner.close": "关闭",
     "updates.banner.download": "下载",
+    "updates.banner.install": "安装更新",
+    "updates.banner.installing": "正在安装…",
+    "updates.banner.status.checking": "正在检查安装包…",
+    "updates.banner.status.downloading": "正在下载更新…",
+    "updates.banner.status.downloading_pct": "正在下载更新… {progress}",
+    "updates.banner.status.installing": "正在安装 — 应用即将重启…",
+    "updates.banner.status.restarting": "正在重启…",
+    "updates.banner.status.error": "更新失败。请打开发布页手动安装。",
+    "updates.banner.status.error_detail": "更新失败：{error}",
     "save.status.saved": "设置已保存。",
     "obs.overlay.instructions":
       "将此 URL 添加为 OBS Browser Source。Kagevi Subtitles bind 地址变更时请更新 URL。",
@@ -2430,6 +2491,10 @@ const voicesubExtrasLocalized = {
       "另有：ONNX Runtime（MIT）、Silero VAD（MIT）、Sonic/libsonic（Apache-2.0）等。",
     "credits.support": "支持开发",
     "credits.website": "打开网站",
+    "provider.bing_translator.hint":
+      "无需 API 密钥。使用 Bing Translator 网页会话（页面令牌 → ttranslatev3）。",
+    "provider.bing_translator.status":
+      "无密钥的实验性提供商。可用性可能会发生变化，恕不另行通知。",
   },
 };
 

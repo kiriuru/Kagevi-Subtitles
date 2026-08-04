@@ -25,6 +25,63 @@ export const STYLE_BASE_DEFAULTS: Record<string, string | number> = {
 /** Fields that only affect the stage container (not per-slot surfaces). */
 export const CONTAINER_ONLY_STYLE_FIELDS = ["line_gap_px"] as const;
 
+export type ResolvedStyleFields = Record<keyof typeof STYLE_BASE_DEFAULTS, string | number>;
+
+/** Resolve one style field from a record, optional base inheritance, and defaults. */
+export function resolveStyleFieldValue(
+  field: string,
+  record: Record<string, unknown>,
+  options?: {
+    inheritFrom?: Record<string, unknown> | null;
+    allowInheritFont?: boolean;
+    fallback?: string | number;
+  },
+): string | number {
+  const fallback =
+    options?.fallback ??
+    STYLE_BASE_DEFAULTS[field] ??
+    "";
+
+  const raw = record[field];
+
+  if (field === "font_family" && options?.allowInheritFont) {
+    if (raw === null || raw === undefined || raw === "") return "";
+    return String(raw);
+  }
+
+  if (raw !== null && raw !== undefined && raw !== "") {
+    return raw as string | number;
+  }
+
+  const inheritFrom = options?.inheritFrom;
+  if (inheritFrom) {
+    const inherited = inheritFrom[field];
+    if (inherited !== null && inherited !== undefined && inherited !== "") {
+      return inherited as string | number;
+    }
+  }
+
+  return fallback;
+}
+
+/** Resolve all base style fields reactively (slot overrides inherit unset keys from base). */
+export function resolveStyleFields(
+  record: Record<string, unknown>,
+  options?: {
+    inheritFrom?: Record<string, unknown> | null;
+    allowInheritFont?: boolean;
+  },
+): ResolvedStyleFields {
+  const resolved = {} as ResolvedStyleFields;
+  for (const [field, fallback] of Object.entries(STYLE_BASE_DEFAULTS)) {
+    resolved[field as keyof typeof STYLE_BASE_DEFAULTS] = resolveStyleFieldValue(field, record, {
+      ...options,
+      fallback,
+    });
+  }
+  return resolved;
+}
+
 /**
  * ASS/Aegisub-style outline thickness in CSS pixels: 0–4, step 0.1.
  * Classic SSA listed 0–4; VSFilter/`\bord` accepts floats (0.1, 1.5, …).

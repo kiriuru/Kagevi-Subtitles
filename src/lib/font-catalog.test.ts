@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   extractPrimaryFontFamily,
+  fontFamilyCssStack,
+  fontScriptNativeLabels,
   formatFontOptionLabel,
+  primaryFontFamiliesMatch,
   replacePrimaryFontFamily,
 } from "./font-catalog";
 
@@ -42,32 +45,49 @@ describe("replacePrimaryFontFamily", () => {
   });
 });
 
-describe("formatFontOptionLabel", () => {
-  const tr = (key: string) =>
-    ({
-      "style.font.script.latin": "Latin",
-      "style.font.script.cyrillic": "Cyrillic",
-      "style.font.script.japanese": "Japanese",
-      "style.font.script.chinese": "Chinese",
-      "style.font.script.korean": "Korean",
-    })[key] || key;
+describe("fontScriptNativeLabels", () => {
+  it("returns native-script alphabet tags", () => {
+    expect(fontScriptNativeLabels(["latin", "cyrillic"])).toEqual(["Latin", "Кириллица"]);
+    expect(fontScriptNativeLabels(["japanese", "chinese", "korean"])).toEqual([
+      "日本語",
+      "中文",
+      "한국어",
+    ]);
+  });
+});
 
-  it("appends supported alphabets with OBS-style middle-dot separators", () => {
+describe("formatFontOptionLabel", () => {
+  it("appends native-script alphabet tags with OBS-style middle-dot separators", () => {
+    expect(formatFontOptionLabel({ label: "Oswald Bold", scripts: ["latin"] })).toBe(
+      "Oswald Bold · Latin",
+    );
     expect(
-      formatFontOptionLabel({ label: "Oswald Bold", scripts: ["latin"] }, tr),
-    ).toBe("Oswald Bold · Latin");
+      formatFontOptionLabel({
+        label: "Noto Sans Regular",
+        scripts: ["latin", "cyrillic"],
+      }),
+    ).toBe("Noto Sans Regular · Latin · Кириллица");
     expect(
-      formatFontOptionLabel(
-        { label: "Noto Sans Regular", scripts: ["latin", "cyrillic"] },
-        tr,
-      ),
-    ).toBe("Noto Sans Regular · Latin · Cyrillic");
-    expect(
-      formatFontOptionLabel({ label: "Zen Maru Gothic Bold", scripts: ["japanese"] }, tr),
-    ).toBe("Zen Maru Gothic Bold · Japanese");
+      formatFontOptionLabel({ label: "Zen Maru Gothic Bold", scripts: ["japanese"] }),
+    ).toBe("Zen Maru Gothic Bold · 日本語");
   });
 
   it("returns the bare label when scripts are missing", () => {
-    expect(formatFontOptionLabel({ label: "Segoe UI" }, tr)).toBe("Segoe UI");
+    expect(formatFontOptionLabel({ label: "Segoe UI" })).toBe("Segoe UI");
+  });
+});
+
+describe("fontFamilyCssStack", () => {
+  it("wraps a quoted primary token with generic fallbacks", () => {
+    expect(fontFamilyCssStack('"Oswald Bold", sans-serif')).toBe(
+      '"Oswald Bold", ui-sans-serif, sans-serif',
+    );
+  });
+});
+
+describe("primaryFontFamiliesMatch", () => {
+  it("compares primary faces case-insensitively", () => {
+    expect(primaryFontFamiliesMatch('"Oswald Bold", sans-serif', '"oswald bold"')).toBe(true);
+    expect(primaryFontFamiliesMatch('"Oswald Bold"', '"Montserrat Bold"')).toBe(false);
   });
 });

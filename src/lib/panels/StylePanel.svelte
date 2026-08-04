@@ -1,7 +1,6 @@
 <script lang="ts">
   import StyleFieldGroup from "../components/StyleFieldGroup.svelte";
   import SubtitleOutputPreview from "../components/SubtitleOutputPreview.svelte";
-  import { LANGUAGES } from "../constants";
   import { locale, t } from "../i18n";
   import { fontOptions } from "../font-catalog";
   import { CONTAINER_ONLY_STYLE_FIELDS } from "../style-field-utils";
@@ -17,10 +16,8 @@
     seedSlotOverrideFromBase,
   } from "../style-presets";
   import {
+    formatOutputSlotLabel,
     getActiveStyleLineSlots,
-    getLineCards,
-    getSlotNumber,
-    isTranslationLineEnabled,
   } from "../translation-helpers";
   import type { ConfigPayload, FontCatalog, RuntimeStatus, StylePresetCatalog } from "../types";
 
@@ -45,16 +42,16 @@
   $: fonts = fontOptions(fontCatalog);
   $: baseStyle = (style.base || style.source || {}) as Record<string, unknown>;
   $: lineSlots = (style.line_slots || {}) as Record<string, Record<string, unknown>>;
-  $: enabledTranslationLines = getLineCards(config).filter((line) => isTranslationLineEnabled(line));
   $: visibleSlots = getActiveStyleLineSlots(config);
   $: if (visibleSlots.length > 0 && !visibleSlots.includes(activeSlot)) {
     activeSlot = visibleSlots[0] || "source";
   }
   $: slotOverride = (lineSlots[activeSlot] || {}) as Record<string, unknown>;
   $: slotEnabled = Boolean(slotOverride.enabled);
+  $: activeSlotLabel = formatOutputSlotLabel(activeSlot, config, loc);
   $: slotHint = slotEnabled
-    ? t("style.slot.enabled_hint", { slotLabel: slotLabel(activeSlot) }, loc)
-    : t("style.slot.disabled_hint", { slotLabel: slotLabel(activeSlot) }, loc);
+    ? t("style.slot.enabled_hint", { slotLabel: activeSlotLabel }, loc)
+    : t("style.slot.disabled_hint", { slotLabel: activeSlotLabel }, loc);
 
   function patchStyle(nextStyle: Record<string, Record<string, unknown>>) {
     onChange({ ...config, subtitle_style: nextStyle });
@@ -63,23 +60,6 @@
   function patchBase(field: string, value: string | number) {
     const base = { ...(style.base || style.source || {}), [field]: value };
     patchStyle({ ...style, base, source: { ...(style.source || {}), [field]: value } });
-  }
-
-  function readBase(field: string, fallback: string | number = ""): string | number {
-    const raw = baseStyle[field];
-    if (raw === null || raw === undefined || raw === "") return fallback;
-    return raw as string | number;
-  }
-
-  function readSlot(field: string, fallback: string | number = ""): string | number {
-    const raw = slotOverride[field];
-    if (raw === null || raw === undefined || raw === "") {
-      if (field === "font_family") return "";
-      const inherited = baseStyle[field];
-      if (inherited === null || inherited === undefined || inherited === "") return fallback;
-      return inherited as string | number;
-    }
-    return raw as string | number;
   }
 
   function patchSlotField(field: string, value: string | number) {
@@ -127,26 +107,6 @@
     const name = customPresetName.trim() || activePreset;
     patchStyle(deleteCustomPreset(style, name));
   }
-
-  function languageLabel(code: string): string {
-    const normalized = String(code || "").trim().toLowerCase();
-    const entry = LANGUAGES.find((item) => item.code === normalized);
-    return entry ? tr(entry.labelKey) : normalized.toUpperCase() || "?";
-  }
-
-  function slotLabel(slot: string): string {
-    if (slot === "source") return tr("common.source");
-    if (/^translation_[1-4]$/.test(slot)) {
-      const line =
-        enabledTranslationLines.find((entry) => entry.slot_id === slot) ||
-        getLineCards(config).find((entry) => entry.slot_id === slot);
-      return tr("obs.output.translation_active", {
-        number: String(getSlotNumber(slot) || "?"),
-        lang: languageLabel(String(line?.target_lang || line?.label || "")),
-      });
-    }
-    return tr(`obs.output.${slot}`);
-  }
 </script>
 
 <section class="surface-card panel-padding stack">
@@ -187,7 +147,7 @@
       <p class="muted">{tr("style.base.note")}</p>
     </div>
     {#key activePreset}
-      <StyleFieldGroup {tr} {fonts} read={readBase} write={patchBase} />
+      <StyleFieldGroup {tr} {fonts} styleRecord={baseStyle} write={patchBase} />
     {/key}
   </div>
 
@@ -210,7 +170,7 @@
     <div class="badges">
       {#each visibleSlots as slot}
         <button type="button" class="tab-btn" class:active={activeSlot === slot} on:click={() => (activeSlot = slot)}>
-          {slotLabel(slot)}
+          {formatOutputSlotLabel(slot, config, loc)}
         </button>
       {/each}
     </div>
@@ -237,9 +197,10 @@
         <StyleFieldGroup
           {tr}
           {fonts}
+          styleRecord={slotOverride}
+          inheritFrom={baseStyle}
           allowInheritFont
           hiddenFields={[...CONTAINER_ONLY_STYLE_FIELDS]}
-          read={readSlot}
           write={patchSlotField}
         />
       {/key}

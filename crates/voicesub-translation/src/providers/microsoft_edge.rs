@@ -25,7 +25,7 @@ const TOKEN_TTL: Duration = Duration::from_secs(7 * 60);
 
 /// The auth endpoint only answers browser-shaped requests.
 const EDGE_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
-     (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0";
+     (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0";
 
 fn extract_edge_translation_text(payload: &Value) -> String {
     let mut parts = Vec::new();
@@ -52,6 +52,8 @@ struct CachedToken {
 pub struct MicrosoftEdgeProvider {
     transport: Arc<SharedHttpClient>,
     token: RwLock<Option<CachedToken>>,
+    /// Serializes cold auth so realtime partials share one token fetch.
+    bootstrap: tokio::sync::Mutex<()>,
 }
 
 impl MicrosoftEdgeProvider {
@@ -59,6 +61,7 @@ impl MicrosoftEdgeProvider {
         Self {
             transport,
             token: RwLock::new(None),
+            bootstrap: tokio::sync::Mutex::new(()),
         }
     }
 
@@ -120,6 +123,19 @@ impl MicrosoftEdgeProvider {
         Ok(token)
     }
 
+    async fn ensure_token(&self, timeout_secs: Option<f64>) -> Result<String, ProviderError> {
+        if let Some(token) = self.cached_token() {
+            return Ok(token);
+        }
+        let _guard = self.bootstrap.lock().await;
+        if let Some(token) = self.cached_token() {
+            return Ok(token);
+        }
+        let token = self.fetch_token(timeout_secs).await?;
+        self.store_token(&token);
+        Ok(token)
+    }
+
     async fn post_translate(
         &self,
         token: &str,
@@ -171,24 +187,18 @@ impl TranslationProvider for MicrosoftEdgeProvider {
         let to = azure_lang(request.target_lang);
         let body = json!([{ "Text": request.text }]);
 
-        let mut token = match self.cached_token() {
-            Some(token) => token,
-            None => {
-                let token = self.fetch_token(request.timeout_secs).await?;
-                self.store_token(&token);
-                token
-            }
-        };
-
+        let mut token = self.ensure_token(request.timeout_secs).await?;
         let mut attempt = self
             .post_translate(&token, &body, from.as_deref(), &to, request.timeout_secs)
             .await?;
 
         // A cached token can be revoked before its TTL elapses; refresh once, then give up.
         if matches!(attempt.0, StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN) {
+            let _guard = self.bootstrap.lock().await;
             self.clear_token();
             token = self.fetch_token(request.timeout_secs).await?;
             self.store_token(&token);
+            drop(_guard);
             attempt = self
                 .post_translate(&token, &body, from.as_deref(), &to, request.timeout_secs)
                 .await?;

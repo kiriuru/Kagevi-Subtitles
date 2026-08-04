@@ -121,6 +121,33 @@ mod tests {
         }
     }
 
+    #[test]
+    fn main_capability_allows_updater_and_relaunch_only() {
+        let main = include_str!("../capabilities/default.json");
+        assert!(
+            main.contains("updater:default"),
+            "main window needs updater check/download/install"
+        );
+        assert!(
+            main.contains("process:allow-restart"),
+            "main window needs relaunch after install"
+        );
+        assert!(
+            !main.contains("process:allow-exit"),
+            "exit should not be exposed to the dashboard frontend"
+        );
+        let tts = include_str!("../capabilities/tts.json");
+        let local_asr = include_str!("../capabilities/local-asr.json");
+        assert!(
+            !tts.contains("updater:"),
+            "TTS window must not install desktop updates"
+        );
+        assert!(
+            !local_asr.contains("updater:"),
+            "Local ASR window must not install desktop updates"
+        );
+    }
+
     /// Frontend `invoke` inventory (keep in sync with `src/`, `src-tts/`, `src-local-asr/`).
     /// Save config / diagnostics export use HTTP `/api/*` + loopback token — not Tauri ACL
     /// beyond `get_loopback_api_token`.
@@ -136,6 +163,8 @@ mod tests {
         for cmd in [
             "get_loopback_api_token",
             "get_runtime_state_snapshot",
+            "prepare_updater_staging",
+            "abort_updater_staging",
             "set_dashboard_layout",
             "tts_open_window",
             "local_asr_open_window",

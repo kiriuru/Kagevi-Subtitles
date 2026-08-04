@@ -1,11 +1,11 @@
 // Build a layout fingerprint that is stable across pure-extension partial
 // frames but changes whenever the *shape* of the render does — different
-// row count, different slot composition, different completed text, or a
-// transient ↔ completed switch. When two consecutive renders share the
-// same shape, we keep the existing wrapper/stage/row/content DOM nodes
-// and only mutate the per-entry surfaces in place. That eliminates the
-// `container.innerHTML = ""` wipe that was repainting the whole subtitle
-// container on every keystroke and producing the v0.4.2 flicker.
+// row count, different slot composition, or a transient ↔ completed switch.
+// Completed text is omitted so late MT / supersession patches stay on the
+// fast path. When two consecutive renders share the same shape, we keep the
+// existing wrapper/stage/row/content DOM nodes and only mutate the per-entry
+// surfaces in place. That eliminates the wipe that was repainting the whole
+// subtitle container on every keystroke and producing the v0.4.2 flicker.
 export function _shapeSignatureForEntry(entry) {
   if (entry.transient) {
     return [
@@ -20,7 +20,6 @@ export function _shapeSignatureForEntry(entry) {
     entry.style_slot || "source",
     entry.kind || "source",
     entry.lang || "",
-    String(entry.text || ""),
   ].join(":");
 }
 
@@ -244,13 +243,8 @@ export function _canFastPathFinalize(rows, previousDescriptors, previousPartialB
         return false;
       }
       if (prev.transient === Boolean(entry.transient)) {
-        // Same transient state: shape-equal handles this branch, so any
-        // text mismatch here means the *only* difference is text of a
-        // completed entry. Bail to the slow path — completed text changes
-        // are rare and old-logic translations expect a fresh render.
-        if (!entry.transient && prev.text !== text) {
-          return false;
-        }
+        // Same transient state: completed text may differ (late MT / draft
+        // finalize). Fast path patches textContent in place — do not bail.
       } else if (prev.transient && !entry.transient) {
         // T → C finalization. Only compatible if the completed text matches
         // what was last shown as a partial in this slot. If they differ,

@@ -88,6 +88,9 @@
   // Cap overlay repaint rate for long partial text (~15 fps). OBS Browser Source
   // at unlimited FPS still composites every DOM change; long stroked lines are costly.
   const OVERLAY_LONG_TEXT_MIN_RENDER_MS = 66;
+  // Trailing coalesce while live MT drafts are visible (~25 fps). completed_only
+  // first paint stays uncapped so finals remain snappy.
+  const OVERLAY_LIVE_DRAFT_MIN_RENDER_MS = 40;
 
   function resolveLongTextThreshold() {
     const fromRenderer = window.SubtitleStyleRenderer?.OVERLAY_DENSE_PARTIAL_CHARS;
@@ -109,10 +112,29 @@
     return maxLen;
   }
 
+  function payloadHasLiveDraft(payload) {
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+    const lifecycle = String(payload.lifecycle_state || "");
+    const items = Array.isArray(payload.visible_items) ? payload.visible_items : [];
+    if (items.some((item) => item && item.is_live_draft === true)) {
+      return true;
+    }
+    // partial_only translation rows are drafts by contract even if the flag
+    // was omitted by an older publisher.
+    return lifecycle === "partial_only"
+      && items.some((item) => item && String(item.kind || "") === "translation");
+  }
+
   function overlayRenderMinIntervalMs(payload) {
-    return maxOverlayPayloadTextLength(payload) >= resolveLongTextThreshold()
-      ? OVERLAY_LONG_TEXT_MIN_RENDER_MS
-      : 0;
+    if (maxOverlayPayloadTextLength(payload) >= resolveLongTextThreshold()) {
+      return OVERLAY_LONG_TEXT_MIN_RENDER_MS;
+    }
+    if (payloadHasLiveDraft(payload)) {
+      return OVERLAY_LIVE_DRAFT_MIN_RENDER_MS;
+    }
+    return 0;
   }
 
   function normalizeOverlayPayload(raw) {
@@ -135,6 +157,7 @@
         lang: String(item?.lang || ""),
         slot_id: String(item?.slot_id || ""),
         target_lang: String(item?.target_lang || ""),
+        is_live_draft: item?.is_live_draft === true,
       })),
       style: current.style && typeof current.style === "object" ? current.style : {},
     };
@@ -145,6 +168,7 @@
       kind: item.kind || "source",
       text: item.text || "",
       style_slot: item.style_slot || "",
+      is_live_draft: item.is_live_draft === true,
     }));
   }
 
@@ -348,6 +372,7 @@
       lang: item.lang || "",
       slot_id: item.slot_id || "",
       target_lang: item.target_lang || "",
+      is_live_draft: item.is_live_draft === true,
     });
     const completedItems = overlayState.completedItems.map(normalizeItem);
     // partial_only with live-partial MT: the backend rows (growing source +
@@ -472,12 +497,21 @@
           lang: item.lang || "",
           slot_id: item.slot_id || "",
           target_lang: item.target_lang || "",
+          is_live_draft: item.is_live_draft === true,
         }));
     } else {
       overlayState.completedItems = [];
     }
     overlayState.livePartialItems = lifecycleState === "partial_only"
-      ? visibleItems.filter((item) => item && item.text)
+      ? visibleItems.filter((item) => item && item.text).map((item) => ({
+          kind: item.kind || "source",
+          text: item.text || "",
+          style_slot: item.style_slot || "",
+          lang: item.lang || "",
+          slot_id: item.slot_id || "",
+          target_lang: item.target_lang || "",
+          is_live_draft: item.is_live_draft === true,
+        }))
       : [];
     if (lifecycleState === "idle" && !hasRenderableOverlayContent(payload)) {
       clearOverlayPresentation("idle empty overlay");

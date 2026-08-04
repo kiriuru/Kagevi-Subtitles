@@ -6,6 +6,7 @@ mod ipc_pump;
 mod local_asr;
 mod shell;
 mod tts;
+mod updater_staging;
 
 #[cfg(windows)]
 mod webview2_gate;
@@ -41,6 +42,18 @@ struct AppState {
     project_root: PathBuf,
     /// Keeps the tokio runtime alive for the embedded HTTP server task.
     _http_runtime: tokio::runtime::Runtime,
+}
+
+#[tauri::command]
+fn prepare_updater_staging(state: State<'_, AppState>) -> Result<String, String> {
+    let path = updater_staging::prepare_updater_staging(&state.project_root)?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn abort_updater_staging(state: State<'_, AppState>) -> Result<(), String> {
+    updater_staging::abort_updater_staging(&state.project_root);
+    Ok(())
 }
 
 #[tauri::command]
@@ -120,6 +133,9 @@ pub fn run() {
     let project_root = discover_project_root();
     let paths = ProjectPaths::discover(&project_root);
     ensure_runtime_data_dirs(&paths).expect("failed to ensure runtime user-data/logs directories");
+    // Updater stages NSIS under project root; leftovers are removed on the next launch
+    // (cannot delete while the installer is still reading the file).
+    let _ = updater_staging::cleanup_updater_staging(&project_root);
     set_config_full_logging_enabled(read_full_logging_enabled_from_user_data(
         &paths.user_data_dir,
     ));
@@ -196,7 +212,11 @@ pub fn run() {
 
     let webview_memory = Mutex::new(WebviewMemoryManager::default());
 
+    // Windows updater quits the app before NSIS runs. Dashboard calls /api/runtime/stop
+    // before downloadAndInstall; CloseRequested path still does a full graceful shutdown.
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
             runtime: runtime_service,
             handle: Mutex::new(Some(handle)),
@@ -215,6 +235,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_loopback_api_token,
             get_runtime_state_snapshot,
+            prepare_updater_staging,
+            abort_updater_staging,
             set_dashboard_layout,
             tts::tts_get_config,
             tts::tts_set_provider,

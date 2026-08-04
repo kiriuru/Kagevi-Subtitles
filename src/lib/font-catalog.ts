@@ -95,30 +95,44 @@ export function fontOptions(catalog: FontCatalog | null): FontCatalogEntry[] {
   ];
 }
 
-const FONT_SCRIPT_KEY: Record<FontScriptTag, string> = {
-  latin: "style.font.script.latin",
-  cyrillic: "style.font.script.cyrillic",
-  japanese: "style.font.script.japanese",
-  chinese: "style.font.script.chinese",
-  korean: "style.font.script.korean",
+/** Native-script alphabet tags so picker preview shows script coverage in the right glyphs. */
+export const FONT_SCRIPT_NATIVE_LABEL: Record<FontScriptTag, string> = {
+  latin: "Latin",
+  cyrillic: "Кириллица",
+  japanese: "日本語",
+  chinese: "中文",
+  korean: "한국어",
 };
 
-/** e.g. `Oswald Bold · Latin` / `Noto Sans Regular · Latin · Cyrillic` (same ` · ` as OBS translation modes). */
+export function fontScriptNativeLabels(scripts?: FontScriptTag[]): string[] {
+  if (!Array.isArray(scripts)) return [];
+  return scripts
+    .map((tag) => FONT_SCRIPT_NATIVE_LABEL[tag])
+    .filter(Boolean);
+}
+
+/** CSS `font-family` for a catalog entry or primary token (quoted face + generic fallback). */
+export function fontFamilyCssStack(family: string): string {
+  const primary = extractPrimaryFontFamily(family);
+  if (!primary) return "";
+  return `${primary}, ui-sans-serif, sans-serif`;
+}
+
+/** e.g. `Oswald Bold · Latin` / `Noto Sans Regular · Latin · Кириллица` (middle-dot separators). */
 export function formatFontOptionLabel(
   font: Pick<FontCatalogEntry, "label" | "scripts">,
-  tr: (key: string) => string,
 ): string {
   const label = String(font.label || "").trim();
   if (!label) return "";
-  const scripts = Array.isArray(font.scripts)
-    ? font.scripts
-        .map((tag) => FONT_SCRIPT_KEY[tag as FontScriptTag])
-        .filter(Boolean)
-        .map((key) => tr(key))
-        .filter(Boolean)
-    : [];
+  const scripts = fontScriptNativeLabels(font.scripts as FontScriptTag[] | undefined);
   if (!scripts.length) return label;
   return `${label} · ${scripts.join(" · ")}`;
+}
+
+export function primaryFontFamiliesMatch(a: string, b: string): boolean {
+  const left = extractPrimaryFontFamily(a).replace(/"/g, "").trim().toLowerCase();
+  const right = extractPrimaryFontFamily(b).replace(/"/g, "").trim().toLowerCase();
+  return Boolean(left) && left === right;
 }
 
 export function extractPrimaryFontFamily(chain: string): string {

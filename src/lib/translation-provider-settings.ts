@@ -60,6 +60,7 @@ export function defaultTranslationProviderSettings(): ProviderSettingsMap {
       override_prompt: "false",
     },
     microsoft_edge: {},
+    bing_translator: {},
     free_web_translate: {},
     baidu_translate: {
       app_id: "",
@@ -114,7 +115,8 @@ export function normalizeTranslationProviderSettings(
     if (
       providerName === "google_web" ||
       providerName === "free_web_translate" ||
-      providerName === "microsoft_edge"
+      providerName === "microsoft_edge" ||
+      providerName === "bing_translator"
     ) {
       normalized[providerName] = {};
       continue;

@@ -1,5 +1,6 @@
 mod azure;
 mod baidu;
+mod bing_translator;
 mod caiyun;
 mod crypto_util;
 mod deepl;
@@ -25,6 +26,7 @@ use thiserror::Error;
 
 pub use azure::AzureTranslatorProvider;
 pub use baidu::BaiduTranslateProvider;
+pub use bing_translator::BingTranslatorProvider;
 pub use caiyun::CaiyunTranslatorProvider;
 pub use deepl::{DeepLProvider, resolve_deepl_api_url};
 pub use experimental_google_web::{FreeWebTranslateProvider, GoogleWebProvider};
@@ -55,6 +57,7 @@ pub const SUPPORTED_PROVIDERS: &[&str] = &[
     "lm_studio",
     "ollama",
     "microsoft_edge",
+    "bing_translator",
     "free_web_translate",
     "baidu_translate",
     "youdao_translate",
@@ -209,6 +212,10 @@ pub fn build_default_registry(
     registry.insert(
         "microsoft_edge".into(),
         Arc::new(MicrosoftEdgeProvider::new(transport.clone())),
+    );
+    registry.insert(
+        "bing_translator".into(),
+        Arc::new(BingTranslatorProvider::new(transport.clone())),
     );
     registry.insert(
         "free_web_translate".into(),

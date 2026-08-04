@@ -65,12 +65,17 @@ export function classifyPartialTransition(currentText, previousText, sharedLengt
   return "revision";
 }
 
+/** OBS Browser Source paint policy (also used by dashboard live preview). */
+export function usesObsPaintPolicy(options) {
+  return Boolean(options?.overlay || options?.obsPaintPolicy);
+}
+
 export function resolveFreshFragmentEffect(slotEffect, options, deltaLength) {
   let base = String(slotEffect || "none");
   if (base === "none") {
     return "none";
   }
-  if (!options?.overlay) {
+  if (!usesObsPaintPolicy(options)) {
     return base;
   }
   if (deltaLength > OVERLAY_MAX_ANIMATED_DELTA_CHARS) {
@@ -87,7 +92,7 @@ export function resolveFreshFragmentEffect(slotEffect, options, deltaLength) {
 export function _transientSurfaceClassName(entry, options) {
   const slot = entry.style_slot || "source";
   const base = `subtitle-line__surface subtitle-slot-${slot} effect-none`;
-  if (options?.overlay && String(entry.text || "").length >= OVERLAY_DENSE_PARTIAL_CHARS) {
+  if (usesObsPaintPolicy(options) && String(entry.text || "").length >= OVERLAY_DENSE_PARTIAL_CHARS) {
     return `${base} is-dense-partial`;
   }
   return base;

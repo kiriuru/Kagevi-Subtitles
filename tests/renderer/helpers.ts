@@ -28,6 +28,7 @@ export type SubtitleStyleRenderer = {
     options: Record<string, unknown> | undefined,
     deltaLength: number,
   ) => string;
+  usesObsPaintPolicy?: (options?: Record<string, unknown>) => boolean;
   disposeRenderContainer: (container: HTMLElement) => void;
   normalizeBaseStyle?: (raw: Record<string, unknown>) => Record<string, unknown>;
   buildCssVariables?: (

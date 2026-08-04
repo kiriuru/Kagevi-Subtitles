@@ -143,6 +143,27 @@ fn overlay_presentation_forwards_style_slot_identity() {
 }
 
 #[test]
+fn overlay_forwards_is_live_draft_for_translation_fast_path() {
+    let source = read_workspace_file("bin/overlay/overlay.js");
+    assert_contains(
+        &source,
+        "is_live_draft: item?.is_live_draft === true",
+        "normalizeOverlayPayload must keep is_live_draft",
+    );
+    assert_contains(
+        &source,
+        "is_live_draft: item.is_live_draft === true",
+        "presentation payload must forward is_live_draft",
+    );
+    assert_contains(
+        &source,
+        "OVERLAY_LIVE_DRAFT_MIN_RENDER_MS",
+        "live-draft coalesce interval",
+    );
+    assert_contains(&source, "payloadHasLiveDraft", "live-draft coalesce gate");
+}
+
+#[test]
 fn overlay_clears_dom_when_idle_arrives_after_state_already_cleared() {
     let source = read_workspace_file("bin/overlay/overlay.js");
     assert_contains(&source, "hasVisibleRenderedFrame", "rendered frame probe");

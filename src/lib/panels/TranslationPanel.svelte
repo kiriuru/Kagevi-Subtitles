@@ -109,8 +109,8 @@
     emit(draft);
   }
 
-  function fieldLabel(field: string): string {
-    return getProviderFieldLabel(editingProvider, field, (key) => tr(key));
+  function fieldLabel(field: string, localeCode: typeof loc = loc): string {
+    return getProviderFieldLabel(editingProvider, field, (key) => t(key, undefined, localeCode));
   }
 
   function updateProviderSetting(field: string, value: string) {
@@ -501,7 +501,7 @@
                 <p class="muted translation-line-note">
                   {tr("translation.line.missing_settings", {
                     fields: missing
-                      .map((field) => getProviderFieldLabel(providerName, field, (key) => tr(key)))
+                      .map((field) => getProviderFieldLabel(providerName, field, (key) => t(key, undefined, loc)))
                       .join(", "),
                   })}
 
@@ -570,7 +570,7 @@
             </label>
             {#if promptOverrideEnabled}
               <label class="stack-field translation-provider-field">
-                <span>{fieldLabel(field)}</span>
+                <span>{fieldLabel(field, loc)}</span>
                 <textarea
                   class="control translation-prompt"
                   rows="4"
@@ -583,7 +583,7 @@
             {/if}
           {:else}
             <label class="stack-field translation-provider-field">
-              <span>{fieldLabel(field)}</span>
+              <span>{fieldLabel(field, loc)}</span>
               <textarea
                 class="control translation-prompt"
                 rows="4"
@@ -598,11 +598,11 @@
 
           <div class="translation-secret-row">
             <label class="stack-field translation-provider-field grow">
-              <span>{fieldLabel(field)}</span>
+              <span>{fieldLabel(field, loc)}</span>
               <input
                 class="control"
                 type={apiKeyVisible ? "text" : "password"}
-                placeholder={getProviderFieldPlaceholder(editingProvider, field) || fieldLabel(field)}
+                placeholder={getProviderFieldPlaceholder(editingProvider, field) || fieldLabel(field, loc)}
                 value={getProviderSetting(editingProvider, providerSettings, field)}
                 on:input={(e) => updateProviderSetting(field, (e.currentTarget as HTMLInputElement).value)}
               />
@@ -618,11 +618,11 @@
 
           <div class="translation-model-row">
             <label class="stack-field translation-provider-field grow">
-              <span>{fieldLabel(field)}</span>
+              <span>{fieldLabel(field, loc)}</span>
               <input
                 class="control"
                 type="text"
-                placeholder={getProviderFieldPlaceholder(editingProvider, field) || fieldLabel(field)}
+                placeholder={getProviderFieldPlaceholder(editingProvider, field) || fieldLabel(field, loc)}
                 value={getProviderSetting(editingProvider, providerSettings, field)}
                 on:input={(e) => updateProviderSetting(field, (e.currentTarget as HTMLInputElement).value)}
               />
@@ -678,11 +678,11 @@
         {:else}
 
           <label class="stack-field translation-provider-field">
-            <span>{fieldLabel(field)}</span>
+            <span>{fieldLabel(field, loc)}</span>
             <input
               class="control"
               type="text"
-              placeholder={getProviderFieldPlaceholder(editingProvider, field) || fieldLabel(field)}
+              placeholder={getProviderFieldPlaceholder(editingProvider, field) || fieldLabel(field, loc)}
               value={getProviderSetting(editingProvider, providerSettings, field)}
               on:input={(e) => updateProviderSetting(field, (e.currentTarget as HTMLInputElement).value)}
             />

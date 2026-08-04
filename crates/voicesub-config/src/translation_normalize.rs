@@ -6,7 +6,7 @@ use crate::secrets::{
     normalize_google_translate_api_key, normalize_provider_secret, normalize_provider_text_value,
 };
 
-pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 17] = [
+pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 18] = [
     "google_translate_v2",
     "google_cloud_translation_v3",
     "google_gas_url",
@@ -19,6 +19,7 @@ pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 17] = [
     "lm_studio",
     "ollama",
     "microsoft_edge",
+    "bing_translator",
     "free_web_translate",
     "baidu_translate",
     "youdao_translate",
@@ -125,6 +126,7 @@ pub fn default_translation_provider_settings() -> Value {
             "override_prompt": "false"
         },
         "microsoft_edge": {},
+        "bing_translator": {},
         "free_web_translate": {},
         "baidu_translate": {
             "app_id": "",
@@ -209,7 +211,7 @@ fn normalize_provider_block(
             )
         }),
         "google_cloud_translation_v3" => normalize_google_v3(current, defaults),
-        "google_web" | "free_web_translate" | "microsoft_edge" => json!({}),
+        "google_web" | "free_web_translate" | "microsoft_edge" | "bing_translator" => json!({}),
         "azure_translator" => {
             let endpoint = str_value(normalized.get("endpoint"));
             let endpoint = if endpoint.is_empty() {
@@ -783,9 +785,11 @@ mod tests {
     #[test]
     fn keyless_providers_normalize_to_empty_settings_blocks() {
         let out = normalize_translation_provider_settings(&json!({
-            "microsoft_edge": { "api_url": "https://example.invalid" }
+            "microsoft_edge": { "api_url": "https://example.invalid" },
+            "bing_translator": { "api_key": "should-drop" }
         }));
         assert_eq!(out["microsoft_edge"], json!({}));
+        assert_eq!(out["bing_translator"], json!({}));
         assert_eq!(out["free_web_translate"], json!({}));
         assert!(out.get("public_libretranslate_mirror").is_none());
     }

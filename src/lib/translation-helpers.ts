@@ -1,4 +1,4 @@
-import { PROVIDER_GROUP_I18N_KEYS, PROVIDERS, type ProviderId } from "./constants";
+import { LANGUAGES, PROVIDER_GROUP_I18N_KEYS, PROVIDERS, type ProviderId } from "./constants";
 import { t } from "./i18n";
 import type { ConfigPayload, LocaleCode, TranslationLine } from "./types";
 
@@ -229,6 +229,46 @@ export function getSubtitleSlotLabel(slotId: string, localeCode?: LocaleCode): s
   if (normalized === "source") return t("common.source", undefined, localeCode);
   if (/^translation_[1-5]$/.test(normalized)) return t(`obs.output.${normalized}`, undefined, localeCode);
   return normalized || t("common.unknown", undefined, localeCode);
+}
+
+/** Localized language name for a target-lang code (e.g. `ru` → «Русский»). */
+export function languageDisplayLabel(code: string, localeCode?: LocaleCode): string {
+  const normalized = String(code || "").trim().toLowerCase();
+  const entry = LANGUAGES.find((item) => item.code === normalized);
+  return entry ? t(entry.labelKey, undefined, localeCode) : normalized.toUpperCase() || "?";
+}
+
+/**
+ * UI label for OBS output-mode options and style override tabs.
+ * Pass `localeCode` from the template (`loc`) so Svelte re-renders on locale change.
+ */
+export function formatOutputSlotLabel(
+  slotOrMode: string,
+  config: ConfigPayload,
+  localeCode?: LocaleCode,
+  options?: { inactive?: boolean },
+): string {
+  const normalized = String(slotOrMode || "").trim();
+  if (normalized === "source") {
+    return t("common.source", undefined, localeCode);
+  }
+  if (/^translation_[1-4]$/.test(normalized)) {
+    const line = getLineCards(config).find((entry) => entry.slot_id === normalized);
+    const key = options?.inactive
+      ? "obs.output.translation_inactive"
+      : "obs.output.translation_active";
+    return t(
+      key,
+      {
+        number: String(getSlotNumber(normalized) || "?"),
+        lang: languageDisplayLabel(String(line?.target_lang || line?.label || ""), localeCode),
+      },
+      localeCode,
+    );
+  }
+  const i18nKey = `obs.output.${normalized}`;
+  const translated = t(i18nKey, undefined, localeCode);
+  return translated === i18nKey ? normalized : translated;
 }
 
 function orderedSlots(config: ConfigPayload): string[] {

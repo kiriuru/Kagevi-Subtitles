@@ -43,8 +43,11 @@
       return;
     }
 
+    // Match OBS paint policy (blur/glow→fade, dense-partial, delta caps) without
+    // `overlay: true`, which would strip the dashboard preview chrome shell.
     const result = renderer.render(previewEl, previewPayload, {
       surface: "dashboard",
+      obsPaintPolicy: true,
     }) as { empty?: boolean } | undefined;
     // Match OBS overlay contract: empty render must tear down fast-path state
     // or the last subtitle frame / min-height shell can stick in the preview.

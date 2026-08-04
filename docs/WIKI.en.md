@@ -95,9 +95,9 @@ No Python or Node.js is required to run the installed app.
 
 1. Run `Kagevi Subtitles_0.6.2_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
 2. Open **Kagevi Subtitles.exe**.
-3. To update later: close the app → install the new setup over the old one. Your settings in `user-data/` stay put.
+3. Later updates: the dashboard can show an **update banner**. **Install update** downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in `user-data/` stay put.
 
-The dashboard can show an **update banner** when a newer GitHub release exists. **Download** opens the release page (the app does not auto-install updates).
+Manual **Download** / release-page links remain available if you prefer not to install from inside the app.
 
 ### Useful local addresses
 
@@ -129,7 +129,7 @@ The dashboard can show an **update banner** when a newer GitHub release exists. 
 3. On the **Live** tab, pick recognition:
    - **Web Speech** (default) — Chrome will open when you Start.
    - **Local ASR** — only appears after setup is finished (see [Local ASR](#local-asr)).
-4. Optional: open **Translation**, turn translation on, enable at least one line, pick a provider (three work with **no API key** — see below).
+4. Optional: open **Translation**, turn translation on, enable at least one line, pick a provider (four work with **no API key** — see below).
 5. Optional: open **Subtitles** / **Style** to set preset, TTL, fonts, and colors.
 6. Press **Start**.
 7. Speak — check the Live preview, then check OBS.
@@ -190,7 +190,7 @@ You only need **one** path at a time.
 
 - [ ] **Translation** tab → translation is enabled.
 - [ ] At least one translation line is enabled.
-- [ ] Provider needs a key? Add it under provider settings. Or switch to a **keyless** provider (Google Web, Free Web Translate, Microsoft Edge).
+- [ ] Provider needs a key? Add it under provider settings. Or switch to a **keyless** provider (Google Web, Free Web Translate, Bing Translator; Microsoft Edge may return **HTTP 404**).
 - [ ] Look at translation results / errors on the same tab — delays can also mean a newer phrase cancelled an older request (normal).
 
 ### OBS is empty
@@ -369,7 +369,7 @@ Offline speech recognition on your machine (Parakeet + ONNX). No Chrome worker w
 3. When the module is **ready**, close the window if you like — settings stay in `user-data/modules/local-asr/`.
 4. On **Live**, choose **Local ASR**, then **Start**.
 
-CPU is enough for Live. CUDA is optional (faster on supported NVIDIA GPUs after extra downloads).
+CPU is enough for Live. CUDA is optional (faster on supported NVIDIA GPUs after extra downloads). For CUDA pick **fp16** or **fp32** models — **int8** stays on CPU.
 
 ### After changing VAD / realtime options
 
@@ -411,9 +411,10 @@ Good starting points if you do not want cloud accounts:
 | --- | --- |
 | **Google Web** | Free browser-style Google path |
 | **Free Web Translate** | Separate free Google path (own rate limits) |
-| **Microsoft Edge Translate** | Anonymous Edge / Azure-quality path |
+| **Microsoft Edge Translate** | Anonymous Edge / Azure-quality path when it works. May fail with **HTTP 404** if Microsoft blocks the endpoint — switch to Bing / Google Web. |
+| **Bing Translator** | Keyless Bing web session (`ttranslatev3`) |
 
-There are **17** providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local `config.toml`.
+There are **18** providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local `config.toml`.
 
 ### Cache
 
@@ -441,7 +442,7 @@ A finished subtitle **stays** until the **next** phrase finishes. Late translati
 | Setting | In plain words |
 | --- | --- |
 | Overlay preset | How rows are stacked: **single**, **dual-line**, or **stacked**. Compact spacing is a separate toggle. OBS URL can override with `?preset=…&compact=1`. |
-| Visibility | Show source, show translations, max translation lines on screen. |
+| Visibility | Show source and translations. How many translation lines appear follows the **enabled** Translation lines (no separate max-lines control). |
 | TTL / lifetime | How long a finished line stays after speech stops. |
 | Line order | Order for preview, OBS overlay, and “first visible line” Closed Captions. |
 
@@ -460,8 +461,9 @@ A finished subtitle **stays** until the **next** phrase finishes. Late translati
 </p>
 
 - Pick a built-in preset or customize fonts, size, outline, shadow, background, alignment.
+- Font picker shows each face in its own typeface; alphabet tags stay in native scripts (`Latin`, `Кириллица`, `日本語`, …) so CJK / Latin-only coverage is obvious.
 - Effects include fade, slide, zoom, glow, and similar.
-- Style **source** and each **translation_1…4** separately if you want.
+- Style **source** and each **enabled** `translation_1…4` separately if you want (tabs only for active lines).
 - Live preview and OBS share the same look — Save (or Start) after edits.
 
 <p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
@@ -504,7 +506,9 @@ Sends captions into OBS via WebSocket (handy for platforms that surface CC, e.g.
 
 - Enable in the OBS tab; set host / port / password to match OBS WebSocket v5.
 - Choose what to send: live source, finals only, a translation line (`translation_1`…`translation_4`), or the first visible line.
+- Optional: send **live-partial translations** in `translation_*` modes (`send_translation_partials`; throttled like source). Finals still cover LLM / providers without partials.
 - Native stream captions only work while OBS is actually streaming.
+- Twitch native CC is reliable for **Latin** scripts; Cyrillic / CJK usually need the **browser overlay** instead.
 - Debug mirror can push text into an OBS text source for testing.
 
 <p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
@@ -589,7 +593,7 @@ The Google TTS helper binary is bundled under the TTS module runtime — you do 
 <details>
 <summary><strong>Deep diagnostics (advanced)</strong></summary>
 
-Turn on full logging in Settings / config (`logging.full_enabled`) or set `VOICESUB_DEEP_DIAGNOSTICS=1`. Extra JSONL traces can be enabled with `VOICESUB_TRACE_*` variables. Only needed when hunting a tough bug.
+Turn on full logging in Settings / config (`logging.full_enabled`) or set `VOICESUB_DEEP_DIAGNOSTICS=1`. Extra JSONL traces can be enabled with `VOICESUB_TRACE_*` variables. Detailed Tools metrics / Local ASR decode counters need `logging.runtime_metrics_enabled` (off by default). Only needed when hunting a tough bug.
 
 </details>
 

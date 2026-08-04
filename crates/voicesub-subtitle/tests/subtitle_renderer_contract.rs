@@ -131,10 +131,38 @@ fn compose_render_rows_marks_completed_with_partial_source_as_transient() {
         "String(item.text || \"\") === activePartialText",
         "transient source text match",
     );
+    // Completed previous-phrase MT must not use the source-partial gate.
     assert_not_contains(
         &source,
         "item.kind === \"translation\" && livePartialSourceInVisibleItems",
-        "translation transient guard",
+        "translation must not inherit source-partial transient gate",
+    );
+}
+
+#[test]
+fn compose_render_rows_marks_live_draft_translations_as_transient() {
+    let source = subtitle_style_js();
+    assert_contains(&source, "isLiveDraftTranslation", "live draft translation gate");
+    assert_contains(&source, "item.is_live_draft === true", "is_live_draft flag");
+    assert_contains(
+        &source,
+        "isLivePartialSource || isLiveDraftTranslation",
+        "transient combines source partial + draft MT",
+    );
+}
+
+#[test]
+fn shape_signature_omits_completed_text_for_in_place_patches() {
+    let source = subtitle_style_js();
+    let body = slice_from_function(&source, "_shapeSignatureForEntry", 800);
+    assert!(
+        body.contains("\"T\"") && body.contains("\"C\""),
+        "shape signature must distinguish transient vs completed"
+    );
+    // Completed branch must not embed entry.text (enables fast-path text patches).
+    assert!(
+        !body.contains("String(entry.text || \"\")"),
+        "_shapeSignatureForEntry must omit completed text from the fingerprint"
     );
 }
 

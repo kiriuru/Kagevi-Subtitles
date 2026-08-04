@@ -14,6 +14,29 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-08-04
+
+### Added
+
+- In-app auto-update via official `tauri-plugin-updater` (free minisign signatures, no paid Authenticode): banner **Install update** → download/install NSIS → relaunch; `latest.json` on GitHub Releases; keys under `secrets/` (gitignored).
+- Unified updater release path: `npm run version:bump` → `npm run release` (`build-release.ps1` + `release:github`); GitHub-safe artifact names; `scripts/updater-release-lib.mjs`.
+- Translation provider **`bing_translator`** (Bing Translator, no API key) — `bing.com/translator` → `ttranslatev3`.
+- Style → font picker: custom `FontFamilyPicker` — each list row renders in its own typeface; English family names, alphabet tags in native scripts (`Latin`, `Кириллица`, `日本語`, `中文`, `한국어`).
+
+### Changed
+
+- Style → font picker: alphabet tags no longer follow UI locale — always shown in the matching script so CJK / Latin-only coverage is visible at a glance.
+- Desktop updater: NSIS installer is staged under the install/project root (not `%TEMP%`); leftovers are deleted on the next launch after a successful update (or immediately on a failed attempt).
+- Docs / UI: `microsoft_edge` marked unreliable — Microsoft’s anonymous Edge path can fail with **HTTP 404**; prefer Bing / Google Web when it breaks.
+
+### Fixed
+
+- OBS overlay: live-partial translation flicker — `is_live_draft` is forwarded into the renderer so draft MT uses the transient/fast path (like source); completed-text changes patch in place without remount; entrance effects start at opacity ≥0.85; dashboard preview uses the same OBS paint policy (`obsPaintPolicy`); ~40 ms coalesce while drafts are visible; glow keyframes drop `color-mix` for older OBS CEF.
+- UI locale: style slot tabs (“Translation 1 · Russian”) and OBS Output mode options update immediately when the interface language changes, without a page reload; same for Modules badges and Translation provider field labels.
+- Update check: dashboard no longer force-polls GitHub again on bootstrap (reuses the runtime startup check).
+- Style → font picker: dropdown list uses an opaque surface (glass tokens previously showed through underlying form fields).
+- Style (base and slot override): all fields (font, colors, alignment, effect, metrics) update in the UI immediately after edits — no dashboard reload (Svelte 5 + reactive `resolveStyleFields`).
+
 ## [0.6.2] - 2026-08-02
 
 ### Added
@@ -414,7 +437,8 @@ First VoiceSub release (successor to SST Desktop `0.4.4`). Stack and delivery ar
 
 Earlier `0.2.9.*` SST Desktop history lives in archived GitHub release notes and is not expanded here.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0

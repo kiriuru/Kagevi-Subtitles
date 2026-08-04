@@ -79,7 +79,25 @@ export function shouldAnimateEntry(entry, previousEntrySignatures) {
   if (entry.transient) {
     return false;
   }
-  return !previousEntrySignatures.has(renderEntrySignature(entry));
+  if (previousEntrySignatures.has(renderEntrySignature(entry))) {
+    return false;
+  }
+  // Translation slots: replay entrance only on first appearance of the slot.
+  // Text supersession / late revise must not blink the line from opacity 0.
+  if ((entry.kind || "source") === "translation") {
+    const slotPrefix = [
+      "completed",
+      entry.style_slot || "source",
+      entry.kind || "source",
+      entry.lang || "",
+    ].join("\u001f");
+    for (const signature of previousEntrySignatures) {
+      if (typeof signature === "string" && signature.startsWith(`${slotPrefix}\u001f`)) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 export function applyStyleMap(element, styleMap) {

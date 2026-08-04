@@ -31,15 +31,28 @@ describe("normalizeOverlayPayload", () => {
           slot_id: "source",
           target_lang: "en",
         },
+        {
+          kind: "translation",
+          text: "hola",
+          style_slot: "translation_1",
+          is_live_draft: true,
+        },
       ],
     });
-    expect(out.visible_items).toHaveLength(1);
+    expect(out.visible_items).toHaveLength(2);
     expect(out.visible_items[0]).toMatchObject({
       kind: "source",
       text: "hello",
       slot_id: "source",
       target_lang: "en",
       style_slot: "",
+      is_live_draft: false,
+    });
+    expect(out.visible_items[1]).toMatchObject({
+      kind: "translation",
+      text: "hola",
+      style_slot: "translation_1",
+      is_live_draft: true,
     });
   });
 

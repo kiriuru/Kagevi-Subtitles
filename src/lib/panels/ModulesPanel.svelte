@@ -36,6 +36,12 @@
     asrSnapshot?.activeModelFamily,
     asrSnapshot?.activeModelVariant,
   );
+  $: asrBadgeLabel = !asrReady
+    ? tr("tools.local_asr.badge.setup")
+    : asrUsesCuda
+      ? tr("tools.local_asr.badge.cuda_ready")
+      : tr("tools.local_asr.badge.cpu_ready");
+  $: asrPhaseLabel = asrPhase ? tr(`tools.local_asr.phase.${asrPhase}`) : "";
 
   onMount(() => {
     void refreshAsrBadge();
@@ -79,13 +85,6 @@
     }
   }
 
-  function badgeLabel(): string {
-    if (!asrReady) return tr("tools.local_asr.badge.setup");
-    return asrUsesCuda
-      ? tr("tools.local_asr.badge.cuda_ready")
-      : tr("tools.local_asr.badge.cpu_ready");
-  }
-
   async function handleOpenTts() {
     ttsBusy = true;
     ttsStatus = "";
@@ -113,11 +112,6 @@
     } finally {
       asrBusy = false;
     }
-  }
-
-  function phaseLabel(phase: string): string {
-    if (!phase) return "";
-    return tr(`tools.local_asr.phase.${phase}`);
   }
 </script>
 
@@ -158,12 +152,12 @@
       class:modules-badge--ready={asrReady}
       class:modules-badge--cuda={asrReady && asrUsesCuda}
     >
-      {badgeLabel()}
+      {asrBadgeLabel}
       {#if asrReady}
         <span class="muted"> · {asrModelLabel}</span>
       {/if}
-      {#if asrPhase}
-        <span class="muted"> · {phaseLabel(asrPhase)}</span>
+      {#if asrPhaseLabel}
+        <span class="muted"> · {asrPhaseLabel}</span>
       {/if}
     </p>
     <div class="modules-action-row">

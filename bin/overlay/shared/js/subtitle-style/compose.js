@@ -59,20 +59,11 @@ export function composeRenderRows(payload) {
     return [];
   }
 
-  // When the backend lifecycle state is "completed_with_partial" — i.e. the
-  // PREVIOUS phrase's completed translation is still visible while the
-  // NEXT phrase is being typed — the presentation layer mixes the live
-  // partial text into `visible_items[source]` instead of leaving the old
-  // completed source there. Without explicitly marking that source entry
-  // as transient here, the renderer treats every keystroke as a brand
-  // new completed entry: the shape signature changes on every frame,
-  // the fast path bails to the slow path, a fresh surface is created,
-  // and the completion animation fires repeatedly. That's the
-  // "когда появляется перевод, исходник постоянно перерендерится"
-  // regression. Translations keep their completed semantics because
-  // they appear once per phrase and don't need typewriter-incremental
-  // treatment (matches the explicit user request to leave translations
-  // on the old logic).
+  // Source: completed_with_partial / partial_only rows that match the live
+  // ASR partial must be transient (typewriter path). Translations: only
+  // live drafts (`is_live_draft` or any translation during partial_only —
+  // those rows are drafts by contract). Previous-phrase completed MT in
+  // completed_with_partial stays non-transient so it does not re-animate.
   const livePartialSourceInVisibleItems =
     (payload?.lifecycle_state === "completed_with_partial" || isPartialOnly)
     && activePartialText.length > 0;
@@ -86,12 +77,15 @@ export function composeRenderRows(payload) {
       livePartialSourceInVisibleItems
       && item.kind === "source"
       && String(item.text || "") === activePartialText;
+    const isLiveDraftTranslation =
+      item.kind === "translation"
+      && (item.is_live_draft === true || isPartialOnly);
     return {
       kind: item.kind || "source",
       lang: item.lang || "",
       text: item.text || "",
       style_slot: slotName,
-      transient: isLivePartialSource,
+      transient: isLivePartialSource || isLiveDraftTranslation,
     };
   });
 

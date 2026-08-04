@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   clampStrokeWidthPx,
+  resolveStyleFieldValue,
+  resolveStyleFields,
   STYLE_BASE_DEFAULTS,
   STROKE_WIDTH_MAX,
   toCssColorInput,
@@ -52,5 +54,37 @@ describe("style field utils", () => {
     for (const key of required) {
       expect(STYLE_BASE_DEFAULTS[key], key).toBeDefined();
     }
+  });
+
+  it("resolves base fields from the active style record", () => {
+    expect(
+      resolveStyleFieldValue("font_size_px", { font_size_px: 42 }, { fallback: 30 }),
+    ).toBe(42);
+    expect(resolveStyleFieldValue("fill_color", {}, { fallback: "#ffffff" })).toBe("#ffffff");
+  });
+
+  it("inherits unset slot fields from base except font_family inherit mode", () => {
+    const base = { font_size_px: 36, fill_color: "#ff0000", font_family: '"Base Regular", sans-serif' };
+    const slot = { font_size_px: 48 };
+
+    expect(
+      resolveStyleFieldValue("font_size_px", slot, { inheritFrom: base, fallback: 30 }),
+    ).toBe(48);
+    expect(
+      resolveStyleFieldValue("fill_color", slot, { inheritFrom: base, fallback: "#ffffff" }),
+    ).toBe("#ff0000");
+    expect(
+      resolveStyleFieldValue("font_family", {}, {
+        inheritFrom: base,
+        allowInheritFont: true,
+        fallback: '"Default", sans-serif',
+      }),
+    ).toBe("");
+    expect(
+      resolveStyleFields(slot, { inheritFrom: base, allowInheritFont: true }).font_size_px,
+    ).toBe(48);
+    expect(
+      resolveStyleFields(slot, { inheritFrom: base, allowInheritFont: true }).fill_color,
+    ).toBe("#ff0000");
   });
 });

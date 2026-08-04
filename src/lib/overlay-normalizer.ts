@@ -33,6 +33,7 @@ export function normalizeOverlayPayload(
       provider: String((item as { provider?: string })?.provider || ""),
       text: String((item as { text?: string })?.text || ""),
       style_slot: String((item as { style_slot?: string })?.style_slot || ""),
+      is_live_draft: (item as { is_live_draft?: unknown })?.is_live_draft === true,
     })),
     style: current.style && typeof current.style === "object" ? { ...(current.style as object) } : {},
   };

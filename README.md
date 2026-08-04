@@ -45,7 +45,7 @@ First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.2`**.
 | Area | What you get |
 | --- | --- |
 | **Speech** | Google Chrome Web Speech worker, or offline Local ASR (Parakeet / ONNX, CPU or CUDA) |
-| **Translation** | 17 providers (incl. Baidu / Youdao / Tencent / Caiyun), up to **4** translation lines (source is separate). Optional **realtime** translation for classic MT (off by default). Three need **no API key**: Google Web, Free Web Translate, and Microsoft Edge Translate |
+| **Translation** | 18 providers (incl. Baidu / Youdao / Tencent / Caiyun), up to **4** translation lines (source is separate). Optional **realtime** translation for classic MT (off by default). Four need **no API key**: Google Web, Free Web Translate, Microsoft Edge Translate, and Bing Translator |
 | **OBS** | Browser Source overlay + optional Closed Captions via OBS WebSocket (mainly for Twitch) |
 | **Style** | Animated presets, per-slot styling, theme palette |
 | **TTS** | Native / Sonic playback; subtitle speech + Twitch chat TTS (up to 5 channels) |

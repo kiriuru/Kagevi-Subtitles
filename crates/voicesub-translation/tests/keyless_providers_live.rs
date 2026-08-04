@@ -42,11 +42,20 @@ async fn microsoft_edge_translates_without_api_key() {
 }
 
 #[tokio::test]
-#[ignore = "hits the live Microsoft Edge translate endpoint"]
-async fn microsoft_edge_reuses_cached_token_across_calls() {
+#[ignore = "hits the live Bing Translator endpoint"]
+async fn bing_translator_translates_without_api_key() {
+    let translated = translate_with("bing_translator", "hello world", "ru").await;
+    println!("bing_translator -> {translated}");
+    assert!(!translated.is_empty());
+    assert_ne!(translated, "hello world");
+}
+
+#[tokio::test]
+#[ignore = "hits the live Bing Translator endpoint"]
+async fn bing_translator_reuses_session_across_calls() {
     let transport = SharedHttpClient::new(build_translation_http_client());
     let registry = build_default_registry(transport);
-    let provider = registry.get("microsoft_edge").expect("registered");
+    let provider = registry.get("bing_translator").expect("registered");
     let settings = HashMap::new();
 
     for text in ["first call", "second call"] {
@@ -64,7 +73,7 @@ async fn microsoft_edge_reuses_cached_token_across_calls() {
     }
 
     let diag = provider.diagnostics(&settings);
-    assert_eq!(diag["token_cached"], true);
+    assert_eq!(diag["session_cached"], true);
 }
 
 #[tokio::test]

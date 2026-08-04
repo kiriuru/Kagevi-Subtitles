@@ -26,5 +26,6 @@ describe("dashboard preview contracts (SubtitleOutputPreview)", () => {
     expect(source).toContain("SubtitleStyleRenderer");
     expect(source).toContain("renderer.render(previewEl, previewPayload");
     expect(source).toContain("buildPreviewPayload");
+    expect(source).toContain("obsPaintPolicy: true");
   });
 });

@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 /// Canonical product version — edit here only, then run `npm run version:sync`
 /// (also runs from `npm run build`) to update Cargo / package.json / tauri.conf.json /
 /// `src/lib/project-version.ts`.
-pub const PROJECT_VERSION: &str = "0.6.2";
+pub const PROJECT_VERSION: &str = "0.6.3";
 pub const RELEASE_TRACK: &str = "stable";
 pub const DEFAULT_UPDATE_PROVIDER: &str = "github_releases";
 pub const DEFAULT_RELEASE_CHANNEL: &str = "stable";

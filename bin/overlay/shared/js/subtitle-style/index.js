@@ -22,6 +22,7 @@ import {
   classifyPartialTransition,
   mergeFreshIntoStatic,
   resolveFreshFragmentEffect,
+  usesObsPaintPolicy,
   updateTransientSurfaceInPlace,
 } from "./partials.js";
 import {
@@ -52,6 +53,7 @@ window.SubtitleStyleRenderer = {
   classifyPartialTransition,
   mergeFreshIntoStatic,
   resolveFreshFragmentEffect,
+  usesObsPaintPolicy,
   updateTransientSurfaceInPlace,
   _shapeSignatureForRows,
   _shapeSignatureForEntry,

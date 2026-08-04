@@ -274,7 +274,7 @@ src-tauri (Layer 4: IPC, window, bundle only)
 | `voicesub-types` | `PROJECT_VERSION`, WS envelope types, ASR event DTO |
 | `voicesub-config` | TOML store, defaults, normalize/migrate, paths, bind policy |
 | `voicesub-subtitle` | `SubtitleLifecycleCore`, `SubtitleRouter`, presentation, overlay contract |
-| `voicesub-translation` | `TranslationDispatcher`, `TranslationEngine`, 17 providers |
+| `voicesub-translation` | `TranslationDispatcher`, `TranslationEngine`, 18 providers |
 | `voicesub-browser` | Chrome supervisor, worker launch flags, operational FSM |
 | `voicesub-ws` | `/ws/events` hub, `/ws/asr_worker` hub, event sequence |
 | `voicesub-http` | Re-export `voicesub-runtime::http` (thin) |
@@ -757,7 +757,7 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 **Crate:** `voicesub-translation`  
 **Entry:** `TranslationDispatcher` (`dispatcher.rs`)
 
-### Providers (17)
+### Providers (18)
 
 `SUPPORTED_PROVIDERS` in `providers/mod.rs`:
 
@@ -779,17 +779,19 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 | `google_gas_url` | experimental |
 | `google_web` | experimental |
 | `microsoft_edge` | experimental (keyless) |
+| `bing_translator` | experimental (keyless) |
 | `free_web_translate` | experimental (keyless) |
 
 Provider notes: DeepL maps UI codes (`en`/`zh-cn`/`pt`) to API targets and picks Free vs Pro URL from the key (`:fx` → free) unless a custom `api_url` is set. Google v3 short model ids expand to full resource names. Azure prefers `zh-Hans`/`zh-Hant`; LibreTranslate maps Chinese to `zh`/`zt`. China providers: Baidu / Youdao / Tencent use free monthly quotas after console registration; Caiyun supports zh/en/ja only.
 
-**Keyless providers.** Three providers need no API key and are the free path for users without accounts. They are deliberately on **independent hosts** so a throttle or block on one does not take out the others:
+**Keyless providers.** Four providers need no API key and are the free path for users without accounts. They are deliberately on **independent hosts** so a throttle or block on one does not take out the others:
 
 | ID | Endpoint | Notes |
 | --- | --- | --- |
 | `google_web` | `translate.googleapis.com/translate_a/single?client=gtx` | Google page-widget path |
 | `free_web_translate` | `clients5.google.com/translate_a/t?client=dict-chrome-ex` | Chrome-extension dictionary path; separate throttle bucket from `google_web`. `sl=auto` answers `[[text, lang]]`, an explicit `sl` answers `[text]` — both shapes are parsed |
-| `microsoft_edge` | `edge.microsoft.com/translate/auth` → `api-edge.cognitive.microsofttranslator.com/translate` | Real Azure Translator quality. `GET /translate/auth` returns a short-lived anonymous JWT cached for 7 min in-process; a `401`/`403` clears the cache and retries once. Target codes reuse `azure_lang` (`zh-Hans`/`zh-Hant`); `from` is omitted for auto-detect |
+| `microsoft_edge` | `edge.microsoft.com/translate/auth` → `api-edge.cognitive.microsofttranslator.com/translate` | Real Azure Translator quality via Edge anonymous JWT when the path works. JWT cached 7 min in-process; `401`/`403` clears and retries once. Target codes reuse `azure_lang` (`zh-Hans`/`zh-Hant`); `from` omitted for auto-detect. **Unreliable:** Microsoft may return **HTTP 404** (or otherwise break auth/translate) without notice — fall back to `bing_translator` / `google_web` / `free_web_translate` |
+| `bing_translator` | `bing.com/translator` → `ttranslatev3` | Keyless Bing Translator web session. Scrapes IG/IID + AbusePreventionHelper token (TTL from page, minus skew); concurrent partials share one bootstrap mutex. Target codes reuse `azure_lang`; `fromLang=auto-detect` for auto |
 
 `public_libretranslate_mirror` was **removed**: every keyless public LibreTranslate instance is now offline or refuses API traffic (`translate.fedilab.app` answers `403 Request forbidden by administrative rules` at the edge). Existing configs migrate to `microsoft_edge` — see *Removed providers* below.
 
@@ -857,7 +859,7 @@ Semantics: incremental **full-text** HTTP `translate()` on growing ASR text (Goo
 
 ### Backend config
 
-Subtitle style presets loaded via `/api/settings/load` together with config. Font catalog from `bin/fonts/` + `project-fonts.css` (creative + dramatic/anime-title faces across Latin / Cyrillic / JP / CN / KR — e.g. Dela Gothic One, Rampart One, Metal Mania, Black Ops One, Stalinist One, Yeon Sung, Zhi Mang Xing); pickers show alphabet tags joined with ` · ` (`Latin`, `Cyrillic`, …). Presets that already had Cyrillic stacks include matching CJK fallbacks.
+Subtitle style presets loaded via `/api/settings/load` together with config (built-in catalog from `crates/voicesub-config/data/builtin_style_presets.json` via `include_str!`; legacy `beat_saber` migrates to `streamer_bold`). Font catalog from `bin/fonts/` + `project-fonts.css` (creative + dramatic/anime-title faces across Latin / Cyrillic / JP / CN / KR — e.g. Dela Gothic One, Rampart One, Metal Mania, Black Ops One, Stalinist One, Yeon Sung, Zhi Mang Xing). Dashboard `FontFamilyPicker` renders each list row in its own typeface; alphabet tags use **native scripts** (`Latin`, `Кириллица`, `日本語`, `中文`, `한국어`) and do not follow UI locale. Presets that already had Cyrillic stacks include matching CJK fallbacks. Style slots are `source` + `translation_1`…`translation_4` only (`inferStyleSlot` clamp 1…4).
 
 ### Overlay presets
 
@@ -1031,7 +1033,7 @@ Optional sidecar module (TTS pattern): offline **Parakeet TDT** via ONNX Runtime
 | `user-data/modules/local-asr/config.toml` | model, deps, EP, VAD, realtime presets, mic, recognition | Module UI only |
 | `user-data/config.toml` → `asr.mode` | `browser_google` \| `local_parakeet` | Live tab (when ready) |
 
-Lazy downloads land under `user-data/modules/local-asr/` (models, ORT CPU/GPU DLL, CUDA redist). **Not** bundled in the core NSIS installer.
+Lazy downloads land under `user-data/modules/local-asr/` (models, ORT CPU/GPU DLL, CUDA redist). **Not** bundled in the core NSIS installer. Model catalog includes **fp16** (`grikdotnet/parakeet-tdt-0.6b-fp16`) as a lighter floating-point option for CUDA; **`int8` / `int8_smoothquant` decode stays on CPU** (no CUDA kernels for integer-quant ops) — use **fp16** or **fp32** for GPU.
 
 ### Readiness gate
 
@@ -1124,6 +1126,7 @@ Module produces ready-to-display **partial** or **final** text. Core subtitle/tr
 - `frontendDist`: `../bin/dashboard`
 - `beforeBuildCommand`: `npm run build`
 - Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, languages en/ru/ja/ko/zh)
+- `createUpdaterArtifacts: true` + `plugins.updater` (GitHub `latest.json` endpoint, minisign pubkey, Windows `installMode: passive`)
 - NSIS template: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh`
 - WebView2: `downloadBootstrapper` (silent=false)
 - Resources: `bin/dashboard`, `overlay`, `worker`, `tts`, `local-asr`, `fonts`, `modules`
@@ -1139,11 +1142,17 @@ build-release-msi.bat          # back-compat entry
     1. npm run build (+ build:tts + build:local-asr)
     2. bin\modules\tts\build_runtime.bat (if google_tts_fetch.exe missing)
     3. node scripts/validate-nsis-i18n.mjs
-    4. cargo tauri build (NSIS)
-    5. Copy Kagevi Subtitles_{version}_x64-setup.exe → release_root/v{version}/
+    4. cargo tauri build (NSIS + updater .sig; requires secrets/tauri-updater.key)
+    5. Stage GitHub-safe names → release_root/v{version}/
+    6. latest.json via scripts/generate-updater-manifest.mjs
+    7. optional: npm run release:github  (or build-release.ps1 -PublishGitHub)
 ```
 
+Unified npm entry: `npm run version:bump -- --patch` then `npm run release`.
+
 Default `release_root`: `F:\AI\Kagevi Subtitles - release\v{version}\`
+
+Upload assets must match `latest.json` URLs (spaces in product names become `.` on GitHub).
 
 ### Install layout
 
@@ -1229,10 +1238,11 @@ While runtime is in `idle` phase, the dashboard shows **placeholder preview** wi
 | `shared/js/core/ws-stale-guard-logic.js` | Stale filter |
 | `shared/js/i18n/` | Minimal overlay locale bundle (`document.title.overlay` only) |
 
-**WS:** `ws(s)://{host}/ws/events` — **`overlay_update` only** (live subtitle frames + replay on connect). `transcript_update` is not consumed by OBS overlay (dashboard / external WS clients may still use it). Payloads are normalized in `overlay.js` (`normalizeOverlayPayload`, lifecycle allowlist aligned with `src/lib/overlay-normalizer.ts`).  
+**WS:** `ws(s)://{host}/ws/events` — **`overlay_update` only** (live subtitle frames + replay on connect). `transcript_update` is not consumed by OBS overlay (dashboard / external WS clients may still use it). Payloads are normalized in `overlay.js` (`normalizeOverlayPayload`, lifecycle allowlist aligned with `src/lib/overlay-normalizer.ts`); **`is_live_draft` is forwarded** so draft MT rows share the transient/fast-path with source partials. Completed previous-phrase MT in `completed_with_partial` stays non-transient. Shape signatures omit completed text so late MT supersession patches `textContent` in place.  
 **Reconnect:** exponential backoff 1s → 10s max; last frame preserved on disconnect (OBS UX).  
 **Debug:** `?debug=1` gates `writeDebug` → `console.debug`; `?debug-subtitles=1` enables subtitle-effect trace ring. No production `console.log` on hot path.  
-**Empty payload:** `disposeRenderContainer(linesContainer)` when render returns `empty: true` (TTL / Stop / idle). Idle TTL also requires `hasVisibleRenderedFrame()` so state-only clear does not skip DOM teardown. Pending RAF frames are cancelled on explicit clear. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260802c`.
+**Paint coalesce:** long partials (≥200 chars) → ~66 ms; visible live drafts → ~40 ms; `completed_only` first paint uncapped.  
+**Empty payload:** `disposeRenderContainer(linesContainer)` when render returns `empty: true` (TTL / Stop / idle). Idle TTL also requires `hasVisibleRenderedFrame()` so state-only clear does not skip DOM teardown. Pending RAF frames are cancelled on explicit clear. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260804a`. Dashboard preview passes `obsPaintPolicy: true` (same effect downgrades as OBS, without stripping preview chrome).
 
 ## 23. Frontend: Browser Worker (Svelte)
 
@@ -1261,11 +1271,15 @@ Config key: `ui.language` (empty = browser default).
 ## 25. Versioning and Update Checks
 
 - **Single source of truth:** `voicesub-types::PROJECT_VERSION` and `DEFAULT_GITHUB_REPO` (`kiriuru/Kagevi-Subtitles`) in `crates/voicesub-types/src/version.rs`
-- Bump / rename only there, then `npm run version:sync` (also runs from `npm run build`) — updates workspace `Cargo.toml` `[workspace.package].version`, `package.json` / `package-lock.json`, `src-tauri/tauri.conf.json`, generated `src/lib/project-version.ts`, `src/lib/brand.ts` `GITHUB_REPO`, and `site/main.js`
-- Drift guards: `npm run version:check`; Rust test `project_version_matches_cargo_pkg` (`PROJECT_VERSION` == `CARGO_PKG_VERSION`)
-- `GET /api/version`, `POST /api/updates/check` — GitHub Releases poll (`update_service.rs`, `voicesub-types::version`); helpers `github_repo_url` / `release_url_for`
-- Config `updates.github_repo` — defaults to `DEFAULT_GITHUB_REPO`; `normalize_updates_config` migrates legacy `kiriuru/VoiceSub` and `kiriuru/stream_sub_translator`
-- Dashboard `UpdateBanner.svelte` / Credits → `GITHUB_URL` from `brand.ts`; **Download** → Tauri `open_external_https_url` (`shell.rs`)
+- Bump: `npm run version:bump -- --patch` (or `-- 0.6.4`) → edits `PROJECT_VERSION` + `npm run version:sync` (Cargo / package.json / tauri.conf.json / `project-version.ts` / brand / **updater endpoint**)
+- Drift guards: `npm run version:check`; Rust test `project_version_matches_cargo_pkg`
+- `GET /api/version`, `POST /api/updates/check` — GitHub Releases poll for dashboard metadata (`update_service.rs`); runtime force-check on HTTP start; dashboard reuses via `refreshVersionAfterStartupCheck`
+- **In-app install:** `tauri-plugin-updater` + `tauri-plugin-process`; endpoint synced to `https://github.com/{DEFAULT_GITHUB_REPO}/releases/latest/download/latest.json`; minisign keys in `secrets/` (gitignored). Before download, shell IPC `prepare_updater_staging` redirects process `TEMP`/`TMP` to the install/project root (`discover_project_root`) so the NSIS exe is staged there (not `%TEMP%`). On failure, `abort_updater_staging` restores env and deletes partial staging. Successful install exits before NSIS finishes, so leftovers (`{product}-{ver}-updater-*`) are removed on the **next** app launch (`cleanup_updater_staging`).
+- **Unified release (minimal edits after bump):**
+  1. `npm run version:bump -- --patch`
+  2. `npm run release`  (= `build-release.ps1` + `npm run release:github`)
+  - Staging uses GitHub-safe asset names (spaces → `.`); shared helpers in `scripts/updater-release-lib.mjs`
+  - Or step-by-step: `.\build-release.ps1` then `npm run release:github` / `.\build-release.ps1 -PublishGitHub`
 
 ## 26. Testing
 
@@ -1304,7 +1318,7 @@ Config key: `ui.language` (empty = browser default).
 1. **Local-first:** default localhost bind; no cloud assumptions.
 2. **Browser worker visibility:** separate window, visible URL bar, no hidden/throttled-to-death modes.
 3. **Subtitle lifecycle:** completed block persists until new phrase finalized; late translations allowed on browser path.
-4. **Translation:** 17 providers, full dispatcher semantics (queue, stale drop, supersession).
+4. **Translation:** 18 providers, full dispatcher semantics (queue, stale drop, supersession).
 5. **Overlay separation:** vanilla HTML for OBS; not bundled in dashboard Vite chunk.
 6. **No Node in runtime:** only compile-time frontend toolchain.
 
@@ -1312,7 +1326,8 @@ Config key: `ui.language` (empty = browser default).
 
 ### 28.1 Current limitations
 
-- GitHub update **check + dashboard banner** implemented; installer auto-download not implemented (opens release page in system browser)
+- In-app updates use free Tauri minisign signatures only (no Authenticode). Windows SmartScreen may still warn on first/rare runs of an unsigned publisher exe.
+- `microsoft_edge` keyless MT: Microsoft’s anonymous Edge auth/translate path can fail with **HTTP 404** (or similar) at any time; prefer other keyless providers when it breaks.
 - `POST /api/openai/models` — live OpenAI-compatible model list; official OpenAI host filters to chat models
 - Browser ASR: audio input enumeration empty in core devices API (mic lives in Chrome). Local ASR enumerates mics via `GET /api/asr/local/mics/list` (cpal).
 

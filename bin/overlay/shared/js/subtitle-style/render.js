@@ -36,18 +36,28 @@ import {
  * these when text_align / line_gap change without a shape rebuild — otherwise
  * dashboard idle preview stays stuck until a full page reload.
  */
-function applyStageAndRowLayout(wrapper, rows, effectiveStyle) {
+function applyStageAndRowLayout(wrapper, rows, effectiveStyle, cachedLayout) {
   if (!wrapper) {
-    return;
+    return { stage: null, rows: [] };
   }
-  const stage = wrapper.querySelector(".subtitle-stage");
+  const stage =
+    (cachedLayout?.stage && cachedLayout.stage.isConnected && cachedLayout.stage.parentNode === wrapper
+      ? cachedLayout.stage
+      : null)
+    || wrapper.querySelector(".subtitle-stage");
   if (stage) {
     stage.style.setProperty(
       "--subtitle-line-gap",
       `${Math.max(0, effectiveStyle?.container?.line_gap_px || 0)}px`
     );
   }
-  const rowEls = wrapper.querySelectorAll(".subtitle-line");
+  const cachedRows = Array.isArray(cachedLayout?.rows) ? cachedLayout.rows : null;
+  const rowEls =
+    cachedRows
+    && cachedRows.length === (rows || []).length
+    && cachedRows.every((row) => row && row.isConnected)
+      ? cachedRows
+      : Array.from(wrapper.querySelectorAll(".subtitle-line"));
   (rows || []).forEach((rowConfig, rowIndex) => {
     const row = rowEls[rowIndex];
     if (!row) {
@@ -60,6 +70,7 @@ function applyStageAndRowLayout(wrapper, rows, effectiveStyle) {
     row.style.setProperty("--subtitle-text-align", textAlign);
     row.style.setProperty("--subtitle-justify", textAlignToJustify(textAlign));
   });
+  return { stage, rows: rowEls };
 }
 
 export function render(container, payload, options) {
@@ -169,8 +180,17 @@ export function render(container, payload, options) {
     }
     if (allSurfacesReady) {
       usedFastPath = true;
+      const previousLayout = {
+        stage: _derefSurfaceRef(renderState.stage),
+        rows: _derefSurfaceList(renderState.rowElements) || [],
+      };
       // Shape-equal frames still need ancestor layout vars (align / gap).
-      applyStageAndRowLayout(cachedWrapper, rows, effectiveStyle);
+      const layoutRefs = applyStageAndRowLayout(
+        cachedWrapper,
+        rows,
+        effectiveStyle,
+        previousLayout
+      );
       let surfaceCursor = 0;
       rows.forEach((rowConfig) => {
         rowConfig.entries.forEach((entry) => {
@@ -236,12 +256,12 @@ export function render(container, payload, options) {
             nextEntrySignatures.push(renderEntrySignature(entry));
           } else {
             completedEntryCount += 1;
-            // Completed text is part of the shape signature, so identical
-            // shape means identical text — leave the surface untouched.
-            // We still preserve its dataset so subsequent transitions can
-            // dedupe animations correctly.
-            if (surface.textContent !== entry.text) {
-              surface.textContent = entry.text;
+            // Shape omits completed text — patch in place on supersession /
+            // late MT without replaying entrance effects.
+            const prevText = prevDescriptor ? String(prevDescriptor.text || "") : "";
+            const nextText = String(entry.text || "");
+            if (surface.textContent !== nextText) {
+              surface.textContent = nextText;
             }
             _setClassNameIfChanged(
               surface,
@@ -254,9 +274,10 @@ export function render(container, payload, options) {
                 slot: entry.style_slot || "source",
                 kind: entry.kind || "source",
                 effect: String(slotEffect || "none"),
-                text_length: String(entry.text || "").length,
+                text_length: nextText.length,
                 animated: false,
                 reused_surface: true,
+                text_patched: prevText !== nextText,
               };
               traceFrameEvents.push(event);
               _safeEmit(traceCallback, event);
@@ -272,6 +293,8 @@ export function render(container, payload, options) {
           });
         });
       });
+      // Stash layout refs for the fast-path state write below.
+      cachedWrapper.__sstLayoutRefs = layoutRefs;
     }
   }
 
@@ -279,6 +302,8 @@ export function render(container, payload, options) {
     const renderFinishedAt = (typeof performance !== "undefined" && performance && typeof performance.now === "function")
       ? performance.now()
       : Date.now();
+    const layoutRefs = cachedWrapper.__sstLayoutRefs || {};
+    delete cachedWrapper.__sstLayoutRefs;
     container.__subtitleStyleRenderState = {
       entrySignatures: nextEntrySignatures,
       partialBySlot: Object.fromEntries(nextPartialBySlot.entries()),
@@ -287,6 +312,8 @@ export function render(container, payload, options) {
       entryDescriptors: nextEntryDescriptors,
       shapeSignature,
       wrapper: _surfaceRefFor(cachedWrapper),
+      stage: _surfaceRefFor(layoutRefs.stage || null),
+      rowElements: _surfaceRefsFromElements(layoutRefs.rows || []),
       lastRenderedAt: renderFinishedAt,
     };
     if (traceCallback) {
@@ -571,6 +598,7 @@ export function render(container, payload, options) {
   const renderFinishedAt = (typeof performance !== "undefined" && performance && typeof performance.now === "function")
     ? performance.now()
     : Date.now();
+  const slowPathRows = Array.from(stage.querySelectorAll(".subtitle-line"));
   container.__subtitleStyleRenderState = {
     entrySignatures: nextEntrySignatures,
     partialBySlot: Object.fromEntries(nextPartialBySlot.entries()),
@@ -579,6 +607,8 @@ export function render(container, payload, options) {
     entryDescriptors: nextEntryDescriptors,
     shapeSignature,
     wrapper: _surfaceRefFor(wrapper),
+    stage: _surfaceRefFor(stage),
+    rowElements: _surfaceRefsFromElements(slowPathRows),
     lastRenderedAt: renderFinishedAt,
   };
   if (traceCallback) {

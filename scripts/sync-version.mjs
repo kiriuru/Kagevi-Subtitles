@@ -203,6 +203,23 @@ function main() {
     }
   }
 
+  {
+    const expectedEndpoint = `https://github.com/${githubRepo}/releases/latest/download/latest.json`;
+    const tauriText = readText(TAURI_CONF);
+    const endpointRe =
+      /("https:\/\/github\.com\/)[^"\s]+(\/releases\/latest\/download\/latest\.json")/;
+    const endpointMatch = tauriText.match(endpointRe);
+    if (endpointMatch && endpointMatch[0] !== `"${expectedEndpoint}"`) {
+      drifted.push(`${relative(TAURI_CONF)} (updater endpoint)`);
+      if (!checkOnly) {
+        writeText(
+          TAURI_CONF,
+          tauriText.replace(endpointRe, `$1${githubRepo}$2`),
+        );
+      }
+    }
+  }
+
   if (normalizeNewlines(tsCurrent) !== normalizeNewlines(tsExpected)) {
     drifted.push(relative(PROJECT_VERSION_TS));
     if (!checkOnly) {

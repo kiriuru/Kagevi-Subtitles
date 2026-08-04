@@ -1,6 +1,7 @@
 <script lang="ts">
   import { locale, t } from "../i18n";
-  import { fontOptions, formatFontOptionLabel } from "../font-catalog";
+  import FontFamilyPicker from "../components/FontFamilyPicker.svelte";
+  import { extractPrimaryFontFamily, fontOptions } from "../font-catalog";
   import { UI_THEME_PRESETS } from "../ui-theme-presets";
   import {
     applyUiColorSchemeToDocument,
@@ -108,16 +109,14 @@
 
   <label class="stack-field">
     <span>{tr("style.ui_theme.font")}</span>
-    <select
-      class="control"
-      value={selectedFontFamily}
-      on:change={(e) => applyUiFont((e.currentTarget as HTMLSelectElement).value)}
-    >
-      <option value="">{tr("style.ui_theme.font.default")}</option>
-      {#each fonts as font}
-        <option value={font.family}>{formatFontOptionLabel(font, tr)}</option>
-      {/each}
-    </select>
+    <FontFamilyPicker
+      {fonts}
+      allowEmpty
+      emptyLabel={tr("style.ui_theme.font.default")}
+      ariaLabel={tr("style.ui_theme.font")}
+      value={extractPrimaryFontFamily(selectedFontFamily)}
+      on:change={(e) => applyUiFont(e.detail)}
+    />
   </label>
 
   <div class="palette-grid">

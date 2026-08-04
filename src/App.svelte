@@ -7,7 +7,6 @@
     downloadDiagnostics,
     fetchObsUrl,
     fetchRuntimeStatus,
-    checkUpdates,
     openExternalUrl,
     fetchVersion,
     postClientLog,
@@ -16,6 +15,12 @@
     startRuntime,
     stopRuntime,
   } from "./lib/api";
+  import {
+    downloadAndInstallDesktopUpdate,
+    emptyDesktopUpdateProgress,
+    type DesktopUpdateProgress,
+  } from "./lib/desktop-updater";
+  import { refreshVersionAfterStartupCheck } from "./lib/update-check";
   import CommandPalette from "./lib/components/CommandPalette.svelte";
   import SaveSnackbar from "./lib/components/SaveSnackbar.svelte";
   import UpdateBanner from "./lib/components/UpdateBanner.svelte";
@@ -170,9 +175,12 @@
     });
   }
 
+  let updateProgress: DesktopUpdateProgress = emptyDesktopUpdateProgress();
+
   async function refreshUpdateCheck() {
     try {
-      const versionInfo = await checkUpdates();
+      // Runtime already force-checks GitHub on HTTP start; reuse that result.
+      const versionInfo = await refreshVersionAfterStartupCheck();
       applyVersionInfo(versionInfo);
     } catch (err) {
       void postClientLog("dashboard", "update check failed", {
@@ -184,6 +192,40 @@
       } catch {
         // backend may still be starting
       }
+    }
+  }
+
+  async function installDesktopUpdate() {
+    updateProgress = {
+      ...emptyDesktopUpdateProgress(),
+      phase: "checking",
+    };
+    try {
+      try {
+        await stopRuntime();
+      } catch {
+        // idle / already stopped is fine
+      }
+      const result = await downloadAndInstallDesktopUpdate((progress) => {
+        updateProgress = progress;
+      });
+      if (!result.installed) {
+        updateProgress = {
+          ...emptyDesktopUpdateProgress(),
+          phase: "error",
+          error: "No signed installer is published yet (missing or outdated latest.json).",
+        };
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      updateProgress = {
+        ...emptyDesktopUpdateProgress(),
+        phase: "error",
+        error: message,
+      };
+      void postClientLog("dashboard", "desktop update install failed", {
+        error: message,
+      });
     }
   }
 
@@ -632,12 +674,19 @@
 <UpdateBanner
   versionInfo={snapshot.versionInfo}
   visible={shouldShowUpdateBanner(snapshot.versionInfo, snapshot.updateBannerDismissed)}
+  progress={updateProgress}
   onClose={() => {
+    if (updateProgress.phase === "downloading" || updateProgress.phase === "installing") {
+      return;
+    }
     const latest = snapshot.versionInfo?.sync?.latest_known_version || "";
     if (latest) dismissUpdateBanner(latest);
     else patchApp({ updateBannerDismissed: true });
   }}
-  onDownload={(url) => {
+  onInstall={() => {
+    void installDesktopUpdate();
+  }}
+  onOpenRelease={(url) => {
     void openExternalUrl(url);
   }}
 />

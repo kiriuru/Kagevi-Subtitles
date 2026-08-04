@@ -14,6 +14,29 @@
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-08-04
+
+### Added
+
+- In-app автообновление через официальный `tauri-plugin-updater` (бесплатная minisign-подпись, без платного Authenticode): баннер **Установить обновление** → скачивание/установка NSIS → relaunch; `latest.json` на GitHub Releases; ключи в `secrets/` (gitignored).
+- Единый релизный контур updater: `npm run version:bump` → `npm run release` (`build-release.ps1` + `release:github`); GitHub-safe имена артефактов; `scripts/updater-release-lib.mjs`.
+- Провайдер перевода **`bing_translator`** (Bing Translator, без API key) — `bing.com/translator` → `ttranslatev3`.
+- Стиль → выбор шрифта: кастомный `FontFamilyPicker` — каждая строка списка рендерится в своём шрифте; названия на английском, метки алфавитов в родных письменностях (`Latin`, `Кириллица`, `日本語`, `中文`, `한국어`).
+
+### Changed
+
+- Стиль → выбор шрифта: метки алфавитов больше не переводятся через UI-локаль — всегда в соответствующем скрипте, чтобы было видно покрытие CJK/latin-only шрифтов.
+- Desktop updater: NSIS-установщик кладётся в корень install/project (не в `%TEMP%`); хвосты удаляются при следующем запуске после успешного обновления (или сразу при неудачной попытке).
+- Docs / UI: `microsoft_edge` помечен как ненадёжный — анонимный Edge-путь Microsoft может отвечать **HTTP 404**; при сбое предпочтительны Bing / Google Web.
+
+### Fixed
+
+- OBS overlay: мерцание линий live-partial перевода — `is_live_draft` прокидывается в renderer, draft MT идёт по transient/fast-path (как source); смена completed-текста патчится in-place без remount; entrance-эффекты стартуют с opacity ≥0.85; preview дашборда использует ту же OBS paint-policy (`obsPaintPolicy`); coalesce ~40 ms при видимых drafts; glow без `color-mix` для старого OBS CEF.
+- UI-локаль: подписи слотов стиля («Translation 1 · Russian») и опции OBS Output mode обновляются сразу при смене языка интерфейса, без перезагрузки страницы; то же для бейджей Modules и лейблов полей провайдера в Translation.
+- Проверка обновлений: dashboard больше не дублирует force-опрос GitHub при старте (использует результат runtime startup check).
+- Стиль → выбор шрифта: выпадающий список с непрозрачным фоном (glass-токены просвечивали поля под списком).
+- Стиль (базовый и оверрайд слота): все поля (шрифт, цвета, выравнивание, эффект, метрики) снова обновляются в UI сразу после изменения — без перезагрузки dashboard (Svelte 5 + реактивный `resolveStyleFields`).
+
 ## [0.6.2] - 2026-08-02
 
 ### Added
@@ -414,7 +437,8 @@
 
 Более ранняя история `0.2.9.*` SST Desktop остаётся в архивных GitHub release notes и здесь не развёрнута.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0

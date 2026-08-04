@@ -1,12 +1,13 @@
 <script lang="ts">
+  import FontFamilyPicker from "./FontFamilyPicker.svelte";
   import {
     extractPrimaryFontFamily,
-    formatFontOptionLabel,
     replacePrimaryFontFamily,
   } from "../font-catalog";
   import type { FontCatalogEntry } from "../font-catalog";
   import {
     clampStrokeWidthPx,
+    resolveStyleFields,
     STROKE_WIDTH_MAX,
     STROKE_WIDTH_MIN,
     STROKE_WIDTH_STEP,
@@ -28,49 +29,51 @@
 
   export let tr: (key: string) => string;
   export let fonts: FontCatalogEntry[];
-  export let read: (field: string, fallback?: string | number) => string | number;
+  /** Active style slice (base or slot override record). */
+  export let styleRecord: Record<string, unknown> = {};
+  /** When set, unset slot fields inherit from this base record. */
+  export let inheritFrom: Record<string, unknown> | null = null;
   export let write: (field: string, value: string | number) => void;
   export let disabled = false;
   export let allowInheritFont = false;
   /** Field keys to omit (e.g. container-only `line_gap_px` on slot editors). */
   export let hiddenFields: string[] = [];
 
+  $: resolved = resolveStyleFields(styleRecord, { inheritFrom, allowInheritFont });
+  $: fontFamilyValue = extractPrimaryFontFamily(String(resolved.font_family || ""));
+
   function isHidden(field: string): boolean {
     return hiddenFields.includes(field);
   }
 
-  function colorValue(field: string, fallback: string): string {
-    return toCssColorInput(String(read(field, fallback) || ""), fallback);
-  }
-
-  function numberValue(field: string, fallback: number): number {
-    const raw = read(field, fallback);
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : fallback;
+  function currentFontFamilyChain(): string {
+    if (allowInheritFont) {
+      const slotRaw = styleRecord.font_family;
+      if (slotRaw !== null && slotRaw !== undefined && slotRaw !== "") {
+        return String(slotRaw);
+      }
+      return String(inheritFrom?.font_family ?? "");
+    }
+    return String(styleRecord.font_family ?? "");
   }
 </script>
 
 <div class="style-field-group">
   <label class="stack-field style-field-wide">
     <span>{tr("style.field.font_family")}</span>
-    <select
-      class="control"
+    <FontFamilyPicker
+      {fonts}
       {disabled}
-      value={extractPrimaryFontFamily(String(read("font_family", "") || ""))}
+      allowEmpty={allowInheritFont}
+      emptyLabel={tr("style.slots.inherit_base")}
+      ariaLabel={tr("style.field.font_family")}
+      value={fontFamilyValue}
       on:change={(e) => {
-        const next = (e.currentTarget as HTMLSelectElement).value;
-        const current = String(read("font_family", "") || "");
+        const next = e.detail;
         // Keep Latin/Cyrillic (and other) fallback faces from the preset stack.
-        write("font_family", replacePrimaryFontFamily(current, next));
+        write("font_family", replacePrimaryFontFamily(currentFontFamilyChain(), next));
       }}
-    >
-      {#if allowInheritFont}
-        <option value="">{tr("style.slots.inherit_base")}</option>
-      {/if}
-      {#each fonts as font}
-        <option value={font.family}>{formatFontOptionLabel(font, tr)}</option>
-      {/each}
-    </select>
+    />
   </label>
 
   <div class="style-color-strip" aria-label={tr("style.field.text_color")}>
@@ -80,7 +83,7 @@
         class="control control-color control-color-compact"
         type="color"
         {disabled}
-        value={colorValue("fill_color", "#ffffff")}
+        value={toCssColorInput(String(resolved.fill_color), "#ffffff")}
         on:input={(e) => write("fill_color", (e.currentTarget as HTMLInputElement).value)}
       />
     </label>
@@ -90,7 +93,7 @@
         class="control control-color control-color-compact"
         type="color"
         {disabled}
-        value={colorValue("stroke_color", "#000000")}
+        value={toCssColorInput(String(resolved.stroke_color), "#000000")}
         on:input={(e) => write("stroke_color", (e.currentTarget as HTMLInputElement).value)}
       />
     </label>
@@ -100,7 +103,7 @@
         class="control control-color control-color-compact"
         type="color"
         {disabled}
-        value={colorValue("shadow_color", "#000000")}
+        value={toCssColorInput(String(resolved.shadow_color), "#000000")}
         on:input={(e) => write("shadow_color", (e.currentTarget as HTMLInputElement).value)}
       />
     </label>
@@ -110,7 +113,7 @@
         class="control control-color control-color-compact"
         type="color"
         {disabled}
-        value={colorValue("background_color", "#000000")}
+        value={toCssColorInput(String(resolved.background_color), "#000000")}
         on:input={(e) => write("background_color", (e.currentTarget as HTMLInputElement).value)}
       />
     </label>
@@ -122,7 +125,7 @@
       <select
         class="control"
         {disabled}
-        value={String(read("text_align", "center"))}
+        value={String(resolved.text_align)}
         on:change={(e) => write("text_align", (e.currentTarget as HTMLSelectElement).value)}
       >
         {#each TEXT_ALIGNS as align}
@@ -135,7 +138,7 @@
       <select
         class="control"
         {disabled}
-        value={String(read("effect", "none"))}
+        value={String(resolved.effect)}
         on:change={(e) => write("effect", (e.currentTarget as HTMLSelectElement).value)}
       >
         {#each EFFECTS as effect}
@@ -154,7 +157,7 @@
         min="12"
         max="96"
         {disabled}
-        value={numberValue("font_size_px", 30)}
+        value={Number(resolved.font_size_px)}
         on:input={(e) => write("font_size_px", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -167,7 +170,7 @@
         max="900"
         step="100"
         {disabled}
-        value={numberValue("font_weight", 700)}
+        value={Number(resolved.font_weight)}
         on:input={(e) => write("font_weight", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -181,7 +184,7 @@
           max="40"
           step="1"
           {disabled}
-          value={numberValue("line_gap_px", 8)}
+          value={Number(resolved.line_gap_px)}
           on:input={(e) => write("line_gap_px", Number((e.currentTarget as HTMLInputElement).value))}
         />
       </label>
@@ -195,7 +198,7 @@
         max="2.5"
         step="0.05"
         {disabled}
-        value={numberValue("line_spacing_em", 1.15)}
+        value={Number(resolved.line_spacing_em)}
         on:input={(e) => write("line_spacing_em", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -208,7 +211,7 @@
         max="0.5"
         step="0.01"
         {disabled}
-        value={numberValue("letter_spacing_em", 0)}
+        value={Number(resolved.letter_spacing_em)}
         on:input={(e) => write("letter_spacing_em", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -221,7 +224,7 @@
         max="40"
         step="1"
         {disabled}
-        value={numberValue("shadow_blur_px", 10)}
+        value={Number(resolved.shadow_blur_px)}
         on:input={(e) => write("shadow_blur_px", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -235,7 +238,7 @@
         step={STROKE_WIDTH_STEP}
         inputmode="decimal"
         {disabled}
-        value={clampStrokeWidthPx(numberValue("stroke_width_px", 2))}
+        value={clampStrokeWidthPx(resolved.stroke_width_px)}
         on:input={(e) =>
           write(
             "stroke_width_px",
@@ -252,7 +255,7 @@
         max="24"
         step="1"
         {disabled}
-        value={numberValue("shadow_offset_x_px", 0)}
+        value={Number(resolved.shadow_offset_x_px)}
         on:input={(e) => write("shadow_offset_x_px", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -265,7 +268,7 @@
         max="24"
         step="1"
         {disabled}
-        value={numberValue("shadow_offset_y_px", 3)}
+        value={Number(resolved.shadow_offset_y_px)}
         on:input={(e) => write("shadow_offset_y_px", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -277,7 +280,7 @@
         min="0"
         max="100"
         {disabled}
-        value={numberValue("background_opacity", 0)}
+        value={Number(resolved.background_opacity)}
         on:input={(e) => write("background_opacity", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -290,7 +293,7 @@
         max="40"
         step="1"
         {disabled}
-        value={numberValue("background_radius_px", 10)}
+        value={Number(resolved.background_radius_px)}
         on:input={(e) => write("background_radius_px", Number((e.currentTarget as HTMLInputElement).value))}
       />
     </label>
@@ -303,7 +306,7 @@
         max="40"
         step="1"
         {disabled}
-        value={numberValue("background_padding_x_px", 12)}
+        value={Number(resolved.background_padding_x_px)}
         on:input={(e) =>
           write("background_padding_x_px", Number((e.currentTarget as HTMLInputElement).value))}
       />
@@ -317,7 +320,7 @@
         max="24"
         step="1"
         {disabled}
-        value={numberValue("background_padding_y_px", 4)}
+        value={Number(resolved.background_padding_y_px)}
         on:input={(e) =>
           write("background_padding_y_px", Number((e.currentTarget as HTMLInputElement).value))}
       />

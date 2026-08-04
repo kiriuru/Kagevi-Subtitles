@@ -78,6 +78,11 @@ export const PROVIDERS = {
     group: "Experimental / Emergency",
     fields: [] as const,
   },
+  bing_translator: {
+    label: "Bing Translator (no key)",
+    group: "Experimental / Emergency",
+    fields: [] as const,
+  },
   free_web_translate: {
     label: "Free Web Translate",
     group: "Experimental / Emergency",

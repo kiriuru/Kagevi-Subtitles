@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   buildProviderOptionGroups,
+  formatOutputSlotLabel,
   getActiveStyleLineSlots,
   getProviderFieldLabel,
   getProviderHintKey,
   getProviderSetupUrl,
   isCustomPromptOverrideEnabled,
   isLlmProvider,
+  languageDisplayLabel,
 } from "./translation-helpers";
 import { t } from "./i18n";
 import type { ConfigPayload } from "./types";
@@ -18,7 +20,8 @@ describe("translation-helpers", () => {
     expect(ids).toContain("google_translate_v2");
     expect(ids).toContain("openai");
     expect(ids).toContain("free_web_translate");
-    expect(ids.length).toBe(17);
+    expect(ids).toContain("bing_translator");
+    expect(ids.length).toBe(18);
     expect(ids).toContain("baidu_translate");
     expect(ids).toContain("tencent_tmt");
     for (const group of groups) {
@@ -63,16 +66,34 @@ describe("translation-helpers", () => {
     expect(getActiveStyleLineSlots(config)).toEqual(["source", "translation_1", "translation_3"]);
   });
 
-  it("hides translation style slots when show_translations is false", () => {
+  it("formats output slot labels for style tabs and OBS modes with locale", () => {
     const config: ConfigPayload = {
-      subtitle_output: { show_translations: false },
       translation: {
         enabled: true,
         lines: [
-          { slot_id: "translation_1", enabled: true, target_lang: "en", provider: "google_translate_v2" },
+          { slot_id: "translation_1", enabled: true, target_lang: "ru", provider: "google_translate_v2" },
         ],
       },
     };
-    expect(getActiveStyleLineSlots(config)).toEqual(["source"]);
+    expect(formatOutputSlotLabel("source", config, "en")).toBe(t("common.source", undefined, "en"));
+    expect(formatOutputSlotLabel("source", config, "ru")).toBe(t("common.source", undefined, "ru"));
+    expect(formatOutputSlotLabel("translation_1", config, "en")).toBe(
+      t(
+        "obs.output.translation_active",
+        { number: "1", lang: languageDisplayLabel("ru", "en") },
+        "en",
+      ),
+    );
+    expect(formatOutputSlotLabel("translation_1", config, "ru")).toBe(
+      t(
+        "obs.output.translation_active",
+        { number: "1", lang: languageDisplayLabel("ru", "ru") },
+        "ru",
+      ),
+    );
+    expect(formatOutputSlotLabel("source_live", config, "en")).not.toBe(
+      formatOutputSlotLabel("source_live", config, "ru"),
+    );
+    expect(formatOutputSlotLabel("disabled", config, "ja")).toBe(t("obs.output.disabled", undefined, "ja"));
   });
 });

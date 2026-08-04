@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { openLocalUrl } from "../api";
-  import { LANGUAGES } from "../constants";
   import { locale, t } from "../i18n";
   import { obsStatusMessage } from "../diagnostics";
   import { formatObsConnectionState, formatObsNativeCaptionStatus } from "../obs-status-i18n";
   import {
+    formatOutputSlotLabel,
     getLineCards,
-    getSlotNumber,
     isTranslationLineEnabled,
   } from "../translation-helpers";
   import type { ConfigPayload } from "../types";
@@ -70,30 +69,6 @@
       copyFlashTimer = null;
     }
   });
-
-  function languageLabel(code: string): string {
-    const normalized = String(code || "").trim().toLowerCase();
-    const entry = LANGUAGES.find((item) => item.code === normalized);
-    return entry ? tr(entry.labelKey) : normalized.toUpperCase() || "?";
-  }
-
-  function translationModeLabel(mode: string, inactive: boolean): string {
-    const line = enabledTranslationLines.find((entry) => entry.slot_id === mode)
-      || getLineCards(config).find((entry) => entry.slot_id === mode);
-    const lang = languageLabel(String(line?.target_lang || line?.label || ""));
-    const key = inactive ? "obs.output.translation_inactive" : "obs.output.translation_active";
-    return tr(key, {
-      number: String(getSlotNumber(mode) || "?"),
-      lang,
-    });
-  }
-
-  function outputModeLabel(mode: string): string {
-    if (/^translation_[1-4]$/.test(mode)) {
-      return translationModeLabel(mode, mode === staleTranslationMode);
-    }
-    return tr(`obs.output.${mode}`);
-  }
 
   function patchObs(partial: Record<string, unknown>) {
     onChange({
@@ -227,7 +202,7 @@
           on:change={(e) => patchObs({ output_mode: (e.currentTarget as HTMLSelectElement).value })}
         >
           {#each outputModes as mode}
-            <option value={mode}>{outputModeLabel(mode)}</option>
+            <option value={mode}>{formatOutputSlotLabel(mode, config, loc, { inactive: mode === staleTranslationMode })}</option>
           {/each}
         </select>
       </label>

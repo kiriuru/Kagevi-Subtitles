@@ -214,10 +214,11 @@
   letter-spacing: 0.08em;
 }
 
-/* Opacity-only: distinct from slide_up / subtle_pop motion. */
+/* Opacity floors stay ≥0.85 so remounts in OBS CEF do not fully blink out.
+   First-paint motion still reads; fragment fades for typewriter stay short. */
 @keyframes subtitle-fade-in {
   from {
-    opacity: 0;
+    opacity: 0.85;
   }
 
   to {
@@ -227,7 +228,7 @@
 
 @keyframes subtitle-subtle-pop {
   from {
-    opacity: 0;
+    opacity: 0.85;
     transform: translateY(8px) scale(0.97);
   }
 
@@ -239,7 +240,7 @@
 
 @keyframes subtitle-slide-up {
   from {
-    opacity: 0;
+    opacity: 0.85;
     transform: translateY(18px);
   }
 
@@ -251,7 +252,7 @@
 
 @keyframes subtitle-zoom-in {
   from {
-    opacity: 0;
+    opacity: 0.85;
     transform: scale(0.9);
   }
 
@@ -263,7 +264,7 @@
 
 @keyframes subtitle-blur-in {
   from {
-    opacity: 0;
+    opacity: 0.85;
     filter: blur(10px);
     transform: translateY(10px);
   }
@@ -275,12 +276,13 @@
   }
 }
 
-/* Uses the line fill color so neon presets match their palette (not hardcoded cyan). */
+/* Uses the line fill color so neon presets match their palette (not hardcoded cyan).
+   Avoid color-mix — older OBS Browser Source CEF may drop the second stop. */
 @keyframes subtitle-glow {
   from {
-    opacity: 0;
+    opacity: 0.85;
     filter: drop-shadow(0 0 10px var(--subtitle-fill, #6cc7ff))
-      drop-shadow(0 0 20px color-mix(in srgb, var(--subtitle-fill, #6cc7ff) 45%, transparent));
+      drop-shadow(0 0 18px var(--subtitle-fill, #6cc7ff));
     transform: translateY(8px);
   }
 
@@ -293,7 +295,7 @@
 
 @keyframes subtitle-pulse {
   0% {
-    opacity: 0.35;
+    opacity: 0.85;
     transform: scale(0.96);
   }
 
