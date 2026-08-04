@@ -14,11 +14,13 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function git(args, opts = {}) {
-  return execFileSync("git", args, {
+  const out = execFileSync("git", args, {
     cwd: root,
     encoding: "utf8",
     stdio: opts.stdio ?? ["ignore", "pipe", "pipe"],
-  }).trim();
+  });
+  if (out == null) return "";
+  return String(out).trim();
 }
 
 function main() {
