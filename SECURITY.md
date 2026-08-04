@@ -1,36 +1,40 @@
 # Security Policy
 
-## Supported versions
+## Supported Versions
 
-Security fixes are applied to the **latest released version** of Kagevi Subtitles on the `main` branch and in GitHub Releases. Older installers are not patched in place — update to the newest release when a fix ships.
+Security fixes are applied to the **latest released version** of Kagevi Subtitles
+on the `main` branch and in GitHub Releases. Older installers are not patched
+in place - please upgrade to the newest release when a fix ships.
 
 | Version | Supported |
-| --- | --- |
-| Latest release (`0.6.x` and newer on `main`) | Yes |
-| Older releases | No — please upgrade |
+| ------- | ------------------ |
+| Latest release (`0.6.x` and newer on `main`) | :white_check_mark: |
+| Older releases | :x: |
 
-## Reporting a vulnerability
+## Reporting a Vulnerability
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Prefer one of these private channels:
+Use one of these private channels instead:
 
 1. **GitHub private vulnerability reporting** (preferred):  
-   [Report a vulnerability](https://github.com/kiriuru/Kagevi-Subtitles/security/advisories/new)
-2. Contact the maintainer on GitHub: [@kiriuru](https://github.com/kiriuru)
+   https://github.com/kiriuru/Kagevi-Subtitles/security/advisories/new
+2. Contact the maintainer on GitHub: https://github.com/kiriuru
 
-Include as much detail as you can:
+Please include:
 
 - Affected version / commit
 - Impact (local loopback API, installer, update channel, dependency, etc.)
 - Steps to reproduce
-- Proof-of-concept only if it is safe to share privately
+- A proof of concept only if it is safe to share privately
 
-You should receive an acknowledgment within a few days. We will discuss severity, fix timeline, and disclosure with you before publishing details.
+You should receive an acknowledgment within a few days. We will discuss
+severity, fix timeline, and disclosure with you before publishing details.
 
-## Scope notes
+## Scope
 
-Kagevi Subtitles is a **local-first** Windows desktop app. Default bind is `127.0.0.1`. Reports that matter most:
+Kagevi Subtitles is a local-first Windows desktop app. Default bind is
+`127.0.0.1`. High-priority reports include:
 
 - Auth / token handling for the loopback HTTP API
 - Path traversal or unsafe file handling under `user-data/` / export paths
@@ -41,8 +45,10 @@ Out of scope for private advisories (use normal issues instead):
 
 - Feature requests and UX bugs
 - Crashes without a security impact
-- Issues that require changing the user’s machine policy outside the app
+- Issues that require changing the user's machine policy outside the app
 
-## Safe harbor
+## Safe Harbor
 
-Good-faith research and private reporting that follows this policy is appreciated. Do not exploit a vulnerability beyond what is needed to demonstrate it, and do not access other users’ data.
+Good-faith research and private reporting that follows this policy is
+appreciated. Do not exploit a vulnerability beyond what is needed to
+demonstrate it, and do not access other users' data.
