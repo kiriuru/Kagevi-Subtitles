@@ -40,6 +40,8 @@ mod tests {
             [
                 "get_loopback_api_token",
                 "get_runtime_state_snapshot",
+                "prepare_updater_staging",
+                "abort_updater_staging",
                 "set_dashboard_layout",
                 "tts_open_window",
                 "local_asr_open_window",

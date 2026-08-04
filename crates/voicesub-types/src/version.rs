@@ -357,17 +357,17 @@ mod tests {
                 "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.5.0")
             },
             {
-                "tag_name": "v0.6.3",
+                "tag_name": "v0.6.4",
                 "draft": false,
                 "prerelease": false,
-                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.3")
+                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.4")
             }
         ]);
         let (latest, _, url) = extract_latest_github_release(&releases, "stable");
-        assert_eq!(latest.as_deref(), Some("0.6.3"));
+        assert_eq!(latest.as_deref(), Some("0.6.4"));
         assert_eq!(
             url.as_deref(),
-            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.3").as_str())
+            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.4").as_str())
         );
         assert!(is_remote_version_newer(
             PROJECT_VERSION,
@@ -385,7 +385,7 @@ mod tests {
         assert_eq!(payload["sync"]["update_available"], true);
         assert_eq!(
             payload["sync"]["release_url"],
-            release_url_for(DEFAULT_GITHUB_REPO, "0.6.3")
+            release_url_for(DEFAULT_GITHUB_REPO, "0.6.4")
         );
     }
 
@@ -396,7 +396,7 @@ mod tests {
                 "enabled": true,
                 "provider": "github_releases",
                 "github_repo": "example/repo",
-                "latest_known_version": "0.6.3"
+                "latest_known_version": "0.6.4"
             }
         })));
         assert_eq!(payload["current_version"], PROJECT_VERSION);
