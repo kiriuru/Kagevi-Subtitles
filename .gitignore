@@ -28,6 +28,7 @@ scripts/_nemotron_transcript_extract.txt
 # Local-only scripts (installer/release/git helpers). Tracked: sync-version, i18n export/bundle,
 # prune-asr-orphan-i18n (imported by export-i18n), locale overrides/supplement, i18n-source/, build-site.
 scripts/bump-version.mjs
+scripts/ci-local.mjs
 scripts/clean-workspace.ps1
 scripts/generate-updater-manifest.mjs
 scripts/publish-github-release.mjs

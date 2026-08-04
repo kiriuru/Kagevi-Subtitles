@@ -15,11 +15,10 @@ By participating, you agree to follow the [Code of Conduct](./CODE_OF_CONDUCT.md
 3. Run the project checks locally:
 
    ```powershell
-   npm run ci:local
+   cargo test --workspace
+   npm run build
+   npm run test:frontend
    ```
-
-   Or stepwise: `cargo test --workspace`, `npm run build`, `npm run test:frontend`.
-   Options: `npm run ci:local -- --frontend`, `--rust`, or `--install` (`npm ci` first).
 
 4. Keep PRs focused — one provider or one font family per PR is easiest to review.
 5. Do **not** commit secrets, API keys, or personal `user-data/` / `logs/` artifacts.
