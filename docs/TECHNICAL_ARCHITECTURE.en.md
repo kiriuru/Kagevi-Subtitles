@@ -1245,7 +1245,7 @@ While runtime is in `idle` phase, the dashboard shows **placeholder preview** wi
 **Reconnect:** exponential backoff 1s → 10s max; last frame preserved on disconnect (OBS UX).  
 **Debug:** `?debug=1` gates `writeDebug` → `console.debug`; `?debug-subtitles=1` enables subtitle-effect trace ring. No production `console.log` on hot path.  
 **Paint coalesce:** long partials (≥200 chars) → ~66 ms; visible live drafts → ~40 ms; `completed_only` first paint uncapped.  
-**Empty payload:** `disposeRenderContainer(linesContainer)` when render returns `empty: true` (TTL / Stop / idle). Idle TTL also requires `hasVisibleRenderedFrame()` so state-only clear does not skip DOM teardown. Pending RAF frames are cancelled on explicit clear. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260804a`. Dashboard preview passes `obsPaintPolicy: true` (same effect downgrades as OBS, without stripping preview chrome).
+**Empty payload:** `disposeRenderContainer(linesContainer)` when render returns `empty: true` (TTL / Stop / idle). Idle TTL also requires `hasVisibleRenderedFrame()` so state-only clear does not skip DOM teardown. Pending RAF frames are cancelled on explicit clear. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260805d`. Dashboard preview passes `obsPaintPolicy: true` (same paint budget as OBS: mid-phrase large deltas skip fragment animation; phrase-start/`jump` always keep the configured effect). Entrance `fade`/`blur_in`/`glow` start at opacity 0; glow also uses `text-shadow` for older CEF. Remount/finalize keep `effect-none`. Translation draft→final (including refined text) and duplicate finals do not replay entrance.
 
 ## 23. Frontend: Browser Worker (Svelte)
 

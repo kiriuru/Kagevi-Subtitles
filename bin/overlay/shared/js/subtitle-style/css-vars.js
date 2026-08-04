@@ -82,17 +82,25 @@ export function shouldAnimateEntry(entry, previousEntrySignatures) {
   if (previousEntrySignatures.has(renderEntrySignature(entry))) {
     return false;
   }
-  // Translation slots: replay entrance only on first appearance of the slot.
-  // Text supersession / late revise must not blink the line from opacity 0.
+  // Translation slots: entrance only on first paint of the slot. Draft → final,
+  // late revise, or duplicate finals must not replay opacity/filter effects —
+  // that re-blinks an already-visible line and looks like a broken font.
   if ((entry.kind || "source") === "translation") {
-    const slotPrefix = [
-      "completed",
-      entry.style_slot || "source",
-      entry.kind || "source",
-      entry.lang || "",
-    ].join("\u001f");
+    const slot = entry.style_slot || "source";
+    const kind = entry.kind || "source";
+    const lang = entry.lang || "";
     for (const signature of previousEntrySignatures) {
-      if (typeof signature === "string" && signature.startsWith(`${slotPrefix}\u001f`)) {
+      if (typeof signature !== "string") {
+        continue;
+      }
+      // signature: partial|completed \u001f slot \u001f kind \u001f lang \u001f text
+      const parts = signature.split("\u001f");
+      if (
+        parts.length >= 4
+        && parts[1] === slot
+        && parts[2] === kind
+        && parts[3] === lang
+      ) {
         return false;
       }
     }

@@ -34,6 +34,8 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ### Fixed
 
+- OBS overlay: entrance effects readable again — opacity start lowered from ≥0.85; first (often long) ASR partial no longer drops `fade`/`blur_in`/`glow` via the 12-char cap (cap applies only to mid-phrase bursts); stronger glow + `text-shadow` CEF fallback; cache-bust `?v=20260805c`.
+- OBS overlay: final translation after a live draft no longer replays entrance (including draft→final text refine / duplicate finals) — fade/glow from opacity 0 was re-blinking already-painted glyphs; cache-bust `?v=20260805d`.
 - Loopback API: session token is no longer embedded in HTML for `/`, `/tts`, `/local-asr`, `/google-asr` (any local browser could previously control `/api/*`). App HTML itself now requires bootstrap/cookie (401 otherwise); unauthenticated `/tts` serves only a minimal Twitch OAuth shell. Tauri/Chrome launch URLs carry one-time `bootstrap`; Twitch `oauth-complete` requires CSRF `state`. Non-loopback WebSocket clients need `loopback_token` (localhost OBS/worker unchanged).
 - TTS: settings apply more reliably — flush debounced saves on `pagehide`/blur, Twitch rate/volume debounce on `oninput`, clear queue+prefetch when provider/playback mode changes; UI exposes `speech.max_queue_items` and `speak_chat`.
 - Twitch emotes: IRC `emotes` indices applied before trim; lexical strip removes punctuated codes (`Kappa!`, `(OMEGALUL)`); added **FFZ** (FrankerFaceZ) emote source; Clear queue stops playback and drops prefetch.

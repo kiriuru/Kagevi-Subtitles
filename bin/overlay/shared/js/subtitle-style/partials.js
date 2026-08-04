@@ -70,7 +70,7 @@ export function usesObsPaintPolicy(options) {
   return Boolean(options?.overlay || options?.obsPaintPolicy);
 }
 
-export function resolveFreshFragmentEffect(slotEffect, options, deltaLength) {
+export function resolveFreshFragmentEffect(slotEffect, options, deltaLength, transition) {
   let base = String(slotEffect || "none");
   if (base === "none") {
     return "none";
@@ -78,13 +78,12 @@ export function resolveFreshFragmentEffect(slotEffect, options, deltaLength) {
   if (!usesObsPaintPolicy(options)) {
     return base;
   }
-  if (deltaLength > OVERLAY_MAX_ANIMATED_DELTA_CHARS) {
+  // First paint / full replacement must keep the configured effect — ASR's first
+  // partial is often >12 chars, and skipping it made fade/blur_in/glow invisible.
+  // Cap only mid-phrase typing bursts (extension/revision/shrink).
+  const phraseEntrance = transition === "initial" || transition === "jump";
+  if (!phraseEntrance && deltaLength > OVERLAY_MAX_ANIMATED_DELTA_CHARS) {
     return "none";
-  }
-  // Filter-based effects are expensive in OBS CEF during rapid partials;
-  // keep the motion cue via a cheap opacity fade on the fresh fragment only.
-  if (base === "blur_in" || base === "glow") {
-    return "fade";
   }
   return base;
 }
@@ -116,14 +115,15 @@ export function mergeFreshIntoStatic(surface) {
   }
 }
 
-export function appendFreshFragment(surface, delta, slotEffect, options) {
+export function appendFreshFragment(surface, delta, slotEffect, options, transition) {
   if (!delta) {
     return "none";
   }
   const resolvedEffect = resolveFreshFragmentEffect(
     slotEffect,
     options,
-    delta.length
+    delta.length,
+    transition
   );
   const freshSpan = document.createElement("span");
   freshSpan.className = `subtitle-fragment-fresh ${effectClassName(resolvedEffect)}`;
@@ -137,6 +137,11 @@ export function appendTransientFragments(surface, entry, slotEffect, previousPar
   const sharedLength = commonPrefixLength(currentText, previousPartialText);
   const staticPart = currentText.slice(0, sharedLength);
   const freshPart = currentText.slice(sharedLength);
+  const transition = classifyPartialTransition(
+    currentText,
+    String(previousPartialText || ""),
+    sharedLength
+  );
   // Always create the static span — even when empty on the very first
   // partial — so the next pure-extension frame can reuse this surface
   // via updateTransientSurfaceInPlace() instead of falling back to a
@@ -148,7 +153,13 @@ export function appendTransientFragments(surface, entry, slotEffect, previousPar
   staticSpan.className = "subtitle-fragment-static";
   staticSpan.textContent = staticPart;
   surface.appendChild(staticSpan);
-  const resolvedEffect = appendFreshFragment(surface, freshPart, slotEffect, options);
+  const resolvedEffect = appendFreshFragment(
+    surface,
+    freshPart,
+    slotEffect,
+    options,
+    transition
+  );
   if (options && typeof options.onTrace === "function") {
     try {
       options.onTrace({
@@ -161,7 +172,7 @@ export function appendTransientFragments(surface, entry, slotEffect, previousPar
         shared_length: sharedLength,
         static_chars: staticPart.length,
         fresh_chars: freshPart.length,
-        transition: classifyPartialTransition(currentText, String(previousPartialText || ""), sharedLength),
+        transition,
       });
     } catch (_error) {
       // Tracing must never break rendering.
@@ -228,7 +239,14 @@ export function updateTransientSurfaceInPlace(surface, entry, slotEffect, previo
     return false;
   }
   const delta = currentText.slice(previousText.length);
-  const resolvedEffect = appendFreshFragment(surface, delta, slotEffect, options);
+  const transition = classifyPartialTransition(currentText, previousText, sharedLength);
+  const resolvedEffect = appendFreshFragment(
+    surface,
+    delta,
+    slotEffect,
+    options,
+    transition
+  );
   if (options && typeof options.onTrace === "function") {
     try {
       options.onTrace({
@@ -241,7 +259,7 @@ export function updateTransientSurfaceInPlace(surface, entry, slotEffect, previo
         shared_length: sharedLength,
         static_chars: staticSpan.textContent?.length || 0,
         fresh_chars: delta.length,
-        transition: classifyPartialTransition(currentText, previousText, sharedLength),
+        transition,
         reused_surface: true,
       });
     } catch (_error) {

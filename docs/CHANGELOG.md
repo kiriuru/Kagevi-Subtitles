@@ -34,6 +34,8 @@
 
 ### Fixed
 
+- OBS overlay: entrance-эффекты снова читаются — старт opacity снижен с ≥0.85; первый (длинный) ASR-partial больше не теряет `fade`/`blur_in`/`glow` из‑за лимита 12 символов (лимит только на mid-phrase burst); glow усилен + `text-shadow` fallback для CEF; cache-bust `?v=20260805c`.
+- OBS overlay: финальный перевод после live-draft больше не переигрывает entrance (в т.ч. при смене текста draft→final / дубле final) — иначе fade/glow с opacity 0 «ломали» уже нарисованный шрифт; cache-bust `?v=20260805d`.
 - Loopback API: session token больше не вшивается в HTML `/`, `/tts`, `/local-asr`, `/google-asr` (раньше любой локальный браузер мог управлять `/api/*`). Сам HTML теперь тоже требует bootstrap/cookie (иначе 401); без сессии `/tts` отдаёт только минимальный Twitch OAuth shell. Launch URL Tauri/Chrome несут одноразовый `bootstrap`; Twitch `oauth-complete` требует CSRF `state`. Не-loopback WebSocket нужны с `loopback_token` (localhost OBS/worker без изменений).
 - TTS: настройки применяются надёжнее — flush debounce при `pagehide`/blur, Twitch rate/volume debounce на `oninput`, очистка очереди+prefetch при смене provider/playback mode; в UI — `speech.max_queue_items` и `speak_chat`.
 - Twitch emotes: IRC `emotes` индексы применяются до trim; lexical strip снимает эмоуты с пунктуацией (`Kappa!`, `(OMEGALUL)`); добавлен источник **FFZ** (FrankerFaceZ); Clear queue останавливает playback и сбрасывает prefetch.

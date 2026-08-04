@@ -288,8 +288,12 @@ fn overlay_renderer_uses_append_only_partial_merge() {
     assert_contains(&source, "is-dense-partial", "dense partial css hook");
     assert_contains(
         &source,
-        "base === \"blur_in\" || base === \"glow\"",
-        "OBS cheapens filter effects on partial fragments",
+        "transition === \"initial\" || transition === \"jump\"",
+        "phrase-start partials keep entrance effects even when long",
+    );
+    assert!(
+        !source.contains("base === \"blur_in\" || base === \"glow\""),
+        "OBS must not remap blur_in/glow on partial fragments — keep configured effect"
     );
 }
 
@@ -309,6 +313,15 @@ fn overlay_fragment_effects_css_supports_transforms_and_new_effects() {
     assert_contains(&css, "prefers-reduced-motion", "a11y motion preference");
     assert_contains(&css, "subtitle-pulse", "pulse keyframes");
     assert_contains(&css, "subtitle-reveal", "reveal keyframes");
+    assert_contains(&css, "text-shadow:", "glow CEF fallback via text-shadow");
+    assert!(
+        css.contains("opacity: 0;") || css.contains("opacity: 0 }"),
+        "fade/blur/glow entrance must start at opacity 0 to read in OBS"
+    );
+    assert!(
+        !css.contains("opacity: 0.85"),
+        "0.85 entrance floor made fade/glow nearly invisible in OBS"
+    );
 }
 
 #[test]

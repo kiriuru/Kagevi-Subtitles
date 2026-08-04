@@ -1245,7 +1245,7 @@ Standard layout использует те же destinations через `NavRail`
 **Reconnect:** exponential backoff 1s → 10s max; последний кадр сохраняется при disconnect (OBS UX).  
 **Debug:** `?debug=1` включает `writeDebug` → `console.debug`; `?debug-subtitles=1` — ring trace эффектов. В production hot path нет `console.log`.  
 **Paint coalesce:** длинные partials (≥200 символов) → ~66 ms; видимые live drafts → ~40 ms; первый кадр `completed_only` без лимита.  
-**Пустой payload:** `disposeRenderContainer(linesContainer)`, когда `render()` возвращает `empty: true` (TTL / Stop / idle). Idle TTL также требует `hasVisibleRenderedFrame()` — иначе очистка state без `render()` оставляет последний кадр в OBS. Pending RAF отменяется при явной очистке. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260804a`. Dashboard preview передаёт `obsPaintPolicy: true` (те же effect-downgrades, что у OBS, без снятия chrome превью).
+**Пустой payload:** `disposeRenderContainer(linesContainer)`, когда `render()` возвращает `empty: true` (TTL / Stop / idle). Idle TTL также требует `hasVisibleRenderedFrame()` — иначе очистка state без `render()` оставляет последний кадр в OBS. Pending RAF отменяется при явной очистке. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260805d`. Dashboard preview передаёт `obsPaintPolicy: true` (тот же paint-budget, что у OBS: mid-phrase крупные delta без fragment-анимации; phrase-start/`jump` всегда с выбранным эффектом). Entrance `fade`/`blur_in`/`glow` стартуют с opacity 0; glow дополнительно через `text-shadow` для старого CEF. Remount/finalize оставляют `effect-none`. Translation draft→final (в т.ч. с другим текстом) и дубли final не переигрывают entrance.
 
 ## 23. Frontend: browser worker (Svelte)
 

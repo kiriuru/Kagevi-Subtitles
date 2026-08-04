@@ -99,7 +99,7 @@
 }
 
 .subtitle-line__surface.effect-fade {
-  animation: subtitle-fade-in 220ms ease-out both;
+  animation: subtitle-fade-in 280ms ease-out both;
 }
 
 .subtitle-line__surface.effect-subtle-pop {
@@ -115,11 +115,11 @@
 }
 
 .subtitle-line__surface.effect-blur-in {
-  animation: subtitle-blur-in 240ms ease-out both;
+  animation: subtitle-blur-in 320ms ease-out both;
 }
 
 .subtitle-line__surface.effect-glow {
-  animation: subtitle-glow 320ms ease-out both;
+  animation: subtitle-glow 400ms ease-out both;
 }
 
 .subtitle-line__surface.effect-pulse {
@@ -162,7 +162,8 @@
 }
 
 .subtitle-line__surface .subtitle-fragment-fresh.effect-fade {
-  animation: subtitle-fade-in 140ms ease-out both;
+  /* Match surface duration — opacity-only cues need time to read on first paint. */
+  animation: subtitle-fade-in 240ms ease-out both;
 }
 
 .subtitle-line__surface .subtitle-fragment-fresh.effect-subtle-pop {
@@ -178,11 +179,11 @@
 }
 
 .subtitle-line__surface .subtitle-fragment-fresh.effect-blur-in {
-  animation: subtitle-blur-in 160ms ease-out both;
+  animation: subtitle-blur-in 280ms ease-out both;
 }
 
 .subtitle-line__surface .subtitle-fragment-fresh.effect-glow {
-  animation: subtitle-glow 200ms ease-out both;
+  animation: subtitle-glow 360ms ease-out both;
 }
 
 .subtitle-line__surface .subtitle-fragment-fresh.effect-pulse {
@@ -214,11 +215,11 @@
   letter-spacing: 0.08em;
 }
 
-/* Opacity floors stay ≥0.85 so remounts in OBS CEF do not fully blink out.
-   First-paint motion still reads; fragment fades for typewriter stay short. */
+/* Phrase entrance: start near fully transparent so fade/blur/glow read clearly.
+   Remount / finalize / late-MT reuse paths force `effect-none` (no stuck blank). */
 @keyframes subtitle-fade-in {
   from {
-    opacity: 0.85;
+    opacity: 0;
   }
 
   to {
@@ -228,7 +229,7 @@
 
 @keyframes subtitle-subtle-pop {
   from {
-    opacity: 0.85;
+    opacity: 0.2;
     transform: translateY(8px) scale(0.97);
   }
 
@@ -240,7 +241,7 @@
 
 @keyframes subtitle-slide-up {
   from {
-    opacity: 0.85;
+    opacity: 0.15;
     transform: translateY(18px);
   }
 
@@ -252,7 +253,7 @@
 
 @keyframes subtitle-zoom-in {
   from {
-    opacity: 0.85;
+    opacity: 0.15;
     transform: scale(0.9);
   }
 
@@ -264,9 +265,9 @@
 
 @keyframes subtitle-blur-in {
   from {
-    opacity: 0.85;
-    filter: blur(10px);
-    transform: translateY(10px);
+    opacity: 0;
+    filter: blur(16px);
+    transform: translateY(12px);
   }
 
   to {
@@ -276,26 +277,30 @@
   }
 }
 
-/* Uses the line fill color so neon presets match their palette (not hardcoded cyan).
-   Avoid color-mix — older OBS Browser Source CEF may drop the second stop. */
+/* Glow: filter drop-shadow + text-shadow fallback for older OBS CEF that
+   weakens animated filters. text-shadow returns to inherited outline/shadow. */
 @keyframes subtitle-glow {
   from {
-    opacity: 0.85;
-    filter: drop-shadow(0 0 10px var(--subtitle-fill, #6cc7ff))
-      drop-shadow(0 0 18px var(--subtitle-fill, #6cc7ff));
-    transform: translateY(8px);
+    opacity: 0;
+    filter: drop-shadow(0 0 14px var(--subtitle-fill, #6cc7ff))
+      drop-shadow(0 0 28px var(--subtitle-fill, #6cc7ff));
+    text-shadow:
+      0 0 12px var(--subtitle-fill, #6cc7ff),
+      0 0 28px var(--subtitle-fill, #6cc7ff);
+    transform: translateY(10px) scale(1.03);
   }
 
   to {
     opacity: 1;
     filter: drop-shadow(0 0 0 transparent);
-    transform: translateY(0);
+    text-shadow: inherit;
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes subtitle-pulse {
   0% {
-    opacity: 0.85;
+    opacity: 0.2;
     transform: scale(0.96);
   }
 
@@ -312,7 +317,7 @@
 
 @keyframes subtitle-reveal {
   from {
-    opacity: 0.85;
+    opacity: 0.2;
     clip-path: inset(0 100% 0 0);
   }
 

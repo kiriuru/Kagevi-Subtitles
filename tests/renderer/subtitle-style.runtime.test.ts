@@ -515,6 +515,111 @@ describe("SubtitleStyleRenderer runtime", () => {
     expect(Number(summary?.finalized_in_place || 0)).toBeGreaterThan(0);
   });
 
+  it("does not re-animate translation when final text differs from live draft", () => {
+    const R = renderer();
+    const style = {
+      ...minimalStyle(),
+      base: { ...(minimalStyle().base as Record<string, unknown>), effect: "fade" },
+    };
+    const draft = {
+      preset: "stacked",
+      compact: false,
+      show_source: true,
+      show_translations: true,
+      style,
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola draft",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: true,
+        },
+      ],
+    };
+    R.render(container, draft, { overlay: true });
+    const wrapper = container.firstElementChild;
+    const translationSurface = container.querySelector(
+      '.subtitle-line__surface[data-slot="translation_1"]',
+    );
+
+    const traces = collectTrace(container, {
+      ...draft,
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola final",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: false,
+        },
+      ],
+    });
+
+    expect(container.firstElementChild).toBe(wrapper);
+    expect(
+      container.querySelector('.subtitle-line__surface[data-slot="translation_1"]'),
+    ).toBe(translationSurface);
+    expect(container.textContent).toContain("Hola final");
+    expect(translationSurface?.className).toContain("effect-none");
+    expect(translationSurface?.className).not.toContain("effect-fade");
+    const completed = traces.find(
+      (event) => event.type === "completed_frame" && event.kind === "translation",
+    );
+    expect(completed?.animated).toBe(false);
+    expect(completed?.finalized_in_place).toBe(true);
+    const summary = traces.find((event) => event.type === "render_summary");
+    expect(summary?.fast_path).toBe(true);
+  });
+
+  it("does not re-animate translation when a duplicate final arrives", () => {
+    const R = renderer();
+    const style = {
+      ...minimalStyle(),
+      base: { ...(minimalStyle().base as Record<string, unknown>), effect: "glow" },
+    };
+    const finalPayload = {
+      preset: "stacked",
+      compact: false,
+      show_source: true,
+      show_translations: true,
+      style,
+      lifecycle_state: "completed_only",
+      completed_block_visible: true,
+      active_partial_text: "",
+      visible_items: [
+        { kind: "source", text: "Hello", style_slot: "source" },
+        {
+          kind: "translation",
+          text: "Hola",
+          style_slot: "translation_1",
+          lang: "es",
+          is_live_draft: false,
+        },
+      ],
+    };
+    R.render(container, finalPayload, { overlay: true });
+    const translationSurface = container.querySelector(
+      '.subtitle-line__surface[data-slot="translation_1"]',
+    );
+
+    // Duplicate final after the slot was already completed must stay effect-none.
+    const traces = collectTrace(container, finalPayload);
+    expect(
+      container.querySelector('.subtitle-line__surface[data-slot="translation_1"]'),
+    ).toBe(translationSurface);
+    const completed = traces.filter(
+      (event) => event.type === "completed_frame" && event.kind === "translation",
+    );
+    expect(completed.every((event) => event.animated === false)).toBe(true);
+    expect(translationSurface?.className).toContain("effect-none");
+  });
+
   it("does not mark completed MT transient under completed_with_partial without draft flag", () => {
     const rows = renderer().composeRenderRows({
       preset: "stacked",
@@ -538,12 +643,12 @@ describe("SubtitleStyleRenderer runtime", () => {
     expect(translation?.transient).toBeFalsy();
   });
 
-  it("obsPaintPolicy downgrades blur without overlay shell class", () => {
+  it("obsPaintPolicy shares paint budget without remapping effects", () => {
     const R = renderer();
     expect(R.usesObsPaintPolicy?.({ obsPaintPolicy: true })).toBe(true);
     expect(R.usesObsPaintPolicy?.({ overlay: true })).toBe(true);
     expect(R.usesObsPaintPolicy?.({})).toBe(false);
-    expect(R.resolveFreshFragmentEffect("blur_in", { obsPaintPolicy: true }, 3)).toBe("fade");
+    expect(R.resolveFreshFragmentEffect("blur_in", { obsPaintPolicy: true }, 3)).toBe("blur_in");
     expect(R.resolveFreshFragmentEffect("blur_in", { surface: "dashboard" }, 3)).toBe("blur_in");
   });
 
@@ -753,6 +858,9 @@ describe("SubtitleStyleRenderer runtime", () => {
     const long = "x".repeat(threshold);
 
     R.render(container, partialOnlyPayload(long, { style }), { overlay: true });
+    // Phrase start (initial) must animate even when the first partial is long.
+    expect(container.querySelector(".subtitle-fragment-fresh")?.className).toContain("effect-fade");
+
     R.render(container, partialOnlyPayload(`${long}abc`, { style }), { overlay: true });
     expect(container.querySelector(".subtitle-fragment-fresh")?.className).toContain("effect-fade");
 
@@ -764,13 +872,33 @@ describe("SubtitleStyleRenderer runtime", () => {
     expect(container.querySelector(".subtitle-fragment-fresh")?.className).toContain("effect-none");
   });
 
-  it("maps expensive overlay fragment filters to fade", () => {
+  it("keeps configured fragment effects on OBS for small deltas", () => {
     const R = renderer();
-    expect(R.resolveFreshFragmentEffect("glow", { overlay: true }, 3)).toBe("fade");
-    expect(R.resolveFreshFragmentEffect("blur_in", { overlay: true }, 3)).toBe("fade");
+    expect(R.resolveFreshFragmentEffect("glow", { overlay: true }, 3)).toBe("glow");
+    expect(R.resolveFreshFragmentEffect("blur_in", { overlay: true }, 3)).toBe("blur_in");
     expect(R.resolveFreshFragmentEffect("glow", { overlay: false }, 3)).toBe("glow");
     expect(R.resolveFreshFragmentEffect("pulse", { overlay: true }, 3)).toBe("pulse");
     expect(R.resolveFreshFragmentEffect("reveal", { overlay: true }, 3)).toBe("reveal");
+    expect(R.resolveFreshFragmentEffect("glow", { overlay: true }, 20, "extension")).toBe("none");
+    expect(R.resolveFreshFragmentEffect("glow", { overlay: true }, 40, "initial")).toBe("glow");
+    expect(R.resolveFreshFragmentEffect("fade", { overlay: true }, 40, "jump")).toBe("fade");
+  });
+
+  it("animates first long partial for fade blur and glow", () => {
+    const R = renderer();
+    for (const effect of ["fade", "blur_in", "glow"] as const) {
+      const style = {
+        ...minimalStyle(),
+        base: { ...(minimalStyle().base as Record<string, unknown>), effect },
+      };
+      const text = "Это первая длинная фраза для проверки";
+      expect(text.length).toBeGreaterThan(12);
+      R.disposeRenderContainer(container);
+      R.render(container, partialOnlyPayload(text, { style }), { overlay: true });
+      const fresh = container.querySelector(".subtitle-fragment-fresh");
+      expect(fresh?.className, effect).toContain(`effect-${effect.replace(/_/g, "-")}`);
+      expect(fresh?.className, effect).not.toContain("effect-none");
+    }
   });
 
   it("marks animated fresh fragments with transform-capable effect classes", () => {

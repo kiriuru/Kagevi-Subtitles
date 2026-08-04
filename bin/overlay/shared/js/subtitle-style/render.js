@@ -466,21 +466,30 @@ export function render(container, payload, options) {
         //      Without this, the source re-animates each time a
         //      translation row is added/changed, which is exactly the
         //      'got worse for effects' regression.
-        // Translation rows keep the old behaviour — fresh surface,
-        // fresh animation — which matches the user's request that
-        // translations follow the old logic since they appear once.
+        // Translation rows that were already painted as live drafts must
+        // reuse that surface even when final text differs — remount +
+        // entrance animation re-blinks glyphs (fade/blur/glow from opacity 0).
+        // Brand-new translation slots (no prior partial) still get a fresh
+        // animated surface below.
         const slotName = entry.style_slot || "source";
         const entryKind = entry.kind || "source";
         const entryLang = entry.lang || "";
         const entryText = String(entry.text || "");
         const partialSurfaceForSlot = previousPartialSurfaceBySlot.get(slotName) || null;
         const lastPartialTextForSlot = String(previousPartialBySlot.get(slotName) || "");
+        const hasPartialSurfaceForSlot =
+          Boolean(partialSurfaceForSlot) && previousPartialBySlot.has(slotName);
         const canReuseAsFinalization =
-          partialSurfaceForSlot
-          && lastPartialTextForSlot === entryText
-          && previousPartialBySlot.has(slotName);
+          hasPartialSurfaceForSlot && lastPartialTextForSlot === entryText;
+        const canReuseDraftTranslation =
+          entryKind === "translation" && hasPartialSurfaceForSlot;
         let reusableCompletedSurface = null;
-        if (!canReuseAsFinalization && previousEntryDescriptors && previousEntrySurfaces) {
+        if (
+          !canReuseAsFinalization
+          && !canReuseDraftTranslation
+          && previousEntryDescriptors
+          && previousEntrySurfaces
+        ) {
           for (let i = 0; i < previousEntryDescriptors.length; i += 1) {
             const prev = previousEntryDescriptors[i];
             if (
@@ -496,7 +505,7 @@ export function render(container, payload, options) {
             }
           }
         }
-        const reuseSurface = canReuseAsFinalization
+        const reuseSurface = (canReuseAsFinalization || canReuseDraftTranslation)
           ? partialSurfaceForSlot
           : reusableCompletedSurface;
         if (reuseSurface) {
@@ -509,7 +518,7 @@ export function render(container, payload, options) {
             reuseSurface.parentNode.removeChild(reuseSurface);
           }
           surface = reuseSurface;
-          if (canReuseAsFinalization) {
+          if (canReuseAsFinalization || canReuseDraftTranslation) {
             finalizedInPlaceCount += 1;
           }
           while (surface.firstChild) {
@@ -531,7 +540,10 @@ export function render(container, payload, options) {
               effect: "none",
               text_length: entryText.length,
               animated: false,
-              finalized_in_place: Boolean(canReuseAsFinalization),
+              finalized_in_place: Boolean(canReuseAsFinalization || canReuseDraftTranslation),
+              text_patched: Boolean(
+                canReuseDraftTranslation && lastPartialTextForSlot !== entryText
+              ),
               reused_completed_surface: Boolean(reusableCompletedSurface && !canReuseAsFinalization),
             };
             traceFrameEvents.push(event);

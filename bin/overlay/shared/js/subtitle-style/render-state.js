@@ -246,13 +246,12 @@ export function _canFastPathFinalize(rows, previousDescriptors, previousPartialB
         // Same transient state: completed text may differ (late MT / draft
         // finalize). Fast path patches textContent in place — do not bail.
       } else if (prev.transient && !entry.transient) {
-        // T → C finalization. Only compatible if the completed text matches
-        // what was last shown as a partial in this slot. If they differ,
-        // the user would see the text mutate at finalize time — that's
-        // exactly the kind of jump we want the slow path to handle (with
-        // its built-in completion animation).
+        // T → C finalization. Matching text → consolidate fragments in place.
+        // Translation draft → refined final (text differs): still stay on the
+        // fast path and patch textContent — remounting would replay entrance
+        // effects on an already-visible line and break the painted glyphs.
         const lastPartial = String(previousPartialBySlot.get(slot) || "");
-        if (lastPartial !== text) {
+        if (lastPartial !== text && kind !== "translation") {
           return false;
         }
       } else {
