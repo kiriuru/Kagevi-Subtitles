@@ -931,7 +931,7 @@ Shipped as **module** under `bin/modules/tts/` + Svelte UI at `/tts`.
 | Rust service | `crates/voicesub-tts/` |
 | Native playback | `crates/voicesub-audio/src/playback.rs` (`PlaybackHub`) |
 | Twitch | `crates/voicesub-twitch/` |
-| Python sidecar | `bin/modules/tts/runtime/win-x64/google_tts_fetch.exe` |
+| Python sidecar | `bin/modules/tts/runtime/win-x64/google_tts_fetch.exe` (only the onefile binary; never `*.build`) |
 
 ### UI tabs
 
@@ -1127,7 +1127,8 @@ Module produces ready-to-display **partial** or **final** text. Core subtitle/tr
 - `beforeBuildCommand`: `npm run build`
 - Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, languages en/ru/ja/ko/zh)
 - `createUpdaterArtifacts: true` + `plugins.updater` (GitHub `latest.json` endpoint, minisign pubkey, Windows `installMode: passive`)
-- NSIS template: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh`
+- NSIS template: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh` (wired via `bundle.windows.nsis.template` / `installerHooks`)
+- **Upgrade wipe:** `NSIS_HOOK_PREINSTALL` removes shipped `$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}` (and the same under `resources\bin`) before copying new resources, so Vite content-hash orphans and Nuitka `*.build` leftovers cannot survive updates. `user-data/` and `logs/` are never deleted.
 - WebView2: `downloadBootstrapper` (silent=false)
 - Resources: `bin/dashboard`, `overlay`, `worker`, `tts`, `local-asr`, `fonts`, `modules`
 
@@ -1140,7 +1141,7 @@ build-release-msi.bat          # back-compat entry
   → build-release-msi.ps1
   → build-release.ps1
     1. npm run build (+ build:tts + build:local-asr)
-    2. bin\modules\tts\build_runtime.bat (if google_tts_fetch.exe missing)
+    2. bin\modules\tts\build_runtime.bat (if google_tts_fetch.exe missing); npm run scrub:shipped-bin (drop *.build / runtime/build before package)
     3. node scripts/validate-nsis-i18n.mjs
     4. cargo tauri build (NSIS + updater .sig; requires secrets/tauri-updater.key)
     5. Stage GitHub-safe names → release_root/v{version}/

@@ -42,7 +42,9 @@
       "nsis": {
         "installMode": "currentUser",
         "languages": ["English", "Russian", "Japanese", "Korean", "SimpChinese"],
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "template": "./windows/installer.nsi",
+        "installerHooks": "./windows/hooks.nsh"
       }
     },
     "icon": [

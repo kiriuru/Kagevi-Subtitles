@@ -27,10 +27,13 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 - Style → font picker: alphabet tags no longer follow UI locale — always shown in the matching script so CJK / Latin-only coverage is visible at a glance.
 - Desktop updater: NSIS installer is staged under the install/project root (not `%TEMP%`); leftovers are deleted on the next launch after a successful update (or immediately on a failed attempt).
+- NSIS upgrade: before copying resources, wipe shipped `$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}` (and the same under `resources\bin`) so orphaned Vite content-hash files and other leftovers from prior builds cannot accumulate across updates; `user-data/` and `logs/` are never touched.
+- TTS sidecar: `build_runtime.py` builds Nuitka in a work tree and ships only `google_tts_fetch.exe`; `npm run scrub:shipped-bin` (from `build-release.ps1`) refuses to package `*.build` / `runtime/build`.
 - Docs / UI: `microsoft_edge` marked unreliable — Microsoft’s anonymous Edge path can fail with **HTTP 404**; prefer Bing / Google Web when it breaks.
 
 ### Fixed
 
+- Installer / release package: Nuitka intermediate `google_tts_fetch.build` (~13 MB) is no longer left next to the sidecar and does not survive upgrades; orphaned hashed assets under worker/dashboard/tts/local-asr are cleared on upgrade.
 - OBS overlay: live-partial translation flicker — `is_live_draft` is forwarded into the renderer so draft MT uses the transient/fast path (like source); completed-text changes patch in place without remount; entrance effects start at opacity ≥0.85; dashboard preview uses the same OBS paint policy (`obsPaintPolicy`); ~40 ms coalesce while drafts are visible; glow keyframes drop `color-mix` for older OBS CEF.
 - UI locale: style slot tabs (“Translation 1 · Russian”) and OBS Output mode options update immediately when the interface language changes, without a page reload; same for Modules badges and Translation provider field labels.
 - Update check: dashboard no longer force-polls GitHub again on bootstrap (reuses the runtime startup check).

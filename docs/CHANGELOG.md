@@ -27,10 +27,13 @@
 
 - Стиль → выбор шрифта: метки алфавитов больше не переводятся через UI-локаль — всегда в соответствующем скрипте, чтобы было видно покрытие CJK/latin-only шрифтов.
 - Desktop updater: NSIS-установщик кладётся в корень install/project (не в `%TEMP%`); хвосты удаляются при следующем запуске после успешного обновления (или сразу при неудачной попытке).
+- NSIS upgrade: перед копированием ресурсов сносятся shipped-деревья `$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}` (и то же под `resources\bin`), чтобы сиротские Vite content-hash файлы и прочий мусор прошлых сборок не копились при обновлении; `user-data/` и `logs/` не трогаются.
+- TTS sidecar: `build_runtime.py` собирает Nuitka во work-tree и в runtime кладёт только `google_tts_fetch.exe`; `npm run scrub:shipped-bin` (в `build-release.ps1`) не даёт упаковать `*.build` / `runtime/build`.
 - Docs / UI: `microsoft_edge` помечен как ненадёжный — анонимный Edge-путь Microsoft может отвечать **HTTP 404**; при сбое предпочтительны Bing / Google Web.
 
 ### Fixed
 
+- Установщик / релизный пакет: промежуточная папка Nuitka `google_tts_fetch.build` (~13 MB) больше не попадает рядом с sidecar и не остаётся после апдейта; сиротские hashed-ассеты worker/dashboard/tts/local-asr вычищаются при upgrade.
 - OBS overlay: мерцание линий live-partial перевода — `is_live_draft` прокидывается в renderer, draft MT идёт по transient/fast-path (как source); смена completed-текста патчится in-place без remount; entrance-эффекты стартуют с opacity ≥0.85; preview дашборда использует ту же OBS paint-policy (`obsPaintPolicy`); coalesce ~40 ms при видимых drafts; glow без `color-mix` для старого OBS CEF.
 - UI-локаль: подписи слотов стиля («Translation 1 · Russian») и опции OBS Output mode обновляются сразу при смене языка интерфейса, без перезагрузки страницы; то же для бейджей Modules и лейблов полей провайдера в Translation.
 - Проверка обновлений: dashboard больше не дублирует force-опрос GitHub при старте (использует результат runtime startup check).

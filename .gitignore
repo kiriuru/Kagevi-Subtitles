@@ -99,8 +99,7 @@ build-release-msi.ps1
 build-release-msi.bat
 xtask/
 .cargo/config.toml
-src-tauri/windows/hooks.nsh
-src-tauri/windows/installer.nsi
+# NSIS template + hooks are tracked (upgrade wipe of shipped bin/*, WebView2 check).
 legacy/
 docs/COMMIT_CONVENTIONS.md
 docs/LOCAL_ASR_MODULE_PLAN.ru.md

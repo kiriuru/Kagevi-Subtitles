@@ -10,6 +10,9 @@ bin/modules/tts/runtime/
   linux-x64/google_tts_fetch
 ```
 
+Do **not** ship Nuitka/PyInstaller intermediates (`*.build`, `*.dist`, `*.onefile-build`, `runtime/build/`).
+`build_runtime.py` compiles into a work tree under `runtime/build/`, copies only the onefile binary into the platform dir, then deletes the work tree. `npm run scrub:shipped-bin` (also run from `build-release.ps1`) removes any leftovers before NSIS packaging.
+
 Build (developer machine only):
 
 ```bat

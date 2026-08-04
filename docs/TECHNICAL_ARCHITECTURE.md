@@ -931,7 +931,7 @@ http://127.0.0.1:8765/overlay
 | Rust service | `crates/voicesub-tts/` |
 | Native playback | `crates/voicesub-audio/src/playback.rs` (`PlaybackHub`) |
 | Twitch | `crates/voicesub-twitch/` |
-| Python sidecar | `bin/modules/tts/runtime/win-x64/google_tts_fetch.exe` |
+| Python sidecar | `bin/modules/tts/runtime/win-x64/google_tts_fetch.exe` (только onefile binary; никогда `*.build`) |
 
 ### UI tabs
 
@@ -1127,7 +1127,8 @@ Stop останавливает local pipeline (или browser path, если а
 - `beforeBuildCommand`: `npm run build`
 - Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, языки en/ru/ja/ko/zh)
 - `createUpdaterArtifacts: true` + `plugins.updater` (endpoint GitHub `latest.json`, minisign pubkey, Windows `installMode: passive`)
-- Шаблон NSIS: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh`
+- Шаблон NSIS: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh` (через `bundle.windows.nsis.template` / `installerHooks`)
+- **Очистка при обновлении:** `NSIS_HOOK_PREINSTALL` удаляет shipped `$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}` (и то же под `resources\bin`) перед копированием новых ресурсов, чтобы сиротские Vite content-hash файлы и Nuitka `*.build` не переживали апдейт. `user-data/` и `logs/` не трогаются.
 - WebView2: `downloadBootstrapper` (silent=false)
 - Resources: `bin/dashboard`, `overlay`, `worker`, `tts`, `local-asr`, `fonts`, `modules`
 
@@ -1140,7 +1141,7 @@ build-release-msi.bat          # точка входа для back-compat
   → build-release-msi.ps1
   → build-release.ps1
     1. npm run build (+ build:tts + build:local-asr)
-    2. bin\modules\tts\build_runtime.bat (если нет google_tts_fetch.exe)
+    2. bin\modules\tts\build_runtime.bat (если нет google_tts_fetch.exe); npm run scrub:shipped-bin (убрать *.build / runtime/build перед упаковкой)
     3. node scripts/validate-nsis-i18n.mjs
     4. cargo tauri build (NSIS + updater .sig; нужен secrets/tauri-updater.key)
     5. Staging с GitHub-safe именами → release_root/v{version}/
