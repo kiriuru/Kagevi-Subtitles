@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.2 — Технический документ
+# Kagevi Subtitles 0.6.3 — Технический документ
 
-Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.2"`.
+Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.3"`.
 
 Этот документ описывает layout проекта Kagevi Subtitles, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
 
@@ -1275,6 +1275,7 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (м�
 - Контроль drift: `npm run version:check`; Rust-тест `project_version_matches_cargo_pkg`
 - `GET /api/version`, `POST /api/updates/check` — опрос GitHub Releases для метаданных dashboard; runtime force-check на старте HTTP; dashboard переиспользует через `refreshVersionAfterStartupCheck`
 - **Установка из приложения:** `tauri-plugin-updater` + `tauri-plugin-process`; endpoint синхронизируется в `https://github.com/{DEFAULT_GITHUB_REPO}/releases/latest/download/latest.json`; minisign-ключи в `secrets/` (gitignored). Перед скачиванием shell IPC `prepare_updater_staging` перенаправляет `TEMP`/`TMP` процесса в корень install/project (`discover_project_root`), чтобы NSIS exe оказался там (не в `%TEMP%`). При ошибке `abort_updater_staging` восстанавливает env и чистит частичный staging. После успешного запуска установщика процесс завершается раньше, чем NSIS закончит работу, поэтому хвосты (`{product}-{ver}-updater-*`) удаляются при **следующем** старте приложения (`cleanup_updater_staging`).
+- Для пуша коммитов предпочтителен `npm run push:safe`: **отказывается** пушить, если `origin` впереди (без авто `pull --rebase`, который checkout’ит remote и в IDE выглядит как откат локальных доков/кода).
 - **Единый релиз (минимум правок после bump):**
   1. `npm run version:bump -- --patch`
   2. `npm run release`  (= `build-release.ps1` + `npm run release:github`)

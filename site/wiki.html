@@ -71,7 +71,7 @@
         <div class="doc-panels">
           <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
             
-<p>User guide for <strong>Kagevi Subtitles <code>0.6.2</code></strong> — how to get live subtitles on stream, what each screen does, and how to fix common problems.</p>
+<p>User guide for <strong>Kagevi Subtitles <code>0.6.3</code></strong> — how to get live subtitles on stream, what each screen does, and how to fix common problems.</p>
 <p align="center">
   <a href="index.html">README</a> ·
   <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md" target="_blank" rel="noopener noreferrer">Architecture</a> ·
@@ -111,7 +111,7 @@
 <td><strong>TTS</strong> module</td>
 </tr>
 </tbody></table>
-<p>Current version line: <strong><code>0.6.2</code></strong> (first Kagevi release was <code>0.5.0</code>).</p>
+<p>Current version line: <strong><code>0.6.3</code></strong> (first Kagevi release was <code>0.5.0</code>).</p>
 <blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
 In OBS, use exactly: <code>http://127.0.0.1:8765/overlay</code><br>After updating the app, <strong>reload</strong> that Browser Source if the overlay looks stuck or blank.</p>
 </blockquote>
@@ -147,11 +147,11 @@ In OBS, use exactly: <code>http://127.0.0.1:8765/overlay</code><br>After updatin
 <p>No Python or Node.js is required to run the installed app.</p>
 <h3>Install and update</h3>
 <ol>
-<li>Run <code>Kagevi Subtitles_0.6.2_x64-setup.exe</code> (or the latest setup from the <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">releases page</a>).</li>
+<li>Run <code>Kagevi Subtitles_0.6.3_x64-setup.exe</code> (or the latest setup from the <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">releases page</a>).</li>
 <li>Open <strong>Kagevi Subtitles.exe</strong>.</li>
-<li>To update later: close the app → install the new setup over the old one. Your settings in <code>user-data/</code> stay put.</li>
+<li>Later updates: the dashboard can show an <strong>update banner</strong>. <strong>Install update</strong> downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in <code>user-data/</code> stay put.</li>
 </ol>
-<p>The dashboard can show an <strong>update banner</strong> when a newer GitHub release exists. <strong>Download</strong> opens the release page (the app does not auto-install updates).</p>
+<p>Manual <strong>Download</strong> / release-page links remain available if you prefer not to install from inside the app.</p>
 <h3>Useful local addresses</h3>
 <table>
 <thead>
@@ -203,7 +203,7 @@ In OBS, use exactly: <code>http://127.0.0.1:8765/overlay</code><br>After updatin
 <li><strong>Local ASR</strong> — only appears after setup is finished (see <a href="#local-asr">Local ASR</a>).</li>
 </ul>
 </li>
-<li>Optional: open <strong>Translation</strong>, turn translation on, enable at least one line, pick a provider (three work with <strong>no API key</strong> — see below).</li>
+<li>Optional: open <strong>Translation</strong>, turn translation on, enable at least one line, pick a provider (four work with <strong>no API key</strong> — see below).</li>
 <li>Optional: open <strong>Subtitles</strong> / <strong>Style</strong> to set preset, TTL, fonts, and colors.</li>
 <li>Press <strong>Start</strong>.</li>
 <li>Speak — check the Live preview, then check OBS.</li>
@@ -290,7 +290,7 @@ Check in this order: <strong>Start pressed?</strong> → <strong>recognition wor
 <ul>
 <li><input disabled="" type="checkbox"> <strong>Translation</strong> tab → translation is enabled.</li>
 <li><input disabled="" type="checkbox"> At least one translation line is enabled.</li>
-<li><input disabled="" type="checkbox"> Provider needs a key? Add it under provider settings. Or switch to a <strong>keyless</strong> provider (Google Web, Free Web Translate, Microsoft Edge).</li>
+<li><input disabled="" type="checkbox"> Provider needs a key? Add it under provider settings. Or switch to a <strong>keyless</strong> provider (Google Web, Free Web Translate, Bing Translator; Microsoft Edge may return <strong>HTTP 404</strong>).</li>
 <li><input disabled="" type="checkbox"> Look at translation results / errors on the same tab — delays can also mean a newer phrase cancelled an older request (normal).</li>
 </ul>
 <h3>OBS is empty</h3>
@@ -495,7 +495,7 @@ Check in this order: <strong>Start pressed?</strong> → <strong>recognition wor
 <li>When the module is <strong>ready</strong>, close the window if you like — settings stay in <code>user-data/modules/local-asr/</code>.</li>
 <li>On <strong>Live</strong>, choose <strong>Local ASR</strong>, then <strong>Start</strong>.</li>
 </ol>
-<p>CPU is enough for Live. CUDA is optional (faster on supported NVIDIA GPUs after extra downloads).</p>
+<p>CPU is enough for Live. CUDA is optional (faster on supported NVIDIA GPUs after extra downloads). For CUDA pick <strong>fp16</strong> or <strong>fp32</strong> models — <strong>int8</strong> stays on CPU.</p>
 <h3>After changing VAD / realtime options</h3>
 <p><strong>Stop → Start</strong> on Live so the new mic/pipeline settings apply.</p>
 <h3>What you get</h3>
@@ -538,10 +538,14 @@ Check in this order: <strong>Start pressed?</strong> → <strong>recognition wor
 </tr>
 <tr>
 <td><strong>Microsoft Edge Translate</strong></td>
-<td>Anonymous Edge / Azure-quality path</td>
+<td>Anonymous Edge / Azure-quality path when it works. May fail with <strong>HTTP 404</strong> if Microsoft blocks the endpoint — switch to Bing / Google Web.</td>
+</tr>
+<tr>
+<td><strong>Bing Translator</strong></td>
+<td>Keyless Bing web session (<code>ttranslatev3</code>)</td>
 </tr>
 </tbody></table>
-<p>There are <strong>17</strong> providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local <code>config.toml</code>.</p>
+<p>There are <strong>18</strong> providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local <code>config.toml</code>.</p>
 <h3>Cache</h3>
 <p>Memory and optional disk cache (<code>user-data/translation-cache/</code>) avoid repeating the same request. If you change LLM prompts a lot, clear or expect old cached answers until the text changes.</p>
 <h3>Optional realtime translation</h3>
@@ -570,7 +574,7 @@ Check in this order: <strong>Start pressed?</strong> → <strong>recognition wor
 </tr>
 <tr>
 <td>Visibility</td>
-<td>Show source, show translations, max translation lines on screen.</td>
+<td>Show source and translations. How many translation lines appear follows the <strong>enabled</strong> Translation lines (no separate max-lines control).</td>
 </tr>
 <tr>
 <td>TTL / lifetime</td>
@@ -595,8 +599,9 @@ While you start a new sentence, the previous finished translation can stay until
 
 <ul>
 <li>Pick a built-in preset or customize fonts, size, outline, shadow, background, alignment.</li>
+<li>Font picker shows each face in its own typeface; alphabet tags stay in native scripts (<code>Latin</code>, <code>Кириллица</code>, <code>日本語</code>, …) so CJK / Latin-only coverage is obvious.</li>
 <li>Effects include fade, slide, zoom, glow, and similar.</li>
-<li>Style <strong>source</strong> and each <strong>translation_1…4</strong> separately if you want.</li>
+<li>Style <strong>source</strong> and each <strong>enabled</strong> <code>translation_1…4</code> separately if you want (tabs only for active lines).</li>
 <li>Live preview and OBS share the same look — Save (or Start) after edits.</li>
 </ul>
 <p align="right"><a href="#doc-main">↑ Top</a></p>
@@ -631,7 +636,9 @@ While you start a new sentence, the previous finished translation can stay until
 <ul>
 <li>Enable in the OBS tab; set host / port / password to match OBS WebSocket v5.</li>
 <li>Choose what to send: live source, finals only, a translation line (<code>translation_1</code>…<code>translation_4</code>), or the first visible line.</li>
+<li>Optional: send <strong>live-partial translations</strong> in <code>translation_*</code> modes (<code>send_translation_partials</code>; throttled like source). Finals still cover LLM / providers without partials.</li>
 <li>Native stream captions only work while OBS is actually streaming.</li>
+<li>Twitch native CC is reliable for <strong>Latin</strong> scripts; Cyrillic / CJK usually need the <strong>browser overlay</strong> instead.</li>
 <li>Debug mirror can push text into an OBS text source for testing.</li>
 </ul>
 <p align="right"><a href="#doc-main">↑ Top</a></p>
@@ -726,7 +733,7 @@ While you start a new sentence, the previous finished translation can stay until
 <details>
 <summary><strong>Deep diagnostics (advanced)</strong></summary>
 
-<p>Turn on full logging in Settings / config (<code>logging.full_enabled</code>) or set <code>VOICESUB_DEEP_DIAGNOSTICS=1</code>. Extra JSONL traces can be enabled with <code>VOICESUB_TRACE_*</code> variables. Only needed when hunting a tough bug.</p>
+<p>Turn on full logging in Settings / config (<code>logging.full_enabled</code>) or set <code>VOICESUB_DEEP_DIAGNOSTICS=1</code>. Extra JSONL traces can be enabled with <code>VOICESUB_TRACE_*</code> variables. Detailed Tools metrics / Local ASR decode counters need <code>logging.runtime_metrics_enabled</code> (off by default). Only needed when hunting a tough bug.</p>
 </details>
 
 <p align="right"><a href="#doc-main">↑ Top</a></p>
@@ -829,7 +836,7 @@ While you start a new sentence, the previous finished translation can stay until
           </article>
           <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
             
-<p>Руководство пользователя для <strong>Kagevi Subtitles <code>0.6.2</code></strong> — как получить живые субтитры на стриме, что делает каждый экран и как чинить типичные проблемы.</p>
+<p>Руководство пользователя для <strong>Kagevi Subtitles <code>0.6.3</code></strong> — как получить живые субтитры на стриме, что делает каждый экран и как чинить типичные проблемы.</p>
 <p align="center">
   <a href="index.html">README</a> ·
   <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Архитектура</a> ·
@@ -869,7 +876,7 @@ While you start a new sentence, the previous finished translation can stay until
 <td>модуль <strong>TTS</strong></td>
 </tr>
 </tbody></table>
-<p>Текущая линия: <strong><code>0.6.2</code></strong> (первый релиз Kagevi — <code>0.5.0</code>).</p>
+<p>Текущая линия: <strong><code>0.6.3</code></strong> (первый релиз Kagevi — <code>0.5.0</code>).</p>
 <blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
 В OBS нужен именно: <code>http://127.0.0.1:8765/overlay</code><br>После обновления приложения <strong>перезагрузите</strong> Browser Source, если overlay пустой или «залип».</p>
 </blockquote>
@@ -905,11 +912,11 @@ While you start a new sentence, the previous finished translation can stay until
 <p>Для запуска установленного приложения Python и Node.js не нужны.</p>
 <h3>Установка и обновление</h3>
 <ol>
-<li>Запустите <code>Kagevi Subtitles_0.6.2_x64-setup.exe</code> (или свежий setup со <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">страницы релизов</a>).</li>
+<li>Запустите <code>Kagevi Subtitles_0.6.3_x64-setup.exe</code> (или свежий setup со <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">страницы релизов</a>).</li>
 <li>Откройте <strong>Kagevi Subtitles.exe</strong>.</li>
-<li>Обновление: закройте приложение → поставьте новый setup поверх. Настройки в <code>user-data/</code> сохраняются.</li>
+<li>Позже: на dashboard может появиться <strong>баннер обновления</strong>. <strong>Установить обновление</strong> скачивает подписанный NSIS (minisign), ставит его и перезапускает приложение. По-прежнему можно закрыть приложение и поставить новый setup поверх со страницы GitHub. Настройки в <code>user-data/</code> сохраняются.</li>
 </ol>
-<p>На dashboard может появиться <strong>баннер обновления</strong>, если на GitHub есть более новый релиз. <strong>Скачать</strong> открывает страницу релиза (автоустановки нет).</p>
+<p>Ручная ссылка <strong>Скачать</strong> / страница релиза остаётся, если не хотите ставить из приложения.</p>
 <h3>Полезные локальные адреса</h3>
 <table>
 <thead>
@@ -961,7 +968,7 @@ While you start a new sentence, the previous finished translation can stay until
 <li><strong>Local ASR</strong> — появится только после настройки модуля (см. <a href="#local-asr">Local ASR</a>).</li>
 </ul>
 </li>
-<li>По желанию: <strong>Перевод</strong> — включите перевод, активируйте хотя бы одну линию, выберите провайдера (три работают <strong>без API key</strong> — ниже).</li>
+<li>По желанию: <strong>Перевод</strong> — включите перевод, активируйте хотя бы одну линию, выберите провайдера (четыре работают <strong>без API key</strong> — ниже).</li>
 <li>По желанию: <strong>Субтитры</strong> / <strong>Стиль</strong> — пресет, TTL, шрифты и цвета.</li>
 <li>Нажмите <strong>Start</strong>.</li>
 <li>Говорите — смотрите превью на Live, затем OBS.</li>
@@ -1048,7 +1055,7 @@ While you start a new sentence, the previous finished translation can stay until
 <ul>
 <li><input disabled="" type="checkbox"> Вкладка <strong>Перевод</strong> → перевод включён.</li>
 <li><input disabled="" type="checkbox"> Включена хотя бы одна линия перевода.</li>
-<li><input disabled="" type="checkbox"> Провайдеру нужен ключ? Добавьте в настройках провайдера. Или возьмите <strong>безключевой</strong>: Google Web, Free Web Translate, Microsoft Edge.</li>
+<li><input disabled="" type="checkbox"> Провайдеру нужен ключ? Добавьте в настройках провайдера. Или возьмите <strong>безключевой</strong>: Google Web, Free Web Translate, Bing Translator (Microsoft Edge может отвечать <strong>HTTP 404</strong>).</li>
 <li><input disabled="" type="checkbox"> Смотрите блок результатов / ошибок на той же вкладке — задержка иногда значит, что новая фраза отменила старый запрос (это нормально).</li>
 </ul>
 <h3>В OBS пусто</h3>
@@ -1253,7 +1260,7 @@ While you start a new sentence, the previous finished translation can stay until
 <li>Когда модуль <strong>ready</strong>, окно можно закрыть — настройки в <code>user-data/modules/local-asr/</code>.</li>
 <li>На <strong>Live</strong> выберите <strong>Local ASR</strong> и нажмите <strong>Start</strong>.</li>
 </ol>
-<p>Для Live хватает CPU. CUDA опционален (быстрее на подходящих NVIDIA после доп. загрузок).</p>
+<p>Для Live хватает CPU. CUDA опционален (быстрее на подходящих NVIDIA после доп. загрузок). Для CUDA берите модели <strong>fp16</strong> или <strong>fp32</strong> — <strong>int8</strong> остаётся на CPU.</p>
 <h3>После смены VAD / realtime</h3>
 <p>На Live сделайте <strong>Stop → Start</strong>, чтобы новые настройки микрофона/пайплайна применились.</p>
 <h3>Что получаете</h3>
@@ -1296,10 +1303,14 @@ While you start a new sentence, the previous finished translation can stay until
 </tr>
 <tr>
 <td><strong>Microsoft Edge Translate</strong></td>
-<td>Анонимный Edge / качество Azure Translator</td>
+<td>Анонимный Edge / качество Azure, когда путь жив. Может отвечать <strong>HTTP 404</strong>, если Microsoft блокирует endpoint — переключитесь на Bing / Google Web.</td>
+</tr>
+<tr>
+<td><strong>Bing Translator</strong></td>
+<td>Keyless Bing web session (<code>ttranslatev3</code>)</td>
 </tr>
 </tbody></table>
-<p>Всего <strong>17</strong> провайдеров (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, китайские и др.). Ключи хранятся только в локальном <code>config.toml</code>.</p>
+<p>Всего <strong>18</strong> провайдеров (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, китайские и др.). Ключи хранятся только в локальном <code>config.toml</code>.</p>
 <h3>Кэш</h3>
 <p>Память и опциональный диск (<code>user-data/translation-cache/</code>) не дергают провайдера повторно на тот же текст. Если часто меняете промпты LLM — учитывайте старый кэш, пока текст не изменится.</p>
 <h3>Опциональный realtime-перевод</h3>
@@ -1328,7 +1339,7 @@ While you start a new sentence, the previous finished translation can stay until
 </tr>
 <tr>
 <td>Видимость</td>
-<td>Показывать исходник, переводы, сколько линий перевода на экране.</td>
+<td>Показывать исходник и переводы. Сколько линий перевода на экране — по <strong>включённым</strong> линиям в Переводе (отдельного «максимума строк» нет).</td>
 </tr>
 <tr>
 <td>TTL / время жизни</td>
@@ -1353,8 +1364,9 @@ While you start a new sentence, the previous finished translation can stay until
 
 <ul>
 <li>Встроенный пресет или свои шрифт, размер, обводка, тень, фон, выравнивание.</li>
+<li>В списке шрифтов каждая строка рисуется своим лицом; метки алфавитов в родных письменностях (<code>Latin</code>, <code>Кириллица</code>, <code>日本語</code>, …), чтобы было видно покрытие CJK / latin-only.</li>
 <li>Эффекты: fade, slide, zoom, glow и похожие.</li>
-<li>Можно отдельно стилизовать <strong>source</strong> и каждую <strong>translation_1…4</strong>.</li>
+<li>Можно отдельно стилизовать <strong>source</strong> и каждую <strong>включённую</strong> <code>translation_1…4</code> (вкладки только для активных линий).</li>
 <li>Превью и OBS выглядят одинаково — после правок Save (или Start).</li>
 </ul>
 <p align="right"><a href="#doc-main">↑ Top</a></p>
@@ -1389,7 +1401,9 @@ While you start a new sentence, the previous finished translation can stay until
 <ul>
 <li>Включите на вкладке OBS; host / port / password как в OBS WebSocket v5.</li>
 <li>Что слать: live source, только finals, линия перевода (<code>translation_1</code>…<code>translation_4</code>) или первая видимая линия.</li>
+<li>Опционально: <strong>live-partial переводы</strong> в режимах <code>translation_*</code> (<code>send_translation_partials</code>; throttle как у source). Finals остаются для LLM / провайдеров без partials.</li>
 <li>Нативные stream captions работают только пока OBS реально стримит.</li>
+<li>Twitch native CC надёжен для <strong>латиницы</strong>; кириллица / CJK обычно через <strong>browser overlay</strong>.</li>
 <li>Debug mirror может писать в текстовый источник OBS для проверки.</li>
 </ul>
 <p align="right"><a href="#doc-main">↑ Top</a></p>
@@ -1484,7 +1498,7 @@ While you start a new sentence, the previous finished translation can stay until
 <details>
 <summary><strong>Глубокая диагностика (advanced)</strong></summary>
 
-<p>Включите полное логирование в настройках / config (<code>logging.full_enabled</code>) или <code>VOICESUB_DEEP_DIAGNOSTICS=1</code>. Доп. JSONL — через <code>VOICESUB_TRACE_*</code>. Нужно только для сложных багов.</p>
+<p>Включите полное логирование в настройках / config (<code>logging.full_enabled</code>) или <code>VOICESUB_DEEP_DIAGNOSTICS=1</code>. Доп. JSONL — через <code>VOICESUB_TRACE_*</code>. Подробные метрики Tools / счётчики Local ASR — <code>logging.runtime_metrics_enabled</code> (по умолчанию выкл.). Нужно только для сложных багов.</p>
 </details>
 
 <p align="right"><a href="#doc-main">↑ Top</a></p>

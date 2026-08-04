@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.2 — Technical Architecture Document
+# Kagevi Subtitles 0.6.3 — Technical Architecture Document
 
-Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.6.2"`.
+Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.6.3"`.
 
 This document describes the Kagevi Subtitles project layout, HTTP/WebSocket/Tauri IPC contracts, configuration schema, data flow through the Rust runtime, and frontend surfaces. It is the **canonical technical reference** for active development. README is a short product overview; CHANGELOG is release history; agent policy is `AGENTS.md`.
 
@@ -1275,6 +1275,7 @@ Config key: `ui.language` (empty = browser default).
 - Drift guards: `npm run version:check`; Rust test `project_version_matches_cargo_pkg`
 - `GET /api/version`, `POST /api/updates/check` — GitHub Releases poll for dashboard metadata (`update_service.rs`); runtime force-check on HTTP start; dashboard reuses via `refreshVersionAfterStartupCheck`
 - **In-app install:** `tauri-plugin-updater` + `tauri-plugin-process`; endpoint synced to `https://github.com/{DEFAULT_GITHUB_REPO}/releases/latest/download/latest.json`; minisign keys in `secrets/` (gitignored). Before download, shell IPC `prepare_updater_staging` redirects process `TEMP`/`TMP` to the install/project root (`discover_project_root`) so the NSIS exe is staged there (not `%TEMP%`). On failure, `abort_updater_staging` restores env and deletes partial staging. Successful install exits before NSIS finishes, so leftovers (`{product}-{ver}-updater-*`) are removed on the **next** app launch (`cleanup_updater_staging`).
+- Prefer `npm run push:safe` when publishing commits: it **refuses** to push when `origin` is ahead (no auto `pull --rebase`, which checkouts remote and can look like a local docs/code rollback in the IDE).
 - **Unified release (minimal edits after bump):**
   1. `npm run version:bump -- --patch`
   2. `npm run release`  (= `build-release.ps1` + `npm run release:github`)

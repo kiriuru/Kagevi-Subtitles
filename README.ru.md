@@ -2,7 +2,7 @@
 
 **Живые переводимые субтитры для стримеров — локально, privacy-first, готово для OBS.**
 
-[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
+[![Version](https://img.shields.io/badge/version-0.6.3-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#системные-требования)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
@@ -19,7 +19,7 @@
 
 Kagevi Subtitles — Windows desktop-приложение, которое превращает речь в субтитры в реальном времени с опциональным переводом. Распознавание — через **Google Chrome Web Speech** или опциональный офлайн **Local ASR** (Parakeet / ONNX). Всё работает локально: bind по умолчанию `127.0.0.1:8765`, без cloud backend и аккаунтов.
 
-Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.6.2`**.
+Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.6.3`**.
 
 <p align="center">
   <img src="./Images/kagevi_live.png" alt="Вкладка Live в Kagevi Subtitles" width="860">
@@ -152,7 +152,7 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 
 ## Быстрый старт
 
-1. Установите из `Kagevi Subtitles_0.6.2_x64-setup.exe` (или последней сборки в папке релиза).
+1. Установите из `Kagevi Subtitles_0.6.3_x64-setup.exe` (или последней сборки в папке релиза).
 2. Запустите **Kagevi Subtitles.exe** — dashboard откроется на `http://127.0.0.1:8765/`.
 3. В OBS добавьте **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. При необходимости настройте перевод и стиль субтитров, нажмите **Start**.

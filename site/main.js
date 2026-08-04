@@ -22,7 +22,7 @@
         "Speech to on-screen captions with optional translation — local-first, privacy-first, ready for OBS.",
       ctaDownload: "Download for Windows",
       ctaGuide: "Feature guide",
-      heroMeta: "Windows 10/11 · MIT · v0.6.2",
+      heroMeta: "Windows 10/11 · MIT · v0.6.3",
       heroScroll: "Explore",
       guideTitle: "How the product works",
       guideLede:
@@ -156,7 +156,7 @@
         "Речь → субтитры на экране с опциональным переводом. Локально, privacy-first, готово для OBS.",
       ctaDownload: "Скачать для Windows",
       ctaGuide: "Обзор функций",
-      heroMeta: "Windows 10/11 · MIT · v0.6.2",
+      heroMeta: "Windows 10/11 · MIT · v0.6.3",
       heroScroll: "Смотреть",
       guideTitle: "Как устроен продукт",
       guideLede:
@@ -289,7 +289,7 @@
         "音声から画面上の字幕へ。翻訳は任意。ローカル優先・プライバシー優先で OBS にすぐ使えます。",
       ctaDownload: "Windows 用をダウンロード",
       ctaGuide: "機能ガイド",
-      heroMeta: "Windows 10/11 · MIT · v0.6.2",
+      heroMeta: "Windows 10/11 · MIT · v0.6.3",
       heroScroll: "Explore",
       guideTitle: "製品の仕組み",
       guideLede:
@@ -423,7 +423,7 @@
         "语音到屏幕字幕，可选翻译。本地优先、隐私优先，即刻对接 OBS。",
       ctaDownload: "下载 Windows 版",
       ctaGuide: "功能指南",
-      heroMeta: "Windows 10/11 · MIT · v0.6.2",
+      heroMeta: "Windows 10/11 · MIT · v0.6.3",
       heroScroll: "探索",
       guideTitle: "产品如何工作",
       guideLede:
@@ -556,7 +556,7 @@
         "음성을 화면 자막으로. 번역은 선택. 로컬·프라이버시 우선, OBS에 바로 연결.",
       ctaDownload: "Windows용 다운로드",
       ctaGuide: "기능 가이드",
-      heroMeta: "Windows 10/11 · MIT · v0.6.2",
+      heroMeta: "Windows 10/11 · MIT · v0.6.3",
       heroScroll: "둘러보기",
       guideTitle: "제품 동작 방식",
       guideLede:
