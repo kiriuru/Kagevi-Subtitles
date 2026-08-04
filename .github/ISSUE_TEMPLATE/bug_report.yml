@@ -1,0 +1,73 @@
+name: Bug report
+description: Something is broken or behaves incorrectly
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please check the [Wiki → Troubleshooting](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html) first.
+        For security issues, use a [private advisory](https://github.com/kiriuru/Kagevi-Subtitles/security/advisories/new) instead.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Help → About, or the installer filename (e.g. 0.6.3).
+      placeholder: "0.6.3"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Browser Speech / Chrome worker
+        - Local ASR
+        - Translation
+        - Subtitles / overlay / OBS
+        - TTS / Twitch
+        - Installer / updater
+        - Dashboard UI / settings
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Clear description of the bug.
+      placeholder: Expected X, but got Y…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps so someone else can hit the same bug.
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / diagnostics
+      description: Relevant lines from `logs/core.log` or a redacted diagnostics export. Do not paste API keys.
+      render: text
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for duplicates
+          required: true
+        - label: This is not a security vulnerability (those go to private advisories)
+          required: true

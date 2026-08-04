@@ -210,6 +210,10 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 
 PR приветствуются. Для крупных изменений — сначала issue.
 
+**Гайд для контрибьюторов:** [CONTRIBUTING.md](./CONTRIBUTING.md) — чеклисты PR для нового провайдера перевода или шрифта, i18n и тесты (на английском).
+
+Также: [Code of Conduct](./CODE_OF_CONDUCT.md) · [Security policy](./SECURITY.md) · [Support](./SUPPORT.md)
+
 ```powershell
 cargo test --workspace
 npm run build

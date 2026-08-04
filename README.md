@@ -210,6 +210,10 @@ Full guide: [Wiki → Troubleshooting](https://kiriuru.github.io/Kagevi-Subtitle
 
 Pull requests are welcome. For larger changes, open an issue first.
 
+**Contributor guide:** [CONTRIBUTING.md](./CONTRIBUTING.md) — step-by-step PR checklists for adding a translation provider or subtitle font, i18n workflow, and tests.
+
+Also: [Code of Conduct](./CODE_OF_CONDUCT.md) · [Security policy](./SECURITY.md) · [Support](./SUPPORT.md)
+
 ```powershell
 cargo test --workspace
 npm run build
