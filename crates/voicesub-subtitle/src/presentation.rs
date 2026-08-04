@@ -782,6 +782,33 @@ impl SubtitlePresentation {
                     visible_items.push(updated);
                 }
             }
+            // Overlay may hide previous completed MT during live-partial, but TTS/OBS CC still
+            // need the completed non-draft text in `items` (visible=false) for final delivery.
+            if live_partial_enabled {
+                for completed_item in completed_tp.visible_items.iter().filter(|item| {
+                    item.kind == "translation"
+                        && !item.is_live_draft
+                        && !item.text.trim().is_empty()
+                }) {
+                    let slot = completed_item
+                        .slot_id
+                        .as_deref()
+                        .or(completed_item.style_slot.as_deref());
+                    let already = items.iter().any(|item| {
+                        item.kind == "translation"
+                            && !item.is_live_draft
+                            && !item.text.trim().is_empty()
+                            && (item.slot_id.as_deref() == slot
+                                || item.style_slot.as_deref() == slot)
+                    });
+                    if !already {
+                        let mut retained = completed_item.clone();
+                        retained.visible = false;
+                        retained.style_slot = None;
+                        items.push(retained);
+                    }
+                }
+            }
             payload.sequence = active_partial_sequence.unwrap_or(payload.sequence);
             payload.source_text = active_partial_text.clone();
             payload.source_lang = active_source_lang;

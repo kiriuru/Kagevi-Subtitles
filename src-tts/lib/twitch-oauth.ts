@@ -37,7 +37,8 @@ export function twitchOAuthRedirectUri(): string {
 
 /**
  * BeatSaberPlus-style implicit OAuth URL (`response_type=token`).
- * Twitch redirects back to `/tts#access_token=…`; JS reads the hash fragment.
+ * Twitch redirects back to `/tts#access_token=…` on success, or
+ * `/tts?error=access_denied&error_description=…` when the user cancels.
  */
 export function buildTwitchAuthorizeUrl(clientId: string): string {
   const id = clientId.trim();
@@ -61,11 +62,58 @@ export function parseTwitchAccessTokenFromLocation(href: string = location.href)
   return token || null;
 }
 
+/** OAuth CSRF `state` — Twitch returns it in the hash (success) or query (error). */
+export function parseTwitchOAuthStateFromLocation(href: string = location.href): string | null {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return null;
+  }
+  const fromQuery = url.searchParams.get("state")?.trim() || "";
+  if (fromQuery) return fromQuery;
+  const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
+  const fromHash = new URLSearchParams(hash).get("state")?.trim() || "";
+  return fromHash || null;
+}
+
+/** Twitch sends OAuth errors as query params (not hash) on cancel/deny. */
+export function parseTwitchOAuthErrorFromLocation(
+  href: string = location.href,
+): { error: string; message: string } | null {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return null;
+  }
+  const error = url.searchParams.get("error")?.trim() || "";
+  if (!error) return null;
+  const description =
+    url.searchParams.get("error_description")?.trim().replace(/\+/g, " ") || "";
+  return {
+    error,
+    message: description || error,
+  };
+}
+
 export function clearTwitchOAuthFragment(): void {
   const url = location.href;
   const hashIndex = url.indexOf("#");
   if (hashIndex < 0) return;
   history.replaceState(null, document.title, url.slice(0, hashIndex));
+}
+
+/** Drop `?error=…` (and hash) from the callback URL after handling. */
+export function clearTwitchOAuthCallbackParams(): void {
+  if (typeof location === "undefined" || typeof history === "undefined") return;
+  const url = new URL(location.href);
+  const hadQuery = url.search.length > 0;
+  const hadHash = url.hash.length > 0;
+  if (!hadQuery && !hadHash) return;
+  url.search = "";
+  url.hash = "";
+  history.replaceState(null, document.title, url.pathname + url.search);
 }
 
 export function normalizeOAuthToken(token: string): string {

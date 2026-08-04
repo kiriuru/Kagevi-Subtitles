@@ -35,8 +35,8 @@ use voicesub_tts::{TTS_WINDOW_LABEL, TtsModuleService, TtsSpeechPipeline, Twitch
 use crate::tts::TtsState;
 use crate::webview_memory::{SharedWebviewMemoryManager, WebviewMemoryManager};
 
-struct AppState {
-    runtime: Arc<RuntimeService>,
+pub(crate) struct AppState {
+    pub(crate) runtime: Arc<RuntimeService>,
     handle: Mutex<Option<RuntimeHandle>>,
     bind_addr: SocketAddr,
     project_root: PathBuf,
@@ -266,7 +266,11 @@ pub fn run() {
             shell::open_local_http_url,
         ])
         .setup(move |app| {
-            let url = dashboard_nav::main_dashboard_http_url(bind_addr);
+            let bootstrap = app
+                .state::<AppState>()
+                .runtime
+                .issue_loopback_bootstrap_nonce();
+            let url = dashboard_nav::main_dashboard_http_url(bind_addr, &bootstrap);
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.eval(format!("window.location.replace('{url}');"));
                 if let Ok(mut guard) = app.state::<SharedWebviewMemoryManager>().lock() {

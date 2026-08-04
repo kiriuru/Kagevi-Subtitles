@@ -219,6 +219,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--space-3);
+  align-items: start;
 }
 
 .tts-settings-grid .stack-field {
@@ -227,6 +228,17 @@ body {
 
 .tts-settings-grid .stack-field--full {
   grid-column: 1 / -1;
+}
+
+.tts-speech-limits .stack-field .control {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.tts-speech-limits .muted {
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .stack-field--range .stack-field__label-row {

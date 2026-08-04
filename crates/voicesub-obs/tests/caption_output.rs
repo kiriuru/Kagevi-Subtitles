@@ -83,6 +83,49 @@ fn translation_mode_selects_requested_visible_translation() {
 }
 
 #[test]
+fn translation_mode_selects_by_slot_id_when_gaps_exist() {
+    let items = vec![
+        SubtitleLineItem {
+            kind: "translation".into(),
+            lang: "ja".into(),
+            label: "JA".into(),
+            text: "こんにちは".into(),
+            style_slot: Some("translation_1".into()),
+            slot_id: Some("translation_1".into()),
+            target_lang: Some("ja".into()),
+            provider: None,
+            visible: true,
+            success: true,
+            error: None,
+            is_live_draft: false,
+        },
+        SubtitleLineItem {
+            kind: "translation".into(),
+            lang: "en".into(),
+            label: "EN".into(),
+            text: "Hello".into(),
+            style_slot: Some("translation_3".into()),
+            slot_id: Some("translation_3".into()),
+            target_lang: Some("en".into()),
+            provider: None,
+            visible: true,
+            success: true,
+            error: None,
+            is_live_draft: false,
+        },
+    ];
+    let payload = SubtitlePayloadEvent {
+        sequence: 1,
+        visible_items: items.clone(),
+        items,
+        lifecycle_state: LifecycleState::CompletedOnly,
+        completed_block_visible: true,
+        ..SubtitlePayloadEvent::default()
+    };
+    assert_eq!(select_payload_text(&payload, "translation_3"), "Hello");
+}
+
+#[test]
 fn source_final_normalizes_whitespace() {
     assert_eq!(normalize_text("  hello \n world "), "hello\nworld");
 }

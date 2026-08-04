@@ -371,9 +371,18 @@ impl ObsCaptionService {
             return;
         }
         let settings = ObsCaptionSettings::from_config(&(self.config_getter)());
-        if payload_will_supersede_caption(&self.inner, &settings, &payload) {
+        let supersede = payload_will_supersede_caption(&self.inner, &settings, &payload);
+        let draft = payload_has_sendable_translation_draft(&settings, &payload);
+        if supersede {
             bump_delayed_generation(&self.inner);
             bump_clear_generation(&self.inner);
+        } else if draft {
+            // Bump before enqueue so an in-flight DelayedClear sleep cannot wipe the next phrase.
+            bump_clear_generation(&self.inner);
+        } else {
+            // No new completed phrase / draft — skip sticky frames (including post-clear_after
+            // republishes of the same text when avoid_duplicate_text is on).
+            return;
         }
         self.enqueue(QueueItem::Payload(Box::new(payload)));
     }
@@ -384,6 +393,11 @@ impl ObsCaptionService {
         }
         if matches!(&item, QueueItem::SourcePartial(_)) {
             drop_queued_partials(&self.inner);
+        }
+        if let QueueItem::Payload(payload) = &item {
+            // Keep distinct completed finals in the queue (live_partial can finalize faster
+            // than OBS WS). Only coalesce sticky republishes / draft-only frames.
+            coalesce_queued_payloads(&self.inner, payload);
         }
         {
             let mut queue = self.inner.queue.lock().expect("obs queue lock");
@@ -729,59 +743,84 @@ async fn handle_payload(inner: Arc<Inner>, payload: SubtitlePayloadEvent) -> Res
         return Ok(());
     }
 
-    // Optional live-partial translations (MT); finals below remain the LLM / no-partial fallback.
-    if settings.send_translation_partials && mode.starts_with("translation_") {
-        let draft = select_payload_live_draft_text(&payload, mode);
-        let draft_normalized = normalize_text(&draft);
-        if !draft_normalized.is_empty() {
-            return handle_translation_partial(
-                inner,
-                &settings,
-                mode,
-                payload.sequence,
-                &draft_normalized,
-                send_stream,
-                mirror_debug,
-            )
-            .await;
+    // Live MT draft for the next phrase (optional). Must not preempt a completed final that
+    // first appears in the same CompletedWithPartial payload — otherwise whole phrases are lost.
+    let draft_normalized = if settings.send_translation_partials && mode.starts_with("translation_")
+    {
+        normalize_text(&select_payload_live_draft_text(&payload, mode))
+    } else {
+        String::new()
+    };
+    let has_live_draft = !draft_normalized.is_empty();
+
+    if payload.completed_block_visible {
+        let selected = select_payload_text(&payload, mode);
+        let normalized = normalize_text(&selected);
+        if !normalized.is_empty() {
+            let caption_sequence = caption_sequence_for_completed(&payload);
+            let signature = (caption_sequence, mode.to_string(), normalized.clone());
+            let is_dup = if settings.avoid_duplicate_text {
+                let last = inner
+                    .last_payload_signature
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
+                last.as_ref() == Some(&signature)
+            } else {
+                false
+            };
+            if is_dup {
+                inner.log.send_skipped(
+                    "payload_dedup",
+                    json!({
+                        "sequence": caption_sequence,
+                        "output_mode": mode,
+                    }),
+                );
+            } else {
+                inner
+                    .log
+                    .payload_routed(caption_sequence, mode, normalized.chars().count());
+                *inner
+                    .last_payload_signature
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner()) = Some(signature);
+                *inner.last_partial_text.lock().await = String::new();
+                *inner.last_partial_sent.lock().await = None;
+                if has_live_draft {
+                    // Same-payload next-phrase draft: deliver the completed final immediately
+                    // without clear_after / replace-delay so a deferred send cannot overwrite
+                    // the growing draft that follows in this tick.
+                    send_text(
+                        inner.clone(),
+                        &normalized,
+                        &settings,
+                        send_stream,
+                        mirror_debug,
+                        false,
+                        false,
+                    )
+                    .await?;
+                } else {
+                    schedule_final_send(inner.clone(), normalized, send_stream, mirror_debug)
+                        .await?;
+                }
+            }
         }
     }
 
-    if !payload.completed_block_visible {
-        return Ok(());
+    if has_live_draft {
+        return handle_translation_partial(
+            inner,
+            &settings,
+            mode,
+            payload.sequence,
+            &draft_normalized,
+            send_stream,
+            mirror_debug,
+        )
+        .await;
     }
-    let selected = select_payload_text(&payload, mode);
-    let normalized = normalize_text(&selected);
-    if normalized.is_empty() {
-        return Ok(());
-    }
-    let signature = (payload.sequence, mode.to_string(), normalized.clone());
-    if settings.avoid_duplicate_text {
-        let last = inner
-            .last_payload_signature
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
-        if last.as_ref() == Some(&signature) {
-            inner.log.send_skipped(
-                "payload_dedup",
-                json!({
-                    "sequence": payload.sequence,
-                    "output_mode": mode,
-                }),
-            );
-            return Ok(());
-        }
-    }
-    inner
-        .log
-        .payload_routed(payload.sequence, mode, normalized.chars().count());
-    *inner
-        .last_payload_signature
-        .lock()
-        .unwrap_or_else(|e| e.into_inner()) = Some(signature);
-    *inner.last_partial_text.lock().await = String::new();
-    *inner.last_partial_sent.lock().await = None;
-    schedule_final_send(inner, normalized, send_stream, mirror_debug).await?;
+
     Ok(())
 }
 
@@ -827,6 +866,8 @@ async fn handle_translation_partial(
     }
     *inner.last_partial_text.lock().await = normalized.to_string();
     *inner.last_partial_sent.lock().await = Some(Instant::now());
+    // Next-phrase live growth supersedes any pending clear_after from the previous final.
+    bump_clear_generation(&inner);
     inner
         .log
         .payload_routed(sequence, mode, normalized.chars().count());
@@ -938,9 +979,11 @@ async fn send_text(
             .await
         {
             Ok(_) => {
-                let mut diag = inner.diagnostics.lock().await;
-                diag.last_debug_text = Some(normalized.clone());
-                diag.last_debug_input_name = Some(settings.debug_input_name.clone());
+                {
+                    let mut diag = inner.diagnostics.lock().await;
+                    diag.last_debug_text = Some(normalized.clone());
+                    diag.last_debug_input_name = Some(settings.debug_input_name.clone());
+                }
                 debug_mirror_ok = true;
                 if !should_send_caption {
                     inner.log.debug_mirror_sent(normalized.chars().count());
@@ -1045,6 +1088,12 @@ fn bump_clear_generation(inner: &Inner) {
     inner.clear_generation.fetch_add(1, Ordering::SeqCst);
 }
 
+fn caption_sequence_for_completed(payload: &SubtitlePayloadEvent) -> u64 {
+    // During completed_with_partial, payload.sequence is the active ASR partial. Dedup must
+    // key the completed phrase itself or every partial tick re-queues the same caption.
+    payload.completed_sequence.unwrap_or(payload.sequence)
+}
+
 fn payload_will_supersede_caption(
     inner: &Inner,
     settings: &ObsCaptionSettings,
@@ -1066,7 +1115,11 @@ fn payload_will_supersede_caption(
         return false;
     }
     if settings.avoid_duplicate_text {
-        let signature = (payload.sequence, mode.to_string(), normalized);
+        let signature = (
+            caption_sequence_for_completed(payload),
+            mode.to_string(),
+            normalized,
+        );
         let last = inner
             .last_payload_signature
             .lock()
@@ -1076,6 +1129,26 @@ fn payload_will_supersede_caption(
         }
     }
     true
+}
+
+fn payload_has_sendable_translation_draft(
+    settings: &ObsCaptionSettings,
+    payload: &SubtitlePayloadEvent,
+) -> bool {
+    if !settings.send_translation_partials {
+        return false;
+    }
+    let mode = settings.output_mode.as_str();
+    if !mode.starts_with("translation_") {
+        return false;
+    }
+    let send_stream = settings.native_enabled()
+        && !matches!(mode, "disabled" | "source_live" | "source_final_only");
+    let mirror_debug = settings.debug_text_input_enabled();
+    if !send_stream && !mirror_debug {
+        return false;
+    }
+    !normalize_text(&select_payload_live_draft_text(payload, mode)).is_empty()
 }
 
 async fn schedule_final_send(
@@ -1147,6 +1220,39 @@ fn drain_queue(inner: &Inner) {
 fn drop_queued_partials(inner: &Inner) {
     let mut queue = inner.queue.lock().expect("obs queue lock");
     queue.retain(|item| !matches!(item, QueueItem::SourcePartial(_)));
+}
+
+fn coalesce_queued_payloads(inner: &Inner, incoming: &SubtitlePayloadEvent) {
+    let settings = ObsCaptionSettings::from_config(&(inner.config_getter)());
+    let mode = settings.output_mode.as_str();
+    let incoming_seq = caption_sequence_for_completed(incoming);
+    let incoming_final = normalize_text(&select_payload_text(incoming, mode));
+    let incoming_draft = if settings.send_translation_partials {
+        normalize_text(&select_payload_live_draft_text(incoming, mode))
+    } else {
+        String::new()
+    };
+    let incoming_draft_only = !incoming_draft.is_empty() && incoming_final.is_empty();
+
+    let mut queue = inner.queue.lock().expect("obs queue lock");
+    queue.retain(|entry| {
+        let QueueItem::Payload(existing) = entry else {
+            return true;
+        };
+        let existing_seq = caption_sequence_for_completed(existing);
+        let existing_final = normalize_text(&select_payload_text(existing, mode));
+
+        // Replace sticky republishes of the same completed phrase.
+        if !incoming_final.is_empty() && existing_seq == incoming_seq {
+            return false;
+        }
+        // Draft-only frames coalesce to the latest draft update.
+        if incoming_draft_only && existing_final.is_empty() {
+            return false;
+        }
+        // Preserve queued finals for other phrases.
+        true
+    });
 }
 
 async fn send_clear_with_retries(

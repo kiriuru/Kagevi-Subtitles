@@ -5,7 +5,7 @@ mod common;
 use std::time::Duration;
 
 use common::{AuthedApi, EphemeralRuntime, integration_lock};
-use voicesub_runtime::LOOPBACK_TOKEN_HEADER;
+use voicesub_runtime::{LOOPBACK_COOKIE_NAME, LOOPBACK_TOKEN_HEADER};
 
 #[tokio::test]
 async fn runtime_start_and_stop_serves_health() {
@@ -129,112 +129,208 @@ async fn public_live_endpoint_without_token() {
 }
 
 #[tokio::test]
-async fn trusted_dashboard_html_injects_loopback_token() {
+async fn gated_app_pages_reject_unauthenticated_browser() {
     let _guard = integration_lock();
     let runtime = EphemeralRuntime::new();
     let handle = runtime.start().await;
     let addr = handle.bind_addr;
 
     let client = reqwest::Client::new();
-    let response = client
-        .get(format!("http://{addr}/"))
-        .timeout(Duration::from_secs(3))
-        .send()
-        .await
-        .expect("dashboard index");
-    assert!(response.status().is_success());
-    let html = response.text().await.expect("html body");
-    assert!(
-        html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
-        "dashboard HTML must inject loopback API token"
-    );
+    for path in ["/", "/google-asr", "/local-asr"] {
+        let response = client
+            .get(format!("http://{addr}{path}"))
+            .timeout(Duration::from_secs(3))
+            .send()
+            .await
+            .unwrap_or_else(|_| panic!("{path} request"));
+        assert_eq!(
+            response.status(),
+            reqwest::StatusCode::UNAUTHORIZED,
+            "{path} must require bootstrap/cookie"
+        );
+    }
 
-    handle.shutdown().await;
-}
-
-#[tokio::test]
-async fn trusted_worker_html_injects_loopback_token() {
-    let _guard = integration_lock();
-    let runtime = EphemeralRuntime::new();
-    let handle = runtime.start().await;
-    let addr = handle.bind_addr;
-
-    let client = reqwest::Client::new();
-    let response = client
-        .get(format!("http://{addr}/google-asr"))
-        .timeout(Duration::from_secs(3))
-        .send()
-        .await
-        .expect("worker page");
-    assert!(response.status().is_success());
-    let html = response.text().await.expect("html body");
-    assert!(
-        html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
-        "worker HTML must inject loopback API token"
-    );
-
-    handle.shutdown().await;
-}
-
-#[tokio::test]
-async fn trusted_tts_html_injects_loopback_token() {
-    let _guard = integration_lock();
-    let runtime = EphemeralRuntime::new();
-    let handle = runtime.start().await;
-    let addr = handle.bind_addr;
-
-    let client = reqwest::Client::new();
-    let response = client
+    let tts = client
         .get(format!("http://{addr}/tts"))
         .timeout(Duration::from_secs(3))
         .send()
         .await
-        .expect("tts page");
-    assert!(response.status().is_success());
-    let html = response.text().await.expect("html body");
+        .expect("tts unauth");
+    assert!(tts.status().is_success());
+    let html = tts.text().await.expect("tts html");
     assert!(
-        html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
-        "tts HTML must inject loopback API token"
+        html.contains("/api/tts/twitch/oauth-complete"),
+        "unauth /tts must be Twitch OAuth shell"
+    );
+    assert!(
+        !html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
+        "oauth shell must not inject session token"
+    );
+    assert!(
+        !html.contains("tts-assets"),
+        "oauth shell must not load full TTS SPA"
     );
 
     handle.shutdown().await;
 }
 
-fn loopback_token_from_trusted_html(html: &str) -> Option<String> {
-    let needle = "window.__KAGEVI_SUBTITLES_API_TOKEN__=";
-    let start = html.find(needle)? + needle.len();
-    let rest = html[start..].trim_start();
-    let end = rest.find(';')?;
-    serde_json::from_str::<String>(rest[..end].trim()).ok()
+#[tokio::test]
+async fn gated_app_pages_serve_html_with_session_cookie() {
+    let _guard = integration_lock();
+    let runtime = EphemeralRuntime::new();
+    let handle = runtime.start().await;
+    let addr = handle.bind_addr;
+    let cookie = format!(
+        "{LOOPBACK_COOKIE_NAME}={}",
+        runtime.service.loopback_api_token()
+    );
+
+    let client = reqwest::Client::new();
+    for path in ["/", "/google-asr", "/tts", "/local-asr"] {
+        let response = client
+            .get(format!("http://{addr}{path}"))
+            .header(reqwest::header::COOKIE, &cookie)
+            .timeout(Duration::from_secs(3))
+            .send()
+            .await
+            .unwrap_or_else(|_| panic!("{path} request"));
+        assert!(
+            response.status().is_success(),
+            "{path} status {}",
+            response.status()
+        );
+        let html = response.text().await.expect("html body");
+        assert!(
+            !html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
+            "{path} must not inject loopback API token"
+        );
+    }
+
+    handle.shutdown().await;
 }
 
 #[tokio::test]
-async fn protected_api_accepts_token_from_trusted_html_injection() {
+async fn protected_api_rejects_unauthenticated_requests() {
     let _guard = integration_lock();
     let runtime = EphemeralRuntime::new();
     let handle = runtime.start().await;
     let addr = handle.bind_addr;
 
     let client = reqwest::Client::new();
-    let html = client
-        .get(format!("http://{addr}/"))
-        .timeout(Duration::from_secs(3))
-        .send()
-        .await
-        .expect("dashboard index")
-        .text()
-        .await
-        .expect("html body");
-    let token = loopback_token_from_trusted_html(&html).expect("injected loopback token");
-
     let response = client
         .get(format!("http://{addr}/api/settings/load"))
-        .header(LOOPBACK_TOKEN_HEADER, token)
         .timeout(Duration::from_secs(3))
         .send()
         .await
         .expect("settings load");
-    assert!(response.status().is_success());
+    assert_eq!(response.status(), reqwest::StatusCode::UNAUTHORIZED);
+
+    handle.shutdown().await;
+}
+
+#[tokio::test]
+async fn google_asr_bootstrap_sets_cookie_and_authorizes_api() {
+    let _guard = integration_lock();
+    let runtime = EphemeralRuntime::new();
+    let handle = runtime.start().await;
+    let addr = handle.bind_addr;
+    let nonce = runtime.service.issue_loopback_bootstrap_nonce();
+
+    let client = reqwest::Client::new();
+    let bootstrap = client
+        .get(format!(
+            "http://{addr}/google-asr?autostart=1&bootstrap={nonce}"
+        ))
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+        .expect("bootstrap");
+    assert!(
+        bootstrap.status().is_success(),
+        "bootstrap must serve HTML immediately, got {}",
+        bootstrap.status()
+    );
+    let set_cookie = bootstrap
+        .headers()
+        .get(reqwest::header::SET_COOKIE)
+        .and_then(|v| v.to_str().ok())
+        .expect("Set-Cookie")
+        .to_string();
+    assert!(set_cookie.contains(LOOPBACK_COOKIE_NAME));
+    assert!(set_cookie.contains("HttpOnly"));
+    assert!(set_cookie.contains("SameSite=Lax"));
+    let html = bootstrap.text().await.expect("html");
+    assert!(
+        !html.contains("__KAGEVI_SUBTITLES_API_TOKEN__"),
+        "must not inject session token into HTML"
+    );
+    assert!(
+        html.contains("history.replaceState"),
+        "bootstrap response should scrub nonce from the address bar"
+    );
+
+    let cookie_pair = set_cookie
+        .split(';')
+        .next()
+        .expect("cookie pair")
+        .to_string();
+    let api = client
+        .get(format!("http://{addr}/api/settings/load"))
+        .header(reqwest::header::COOKIE, &cookie_pair)
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+        .expect("settings load with cookie");
+    assert!(api.status().is_success());
+
+    let reused = client
+        .get(format!(
+            "http://{addr}/google-asr?autostart=1&bootstrap={nonce}"
+        ))
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+        .expect("reused bootstrap");
+    assert_eq!(reused.status(), reqwest::StatusCode::UNAUTHORIZED);
+
+    handle.shutdown().await;
+}
+
+#[tokio::test]
+async fn twitch_oauth_complete_requires_state() {
+    let _guard = integration_lock();
+    let runtime = EphemeralRuntime::new();
+    let handle = runtime.start().await;
+    let addr = handle.bind_addr;
+
+    let client = reqwest::Client::new();
+    let rejected = client
+        .post(format!("http://{addr}/api/tts/twitch/oauth-complete"))
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(r#"{"token":"oauth:test-token"}"#)
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+        .expect("oauth-complete without state");
+    assert!(rejected.status().is_success());
+    let rejected_body: serde_json::Value = rejected.json().await.expect("json");
+    assert_eq!(rejected_body["ok"], false);
+    assert_eq!(rejected_body["error"], "invalid_state");
+
+    let state = runtime.service.begin_twitch_oauth_state();
+    let ok = client
+        .post(format!("http://{addr}/api/tts/twitch/oauth-complete"))
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(format!(
+            r#"{{"token":"oauth:test-token","state":"{state}"}}"#
+        ))
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await
+        .expect("oauth-complete with state");
+    assert!(ok.status().is_success());
+    let body: serde_json::Value = ok.json().await.expect("json");
+    assert_eq!(body["ok"], true);
 
     handle.shutdown().await;
 }

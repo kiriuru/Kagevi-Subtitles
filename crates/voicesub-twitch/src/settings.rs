@@ -14,6 +14,7 @@ pub struct TwitchEmoteSources {
     pub twitch: bool,
     pub bttv: bool,
     pub seventv: bool,
+    pub ffz: bool,
 }
 
 impl Default for TwitchEmoteSources {
@@ -22,6 +23,7 @@ impl Default for TwitchEmoteSources {
             twitch: true,
             bttv: true,
             seventv: true,
+            ffz: true,
         }
     }
 }
@@ -92,7 +94,7 @@ pub struct TwitchTtsSettings {
     /// Replace `_` with a space in nicks and message text (pause like a word boundary).
     #[serde(default = "default_replace_underscore_with_space")]
     pub replace_underscore_with_space: bool,
-    /// Remove Twitch / BTTV / 7TV emote codes from message text.
+    /// Remove Twitch / BTTV / 7TV / FFZ emote codes from message text.
     #[serde(default = "default_true")]
     pub strip_emotes: bool,
     /// Remove Unicode emoji from message text.

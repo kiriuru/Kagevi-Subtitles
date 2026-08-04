@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex, Once, OnceLock};
 
 use tempfile::TempDir;
 use voicesub_config::{AppConfig, HttpBindConfig};
-use voicesub_runtime::{RuntimeHandle, RuntimeService};
+use voicesub_runtime::{LOOPBACK_COOKIE_NAME, RuntimeHandle, RuntimeService};
 use voicesub_tts::TwitchOAuthBridge;
 
 #[path = "../../voicesub-runtime/tests/authed_api.rs"]
@@ -81,6 +81,15 @@ impl EphemeralRuntime {
 
     pub async fn start(&self) -> RuntimeHandle {
         self.service.start().await.expect("start runtime")
+    }
+
+    /// Cookie auth for HTML/app pages; not every integration binary exercises it.
+    #[allow(dead_code)]
+    pub fn session_cookie(&self) -> String {
+        format!(
+            "{LOOPBACK_COOKIE_NAME}={}",
+            self.service.loopback_api_token()
+        )
     }
 
     pub fn authed<'a>(&'a self, client: &'a reqwest::Client) -> AuthedApi<'a> {

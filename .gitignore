@@ -104,6 +104,7 @@ legacy/
 docs/COMMIT_CONVENTIONS.md
 docs/LOCAL_ASR_MODULE_PLAN.ru.md
 docs/GITHUB_RELEASE_NOTES.template.md
+docs/security/
 VoiceSub_TAURI_CAPABILITIES_AUDIT_2026-07-18.md
 # Local-only GitHub notes / hooks (community health + workflows are tracked)
 .github/*

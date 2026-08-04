@@ -22,7 +22,7 @@ pub use ipc::{
     TTS_WINDOW_LABEL, bind_window_process, build_tts_module_url, speech_queue_item_id,
     tts_webview_data_dir, validate_twitch_oauth_url,
 };
-pub use oauth_bridge::TwitchOAuthBridge;
+pub use oauth_bridge::{TwitchOAuthBridge, TwitchOAuthPending};
 pub use python_runtime::{
     PythonRuntimeKind, PythonRuntimeStatus, embedded_binary_path, normalize_tts_lang,
     probe_python_runtime, run_google_tts_fetch,

@@ -2,9 +2,13 @@
 
 use std::net::SocketAddr;
 
+use voicesub_runtime::append_bootstrap_query;
+
 /// HTTP URL the Tauri shell navigates to after loading bundled assets (`lib.rs` setup).
-pub fn main_dashboard_http_url(bind_addr: SocketAddr) -> String {
-    format!("http://{}:{}/", bind_addr.ip(), bind_addr.port())
+/// `bootstrap` is a one-time nonce so the page can set the HttpOnly session cookie.
+pub fn main_dashboard_http_url(bind_addr: SocketAddr, bootstrap: &str) -> String {
+    let base = format!("http://{}:{}/", bind_addr.ip(), bind_addr.port());
+    append_bootstrap_query(&base, bootstrap)
 }
 
 #[cfg(test)]
@@ -14,14 +18,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn main_dashboard_url_uses_runtime_bind_addr() {
+    fn main_dashboard_url_includes_bootstrap() {
         let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8765).into();
-        assert_eq!(main_dashboard_http_url(addr), "http://127.0.0.1:8765/");
+        let url = main_dashboard_http_url(addr, "test-nonce");
+        assert_eq!(url, "http://127.0.0.1:8765/?bootstrap=test-nonce");
     }
 
     #[test]
     fn main_dashboard_url_preserves_custom_port() {
         let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 9123).into();
-        assert_eq!(main_dashboard_http_url(addr), "http://127.0.0.1:9123/");
+        let url = main_dashboard_http_url(addr, "n");
+        assert_eq!(url, "http://127.0.0.1:9123/?bootstrap=n");
     }
 }

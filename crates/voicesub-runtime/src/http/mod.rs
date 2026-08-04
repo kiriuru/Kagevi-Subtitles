@@ -24,7 +24,10 @@ mod update_service;
 mod updates;
 
 pub use background_tasks::BackgroundTaskRegistry;
-pub use loopback_auth::{LOOPBACK_TOKEN_HEADER, LoopbackAuth};
+pub use loopback_auth::{
+    LOOPBACK_BOOTSTRAP_QUERY, LOOPBACK_COOKIE_NAME, LOOPBACK_TOKEN_HEADER, LOOPBACK_WS_TOKEN_QUERY,
+    LoopbackAuth, append_bootstrap_query, is_loopback_socket,
+};
 pub use metrics::RuntimeMetricsCollector;
 pub use partial_emit::{PartialEmitCoordinator, partial_emit_settings_from_config};
 pub use router::build_router;

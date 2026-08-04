@@ -163,6 +163,7 @@ fn payload_for_sequence(
 ) -> SubtitlePayloadEvent {
     SubtitlePayloadEvent {
         sequence,
+        completed_sequence: Some(sequence),
         source_lang: "ru".into(),
         source_text: "Привет".into(),
         display_order: vec!["source".into(), "en".into(), "de".into()],
@@ -422,6 +423,108 @@ async fn source_final_only_routes_final_caption_to_send_stream_caption() {
     assert_eq!(
         stream_caption_texts(&requests),
         vec!["hello\nworld".to_string()]
+    );
+}
+
+#[tokio::test]
+async fn sticky_completed_during_partial_dedupes_by_completed_sequence() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let completed = payload_for_sequence(
+        10,
+        vec![
+            source_line_item("Привет"),
+            translation_line_item("Hello", "translation_1", "en", "EN"),
+        ],
+    );
+    service.publish_payload(completed);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    // Overlay ticks while the next ASR partial grows — sequence advances, completed_sequence stays.
+    for partial_seq in 11..=20 {
+        let mut sticky = payload_for_sequence(
+            partial_seq,
+            vec![
+                source_line_item("следующая фраза"),
+                translation_line_item("Hello", "translation_1", "en", "EN"),
+            ],
+        );
+        sticky.completed_sequence = Some(10);
+        sticky.lifecycle_state = LifecycleState::CompletedWithPartial;
+        sticky.active_partial_text = "следующая фраза".into();
+        sticky.active_partial_sequence = Some(partial_seq);
+        service.publish_payload(sticky);
+    }
+    tokio::time::sleep(Duration::from_millis(150)).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello".to_string()],
+        "sticky completed-block republishes must dedupe by completed_sequence, not active partial sequence"
+    );
+}
+
+#[tokio::test]
+async fn clear_does_not_resend_same_text_when_avoid_duplicate_enabled() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 50,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    service.publish_payload(payload_for_sequence(
+        10,
+        vec![
+            source_line_item("Привет"),
+            translation_line_item("Hello", "translation_1", "en", "EN"),
+        ],
+    ));
+    wait_for_requests(&requests, "SendStreamCaption", 2).await; // Hello + clear
+
+    let mut sticky = payload_for_sequence(
+        15,
+        vec![
+            source_line_item("дальше"),
+            translation_line_item("Hello", "translation_1", "en", "EN"),
+        ],
+    );
+    sticky.completed_sequence = Some(10);
+    sticky.lifecycle_state = LifecycleState::CompletedWithPartial;
+    sticky.active_partial_text = "дальше".into();
+    sticky.active_partial_sequence = Some(15);
+    service.publish_payload(sticky);
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello".to_string(), String::new()],
+        "avoid_duplicate_text must not re-send the same phrase after clear_after"
     );
 }
 
@@ -994,5 +1097,201 @@ async fn translation_live_partial_throttle_skips_small_growth() {
         stream_caption_texts(&requests),
         vec!["Hello".to_string()],
         "small growth within throttle window must be suppressed"
+    );
+}
+
+#[tokio::test]
+async fn completed_with_partial_sends_final_before_next_draft() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    // Late final for phrase A arrives in the same payload as live draft for phrase B.
+    let mut payload = payload_for_sequence(
+        11,
+        vec![
+            source_line_item("Привет мир"),
+            translation_line_item("Hello world", "translation_1", "en", "EN"),
+            translation_live_draft_item("Next", "translation_1", "en", "EN"),
+        ],
+    );
+    payload.lifecycle_state = LifecycleState::CompletedWithPartial;
+
+    service.publish_payload(payload);
+    wait_for_requests(&requests, "SendStreamCaption", 2).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello world".to_string(), "Next".to_string()],
+        "completed final must not be skipped when a next-phrase live draft is present"
+    );
+}
+
+#[tokio::test]
+async fn translation_live_partial_cancels_pending_clear_from_prior_final() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 80,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    service.publish_payload(payload_for_sequence(
+        12,
+        vec![
+            source_line_item("Привет"),
+            translation_line_item("Hello", "translation_1", "en", "EN"),
+        ],
+    ));
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    let mut draft = payload_for_sequence(
+        13,
+        vec![
+            source_line_item("Дальше"),
+            translation_live_draft_item("Next phrase", "translation_1", "en", "EN"),
+        ],
+    );
+    draft.completed_block_visible = false;
+    draft.lifecycle_state = LifecycleState::PartialOnly;
+    service.publish_payload(draft);
+    wait_for_requests(&requests, "SendStreamCaption", 2).await;
+
+    tokio::time::sleep(Duration::from_millis(160)).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello".to_string(), "Next phrase".to_string()],
+        "next-phrase live draft must cancel clear_after from the previous final"
+    );
+}
+
+#[tokio::test]
+async fn finals_only_sends_completed_retained_in_items_during_live_partial_ui() {
+    // translation.live_partial hides completed MT from visible_items; OBS finals-only mode
+    // must still read non-draft text from items (visible=false).
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_3",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": false,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let completed = translation_line_item("Hello world", "translation_3", "en", "EN");
+    let mut hidden = completed.clone();
+    hidden.visible = false;
+    hidden.style_slot = None;
+    let draft = translation_live_draft_item("Next", "translation_3", "en", "EN");
+
+    let mut payload = SubtitlePayloadEvent {
+        sequence: 20,
+        completed_sequence: Some(10),
+        source_lang: "ru".into(),
+        source_text: "следующая".into(),
+        items: vec![source_line_item("следующая"), draft.clone(), hidden],
+        visible_items: vec![source_line_item("следующая"), draft],
+        lifecycle_state: LifecycleState::CompletedWithPartial,
+        completed_block_visible: true,
+        active_partial_text: "следующая".into(),
+        active_partial_sequence: Some(20),
+        ..SubtitlePayloadEvent::default()
+    };
+    payload.show_translations = true;
+
+    service.publish_payload(payload);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["Hello world".to_string()],
+        "finals-only OBS CC must send completed text retained in items while live draft is visible"
+    );
+}
+
+#[tokio::test]
+async fn rapid_distinct_finals_are_not_dropped_by_payload_coalesce() {
+    let mut mock = MockObsClient::new();
+    mock.caption_delay_ms = 60;
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": false,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        mock,
+    )
+    .await;
+
+    service.publish_payload(payload_for_sequence(
+        10,
+        vec![
+            source_line_item("Один"),
+            translation_line_item("One", "translation_1", "en", "EN"),
+        ],
+    ));
+    tokio::time::sleep(Duration::from_millis(15)).await;
+    service.publish_payload(payload_for_sequence(
+        11,
+        vec![
+            source_line_item("Два"),
+            translation_line_item("Two", "translation_1", "en", "EN"),
+        ],
+    ));
+    service.publish_payload(payload_for_sequence(
+        12,
+        vec![
+            source_line_item("Три"),
+            translation_line_item("Three", "translation_1", "en", "EN"),
+        ],
+    ));
+    wait_for_requests(&requests, "SendStreamCaption", 3).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["One".to_string(), "Two".to_string(), "Three".to_string()],
+        "distinct completed finals must not be coalesced away while OBS WS is busy"
     );
 }

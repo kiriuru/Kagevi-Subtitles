@@ -688,6 +688,16 @@ impl RuntimeService {
         self.loopback_auth.token()
     }
 
+    /// One-time nonce for Chrome worker launch URL (`/google-asr?bootstrap=…`).
+    pub fn issue_loopback_bootstrap_nonce(&self) -> String {
+        self.loopback_auth.issue_bootstrap_nonce()
+    }
+
+    /// Begin Twitch OAuth CSRF state (tests / diagnostics).
+    pub fn begin_twitch_oauth_state(&self) -> String {
+        self.twitch_oauth.begin_login_state()
+    }
+
     pub async fn runtime_state_snapshot(&self) -> RuntimeStateSnapshot {
         let subtitle = self
             .last_subtitle_payload
@@ -857,7 +867,8 @@ impl RuntimeService {
 
         let server_task = tokio::spawn(async move {
             let shutdown_tasks = background_tasks.clone();
-            let server = axum::serve(listener, router).with_graceful_shutdown(async move {
+            let make_svc = router.into_make_service_with_connect_info::<std::net::SocketAddr>();
+            let server = axum::serve(listener, make_svc).with_graceful_shutdown(async move {
                 let _ = shutdown_rx.await;
                 shutdown_tasks.set_http_server(false);
                 info!("http server shutdown requested");

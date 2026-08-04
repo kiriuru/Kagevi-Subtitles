@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::{
     Router,
-    extract::{State, WebSocketUpgrade},
-    http::{HeaderValue, header},
+    extract::{ConnectInfo, Query, State, WebSocketUpgrade},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
     middleware,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
@@ -23,7 +24,9 @@ use super::local_asr::{
     local_asr_test_stop, local_asr_transfer, local_asr_transfer_cancel,
 };
 use super::logs::{logs_client_event, logs_ui_trace};
-use super::loopback_auth::{LoopbackAuth, loopback_auth_middleware};
+use super::loopback_auth::{
+    LOOPBACK_BOOTSTRAP_QUERY, LOOPBACK_WS_TOKEN_QUERY, loopback_auth_middleware,
+};
 use super::openai::{list_models, recommended_models, usable_models};
 use super::profiles::{delete_profile, list_profiles, load_profile, save_profile};
 use super::runtime::{obs_url, runtime_start, runtime_status, runtime_stop};
@@ -72,10 +75,6 @@ pub fn build_router(state: Arc<HttpState>) -> Router {
         .route("/api/tts/google", get(google_tts_proxy))
         .route("/api/tts/python", get(python_tts_proxy))
         .route("/api/tts/python/status", get(python_tts_status))
-        .route(
-            "/api/tts/twitch/oauth-complete",
-            post(twitch_oauth_complete),
-        )
         .route("/api/tts/twitch/oauth-open", post(twitch_oauth_open))
         .route("/api/tts/twitch/oauth-pending", get(twitch_oauth_pending))
         .route("/api/asr/local/status", get(local_asr_status))
@@ -130,6 +129,11 @@ pub fn build_router(state: Arc<HttpState>) -> Router {
         .route("/local-asr", get(local_asr_page))
         .route("/overlay", get(overlay_page))
         .route("/project-fonts.css", get(project_fonts_css))
+        // System-browser Twitch redirect writes pending token/error only — no session token.
+        .route(
+            "/api/tts/twitch/oauth-complete",
+            post(twitch_oauth_complete),
+        )
         .route("/ws/events", get(ws_events))
         .route("/ws/asr_worker", get(ws_asr_worker))
         .nest_service("/overlay-assets", overlay_static)
@@ -168,31 +172,67 @@ async fn version_info_route(State(state): State<Arc<HttpState>>) -> impl IntoRes
     version_info(State(state)).await
 }
 
-async fn dashboard_index(State(state): State<Arc<HttpState>>) -> impl IntoResponse {
-    serve_trusted_html(
-        &state.loopback_auth,
+async fn dashboard_index(
+    State(state): State<Arc<HttpState>>,
+    headers: axum::http::HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    gate_app_html_page(
+        &state,
+        &headers,
+        "/",
+        params,
         state.paths.dashboard_dist.join("index.html"),
         "<!doctype html><html><head><title>VoiceSub</title></head><body><h1>VoiceSub dashboard</h1><p>Run <code>npm run build</code> for Svelte bundle.</p></body></html>",
+        AppPageUnauthPolicy::Reject,
     )
 }
 
-async fn google_asr_page(State(state): State<Arc<HttpState>>) -> impl IntoResponse {
-    serve_trusted_worker_page(&state.paths, &state.loopback_auth)
+async fn google_asr_page(
+    State(state): State<Arc<HttpState>>,
+    headers: axum::http::HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    gate_app_html_page(
+        &state,
+        &headers,
+        "/google-asr",
+        params,
+        state.paths.worker_dist.join("index.html"),
+        "<!doctype html><html><body><h1>VoiceSub Web Speech worker (run npm run build)</h1></body></html>",
+        AppPageUnauthPolicy::Reject,
+    )
 }
 
-async fn tts_page(State(state): State<Arc<HttpState>>) -> impl IntoResponse {
-    serve_trusted_html(
-        &state.loopback_auth,
+async fn tts_page(
+    State(state): State<Arc<HttpState>>,
+    headers: axum::http::HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    gate_app_html_page(
+        &state,
+        &headers,
+        "/tts",
+        params,
         state.paths.tts_dist.join("index.html"),
         "<!doctype html><html><body><h1>VoiceSub TTS module (run npm run build:tts)</h1></body></html>",
+        AppPageUnauthPolicy::TwitchOAuthShell,
     )
 }
 
-async fn local_asr_page(State(state): State<Arc<HttpState>>) -> impl IntoResponse {
-    serve_trusted_html(
-        &state.loopback_auth,
+async fn local_asr_page(
+    State(state): State<Arc<HttpState>>,
+    headers: axum::http::HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    gate_app_html_page(
+        &state,
+        &headers,
+        "/local-asr",
+        params,
         state.paths.local_asr_dist.join("index.html"),
         "<!doctype html><html><body><h1>VoiceSub Local ASR module (run npm run build:local-asr)</h1></body></html>",
+        AppPageUnauthPolicy::Reject,
     )
 }
 
@@ -209,38 +249,223 @@ async fn overlay_page(State(state): State<Arc<HttpState>>) -> impl IntoResponse 
     )
 }
 
-async fn ws_events(State(state): State<Arc<HttpState>>, ws: WebSocketUpgrade) -> impl IntoResponse {
+async fn ws_events(
+    State(state): State<Arc<HttpState>>,
+    ConnectInfo(peer): ConnectInfo<std::net::SocketAddr>,
+    Query(params): Query<HashMap<String, String>>,
+    headers: HeaderMap,
+    ws: WebSocketUpgrade,
+) -> Result<Response, StatusCode> {
+    let query_token = params.get(LOOPBACK_WS_TOKEN_QUERY).map(String::as_str);
+    if !state
+        .loopback_auth
+        .authorize_ws_client(peer, &headers, query_token)
+    {
+        tracing::warn!(
+            target: "voicesub.http.auth",
+            %peer,
+            "ws/events rejected: non-loopback client without loopback token"
+        );
+        return Err(StatusCode::UNAUTHORIZED);
+    }
     let hub = state.events.clone();
-    ws.on_upgrade(move |socket| async move {
-        hub.serve_connection(socket).await;
-    })
+    Ok(ws
+        .on_upgrade(move |socket| async move {
+            hub.serve_connection(socket).await;
+        })
+        .into_response())
 }
 
 async fn ws_asr_worker(
     State(state): State<Arc<HttpState>>,
+    ConnectInfo(peer): ConnectInfo<std::net::SocketAddr>,
+    Query(params): Query<HashMap<String, String>>,
+    headers: HeaderMap,
     ws: WebSocketUpgrade,
-) -> impl IntoResponse {
+) -> Result<Response, StatusCode> {
+    let query_token = params.get(LOOPBACK_WS_TOKEN_QUERY).map(String::as_str);
+    if !state
+        .loopback_auth
+        .authorize_ws_client(peer, &headers, query_token)
+    {
+        tracing::warn!(
+            target: "voicesub.http.auth",
+            %peer,
+            "ws/asr_worker rejected: non-loopback client without loopback token"
+        );
+        return Err(StatusCode::UNAUTHORIZED);
+    }
     let hub = state.asr_worker.clone();
-    ws.on_upgrade(move |socket| async move {
-        hub.serve_connection(socket).await;
-    })
+    Ok(ws
+        .on_upgrade(move |socket| async move {
+            hub.serve_connection(socket).await;
+        })
+        .into_response())
 }
 
-fn serve_trusted_worker_page(
-    paths: &voicesub_config::ProjectPaths,
-    auth: &LoopbackAuth,
+#[derive(Clone, Copy)]
+enum AppPageUnauthPolicy {
+    /// No session cookie/header and no valid bootstrap → 401.
+    Reject,
+    /// Twitch system-browser redirect may land on `/tts` without a session — serve minimal shell.
+    TwitchOAuthShell,
+}
+
+fn gate_app_html_page(
+    state: &HttpState,
+    headers: &axum::http::HeaderMap,
+    path: &str,
+    params: HashMap<String, String>,
+    html_path: PathBuf,
+    fallback: &str,
+    unauth: AppPageUnauthPolicy,
 ) -> Response {
-    serve_trusted_html(
-        auth,
-        paths.worker_dist.join("index.html"),
-        "<!doctype html><html><body><h1>VoiceSub Web Speech worker (run npm run build)</h1></body></html>",
-    )
+    let bootstrap = params
+        .get(LOOPBACK_BOOTSTRAP_QUERY)
+        .map(String::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+
+    if let Some(nonce) = bootstrap.as_deref() {
+        if state.loopback_auth.consume_bootstrap_nonce(nonce) {
+            // Serve HTML immediately with Set-Cookie (no 307). WebView2 often drops
+            // Strict cookies across the asset→http navigation + redirect follow.
+            let clean_location = location_without_bootstrap(path, &params);
+            let mut response =
+                serve_html_with_bootstrap_cleanup(html_path, fallback, &clean_location);
+            response.headers_mut().insert(
+                header::SET_COOKIE,
+                state.loopback_auth.session_set_cookie_header(),
+            );
+            return response;
+        }
+        tracing::warn!(
+            target: "voicesub.http.auth",
+            path,
+            "invalid or reused app-page bootstrap nonce"
+        );
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    if state.loopback_auth.authorize_request(headers) {
+        return serve_html_candidate(html_path, fallback);
+    }
+
+    match unauth {
+        AppPageUnauthPolicy::Reject => {
+            tracing::warn!(
+                target: "voicesub.http.auth",
+                path,
+                "app HTML rejected: missing loopback session"
+            );
+            StatusCode::UNAUTHORIZED.into_response()
+        }
+        AppPageUnauthPolicy::TwitchOAuthShell => {
+            Html(TWITCH_OAUTH_PUBLIC_SHELL_HTML).into_response()
+        }
+    }
 }
 
-fn serve_trusted_html(auth: &LoopbackAuth, path: PathBuf, fallback: &str) -> Response {
-    let html = read_html_text(path, fallback);
-    Html(auth.inject_token_script(&html)).into_response()
+fn location_without_bootstrap(path: &str, params: &HashMap<String, String>) -> String {
+    let mut redirect_params: Vec<(String, String)> = params
+        .iter()
+        .filter(|(key, _)| key.as_str() != LOOPBACK_BOOTSTRAP_QUERY)
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    redirect_params.sort_by(|a, b| a.0.cmp(&b.0));
+    if redirect_params.is_empty() {
+        path.to_string()
+    } else {
+        let query = redirect_params
+            .iter()
+            .map(|(k, v)| format!("{}={}", urlencoding::encode(k), urlencoding::encode(v)))
+            .collect::<Vec<_>>()
+            .join("&");
+        format!("{path}?{query}")
+    }
 }
+
+fn serve_html_with_bootstrap_cleanup(
+    html_path: PathBuf,
+    fallback: &str,
+    clean_location: &str,
+) -> Response {
+    let html = read_html_text(html_path, fallback);
+    let clean_json = serde_json::to_string(clean_location).unwrap_or_else(|_| "\"/\"".into());
+    let scrub = format!(
+        "<script>try{{history.replaceState(null,\"\",{clean_json});}}catch(_e){{}}</script>"
+    );
+    let html = if let Some(pos) = html.find("</head>") {
+        let mut out = String::with_capacity(html.len() + scrub.len());
+        out.push_str(&html[..pos]);
+        out.push_str(&scrub);
+        out.push_str(&html[pos..]);
+        out
+    } else {
+        format!("{scrub}{html}")
+    };
+    Html(html).into_response()
+}
+
+/// Minimal public page for Twitch implicit-grant redirect (`/tts#access_token=…`).
+/// Full TTS SPA requires bootstrap/cookie (Tauri window).
+const TWITCH_OAUTH_PUBLIC_SHELL_HTML: &str = r#"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Twitch authorization</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:28rem;margin:3rem auto;padding:0 1rem;line-height:1.45;color:#1a1a1a}
+  .muted{color:#555}
+</style>
+</head>
+<body>
+<p id="msg" class="muted">Completing Twitch sign-in…</p>
+<script>
+(async () => {
+  const msg = document.getElementById("msg");
+  const params = new URLSearchParams(location.search);
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const state = (hash.get("state") || params.get("state") || "").trim();
+  const error = (params.get("error") || "").trim();
+  if (error) {
+    const description = (params.get("error_description") || "").trim().replace(/\+/g, " ");
+    try {
+      await fetch("/api/tts/twitch/oauth-complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error, message: description, state }),
+      });
+    } catch (_) {}
+    history.replaceState(null, "", location.pathname);
+    msg.textContent = "Twitch authorization was cancelled or denied. You can close this window.";
+    return;
+  }
+  const raw = (hash.get("access_token") || "").trim();
+  if (!raw) {
+    msg.textContent = "Open the TTS module from Kagevi Subtitles to use this page.";
+    return;
+  }
+  const token = raw.toLowerCase().startsWith("oauth:") ? raw : ("oauth:" + raw);
+  let ok = false;
+  try {
+    const response = await fetch("/api/tts/twitch/oauth-complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, state }),
+    });
+    ok = response.ok;
+  } catch (_) {}
+  history.replaceState(null, "", location.pathname);
+  msg.textContent = ok
+    ? "Twitch authorization complete. You can close this window and return to the app."
+    : "Could not store the Twitch token. Close this window and try again from the app.";
+})();
+</script>
+</body>
+</html>"#;
 
 fn read_html_text(path: PathBuf, fallback: &str) -> String {
     if path.is_file()

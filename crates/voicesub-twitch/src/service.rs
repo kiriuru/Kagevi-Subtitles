@@ -120,7 +120,7 @@ impl TwitchChatService {
             return;
         }
         let sources = settings.emote_sources.clone();
-        if !sources.twitch && !sources.bttv && !sources.seventv {
+        if !sources.twitch && !sources.bttv && !sources.seventv && !sources.ffz {
             return;
         }
         let logins = settings.channel_logins();
@@ -288,7 +288,10 @@ impl TwitchChatService {
         let inner_for_cleanup = self.inner.clone();
         let task = self.runtime.spawn(async move {
             if refresh_settings.strip_emotes
-                && (refresh_sources.twitch || refresh_sources.bttv || refresh_sources.seventv)
+                && (refresh_sources.twitch
+                    || refresh_sources.bttv
+                    || refresh_sources.seventv
+                    || refresh_sources.ffz)
                 && let Err(err) = emotes_for_session
                     .refresh_all(
                         &refresh_logins,

@@ -14,7 +14,8 @@ pub fn resolve_bind_host(explicit_host: Option<&str>, allow_lan: bool) -> IpAddr
 /// Reads `VOICESUB_ALLOW_LAN` (same truthy set as SST `SST_ALLOW_LAN`).
 ///
 /// When enabled, HTTP binds `0.0.0.0`. Protected `/api/*` still requires
-/// `x-kagevi-subtitles-token` (legacy `x-voicesub-token`), but `/ws/events` and `/ws/asr_worker` accept any LAN client.
+/// `x-kagevi-subtitles-token` (legacy `x-voicesub-token`). Non-loopback `/ws/*`
+/// clients must present `loopback_token` (or session header/cookie).
 pub fn allow_lan_from_env() -> bool {
     match std::env::var("VOICESUB_ALLOW_LAN") {
         Ok(value) => matches!(

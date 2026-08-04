@@ -897,6 +897,46 @@ mod tests {
     }
 
     #[test]
+    fn pipeline_strips_punctuated_emotes_and_irc_with_leading_space() {
+        let settings = TwitchTtsSettings::default();
+        let registry = EmoteRegistry::new();
+        registry.seed_test_emotes(&["kappa"], &["OMEGALUL"]);
+        // IRC indices target raw body (with leading spaces); lexical peels `(OMEGALUL)`.
+        let out = process_chat_message(
+            &settings,
+            &no_replacement(),
+            &registry,
+            "viewer",
+            "Viewer",
+            "  Kappa (OMEGALUL) hello",
+            Some("25:2-6"),
+        );
+        assert!(out.speakable);
+        assert_eq!(out.clean_text, "hello");
+        assert_eq!(out.speak_text, "Viewer. hello");
+    }
+
+    #[test]
+    fn pipeline_speak_chat_disabled_skips() {
+        let settings = TwitchTtsSettings {
+            speak_chat: false,
+            ..TwitchTtsSettings::default()
+        };
+        let registry = EmoteRegistry::new();
+        let out = process_chat_message(
+            &settings,
+            &no_replacement(),
+            &registry,
+            "viewer",
+            "Viewer",
+            "hello chat",
+            None,
+        );
+        assert!(!out.speakable);
+        assert_eq!(out.skip_reason, Some("speak_chat_disabled"));
+    }
+
+    #[test]
     fn pipeline_strips_seventv_emotes_from_speech() {
         let settings = TwitchTtsSettings::default();
         let registry = EmoteRegistry::new();
@@ -913,6 +953,25 @@ mod tests {
         assert!(out.speakable);
         assert_eq!(out.clean_text, "nice");
         assert_eq!(out.speak_text, "Viewer. nice");
+    }
+
+    #[test]
+    fn pipeline_strips_ffz_emotes_from_speech() {
+        let settings = TwitchTtsSettings::default();
+        let registry = EmoteRegistry::new();
+        registry.seed_test_emotes_with_providers(&[], &[], &[], &["CatBag", "BeanieHipster"]);
+        let out = process_chat_message(
+            &settings,
+            &no_replacement(),
+            &registry,
+            "viewer",
+            "Viewer",
+            "CatBag BeanieHipster gg",
+            None,
+        );
+        assert!(out.speakable);
+        assert_eq!(out.clean_text, "gg");
+        assert_eq!(out.speak_text, "Viewer. gg");
     }
 
     #[test]

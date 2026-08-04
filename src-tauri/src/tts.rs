@@ -8,6 +8,7 @@ use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowB
 use tracing::{debug, info, warn};
 
 use voicesub_audio::{CHANNEL_SPEECH, CHANNEL_TWITCH, PlaybackHub};
+use voicesub_runtime::append_bootstrap_query;
 use voicesub_tts::{
     ChannelEnqueueResult, TTS_WINDOW_LABEL, TtsConfig, TtsModuleService, TtsSpeechPipeline,
     TtsSpeechSettings, bind_window_process, build_tts_module_url, tts_webview_data_dir,
@@ -185,10 +186,13 @@ pub fn tts_get_config(state: State<'_, TtsState>) -> Result<TtsConfig, String> {
 
 pub fn tts_set_provider(state: State<'_, TtsState>, provider: String) -> Result<TtsConfig, String> {
     info!(target: "voicesub.tts.ipc", provider = %provider, "tts_set_provider");
-    state
+    let config = state
         .service
         .set_tts_provider(&provider)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    // Prefetched audio was fetched with the previous engine — drop it.
+    state.pipeline.clear_queues();
+    Ok(config)
 }
 
 #[tauri::command]
@@ -290,6 +294,8 @@ pub fn tts_set_playback_mode(
         .set_playback_mode(&mode)
         .map_err(|e| e.to_string())?;
     sync_playback_devices(&state);
+    // Rate / stretch path changed — drop prefetched clips so next line uses new mode.
+    state.pipeline.clear_queues();
     Ok(config)
 }
 
@@ -389,10 +395,8 @@ pub fn tts_speak_sample(
 #[tauri::command]
 pub fn tts_channel_clear(state: State<'_, TtsState>, channel: String) -> Result<(), String> {
     info!(target: "voicesub.tts.ipc", channel = %channel, "tts_channel_clear");
-    state
-        .service
-        .queue_clear_channel(&channel)
-        .map_err(|e| e.to_string())
+    state.pipeline.clear_channel(&channel);
+    Ok(())
 }
 
 #[tauri::command]
@@ -535,7 +539,11 @@ async fn open_tts_window(
 
     recover_tts_after_window_closed(&state);
 
-    let url = build_tts_module_url(state.bind_addr);
+    let bootstrap = app
+        .state::<crate::AppState>()
+        .runtime
+        .issue_loopback_bootstrap_nonce();
+    let url = append_bootstrap_query(&build_tts_module_url(state.bind_addr), &bootstrap);
 
     info!(target: "voicesub.tts.ipc", url = %url, "creating tts window");
 

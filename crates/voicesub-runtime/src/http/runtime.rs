@@ -252,7 +252,10 @@ impl RuntimeOrchestrator {
         let base = resolve_base_url(state).await;
         let config_payload = state.config.read().await;
         let payload = config_payload.payload().clone();
-        let worker_target = worker_url_for_payload(&base, &payload);
+        let mut worker_target = worker_url_for_payload(&base, &payload);
+        worker_target = state
+            .loopback_auth
+            .append_bootstrap_to_worker_url(&worker_target);
         let chrome_launch = voicesub_browser::chrome_launch_from_config(&payload);
         drop(config_payload);
 

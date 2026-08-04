@@ -14,7 +14,7 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
-## [0.6.3] - 2026-08-04
+## [0.6.3] - 2026-08-05
 
 ### Added
 
@@ -25,6 +25,7 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ### Changed
 
+- Browser worker: visible-window idle watchdog rearm after **15 s** without transcript (was 30 s), so quiet Web Speech stalls recover sooner.
 - Style → font picker: alphabet tags no longer follow UI locale — always shown in the matching script so CJK / Latin-only coverage is visible at a glance.
 - Desktop updater: NSIS installer is staged under the install/project root (not `%TEMP%`); leftovers are deleted on the next launch after a successful update (or immediately on a failed attempt).
 - NSIS upgrade: before copying resources, wipe shipped `$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}` (and the same under `resources\bin`) so orphaned Vite content-hash files and other leftovers from prior builds cannot accumulate across updates; `user-data/` and `logs/` are never touched.
@@ -33,6 +34,13 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ### Fixed
 
+- Loopback API: session token is no longer embedded in HTML for `/`, `/tts`, `/local-asr`, `/google-asr` (any local browser could previously control `/api/*`). App HTML itself now requires bootstrap/cookie (401 otherwise); unauthenticated `/tts` serves only a minimal Twitch OAuth shell. Tauri/Chrome launch URLs carry one-time `bootstrap`; Twitch `oauth-complete` requires CSRF `state`. Non-loopback WebSocket clients need `loopback_token` (localhost OBS/worker unchanged).
+- TTS: settings apply more reliably — flush debounced saves on `pagehide`/blur, Twitch rate/volume debounce on `oninput`, clear queue+prefetch when provider/playback mode changes; UI exposes `speech.max_queue_items` and `speak_chat`.
+- Twitch emotes: IRC `emotes` indices applied before trim; lexical strip removes punctuated codes (`Kappa!`, `(OMEGALUL)`); added **FFZ** (FrankerFaceZ) emote source; Clear queue stops playback and drops prefetch.
+- Twitch OAuth: cancelling auth in the system browser (`?error=access_denied`) shows a minimal page and forwards the error into the app TTS module via the bridge — full `/tts` UI is not mounted in the browser.
+- OBS CC (`send_translation_partials`): completed translation finals are no longer dropped on `CompletedWithPartial` (a next-phrase live draft used to preempt the payload); pending `clear_after` is cancelled when the next draft arrives so growing caption text is not wiped.
+- OBS CC: `translation_1…4` modes select by `slot_id`, not the Nth visible translation line — otherwise with `translation_1`+`translation_3` and output `translation_3`, finals never sent (especially with live-partials off).
+- OBS CC: dedupe finals by `completed_sequence` (not the active partial sequence) — sticky completed-block republishes under keep_completed were flooding the queue and dropping phrases; sticky republish of the same text after `clear_after` no longer bypasses `avoid_duplicate_text`; payload queue coalesces only sticky/draft frames and keeps distinct completed finals (needed for realtime translation with OBS live-partials off).
 - Installer / release package: Nuitka intermediate `google_tts_fetch.build` (~13 MB) is no longer left next to the sidecar and does not survive upgrades; orphaned hashed assets under worker/dashboard/tts/local-asr are cleared on upgrade.
 - OBS overlay: live-partial translation flicker — `is_live_draft` is forwarded into the renderer so draft MT uses the transient/fast path (like source); completed-text changes patch in place without remount; entrance effects start at opacity ≥0.85; dashboard preview uses the same OBS paint policy (`obsPaintPolicy`); ~40 ms coalesce while drafts are visible; glow keyframes drop `color-mix` for older OBS CEF.
 - UI locale: style slot tabs (“Translation 1 · Russian”) and OBS Output mode options update immediately when the interface language changes, without a page reload; same for Modules badges and Translation provider field labels.

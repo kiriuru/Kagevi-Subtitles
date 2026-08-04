@@ -58,7 +58,7 @@ export async function initLoopbackApiToken(): Promise<string | null> {
       return cachedToken;
     }
   } catch {
-    // Browser dev without Tauri — rely on injected token from trusted HTML pages.
+    // Browser worker / system browser: rely on HttpOnly cookie from bootstrap, or unauthenticated.
   }
   return null;
 }
@@ -83,9 +83,19 @@ export function loopbackApiHeaders(extra?: HeadersInit): HeadersInit {
   return headers;
 }
 
+/**
+ * Attach loopback auth when a JS/IPC token is available.
+ * Without a token, same-origin fetch still sends the HttpOnly bootstrap cookie (Chrome worker).
+ */
 export function withLoopbackAuth(init?: RequestInit): RequestInit {
+  const credentials = init?.credentials ?? "same-origin";
+  const token = loopbackApiToken();
+  if (!token) {
+    return { ...init, credentials };
+  }
   return {
     ...init,
+    credentials,
     headers: loopbackApiHeaders(init?.headers),
   };
 }

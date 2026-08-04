@@ -10,7 +10,7 @@
   import type { AudioOutputDevice, TtsPlaybackMode } from "../lib/types";
   import { twitchOAuthRedirectUri } from "../lib/twitch-oauth";
   import {
-    fetchPendingOAuthToken,
+    fetchPendingOAuthResult,
     openTwitchOAuthInSystemBrowser,
   } from "../lib/twitch-oauth-flow";
   import { defaultTwitchSettings } from "../lib/twitch-defaults";
@@ -284,10 +284,22 @@
 
   async function pollOAuthFromBrowser() {
     try {
-      const token = await fetchPendingOAuthToken();
-      if (!token) return;
+      const pending = await fetchPendingOAuthResult();
+      if (pending.status === "none") return;
       stopOAuthPoll();
-      twitch = { ...twitch, oauth_token: token };
+      if (pending.status === "error") {
+        const denied = pending.error === "access_denied";
+        error = denied
+          ? tr("tts.twitch.oauth_denied")
+          : pending.message || tr("tts.twitch.oauth_denied");
+        oauthNotice = "";
+        ttsTrace("twitch", "oauth_implicit_denied", {
+          error: pending.error,
+          message: pending.message,
+        });
+        return;
+      }
+      twitch = { ...twitch, oauth_token: pending.token };
       oauthNotice = tr("tts.twitch.oauth_received");
       ttsTrace("twitch", "oauth_implicit_ok", { source: "system_browser" });
       saveNow();
@@ -511,10 +523,18 @@
 
   $effect(() => {
     void refreshStatus();
+    const onHide = () => flushPendingSave();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushPendingSave();
+    };
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       flushPendingSave();
       stopOAuthPoll();
       if (settingsSavedTimer) clearTimeout(settingsSavedTimer);
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   });
 </script>
@@ -552,6 +572,22 @@
       }}
     />
     <span>{tr("tts.twitch.enable")}</span>
+  </label>
+
+  <label class="checkbox-row stack-field--full">
+    <input
+      type="checkbox"
+      checked={twitch.speak_chat !== false}
+      disabled={!twitch.enabled}
+      onchange={(e) => {
+        twitch = {
+          ...twitch,
+          speak_chat: (e.currentTarget as HTMLInputElement).checked,
+        };
+        saveNow();
+      }}
+    />
+    <span>{tr("tts.twitch.speak_chat")}</span>
   </label>
 
   <div class="tts-twitch-connect">
@@ -851,6 +887,7 @@
                     ...twitch,
                     speech_rate: Number((e.currentTarget as HTMLInputElement).value) || 0.5,
                   };
+                  queueSave();
                 }}
                 onchange={() => saveNow()}
               />
@@ -899,17 +936,18 @@
                     ...twitch,
                     speech_volume: Number((e.currentTarget as HTMLInputElement).value),
                   };
+                  queueSave();
                 }}
                 onchange={() => saveNow()}
               />
-          {:else}
-            <span class="muted">
-              {tr("tts.twitch.inherit_volume", {
-                volume: formatSpeechVolume(moduleSpeechVolume),
-              })}
-            </span>
-          {/if}
-        </label>
+            {:else}
+              <span class="muted">
+                {tr("tts.twitch.inherit_volume", {
+                  volume: formatSpeechVolume(moduleSpeechVolume),
+                })}
+              </span>
+            {/if}
+          </label>
 
         <label class="stack-field">
           <span>{tr("tts.twitch.max_queue")}</span>
@@ -1025,6 +1063,23 @@
             />
             <span>{tr("tts.twitch.emote_7tv")}</span>
           </label>
+          <label class="checkbox-row">
+            <input
+              type="checkbox"
+              checked={emoteSources().ffz}
+              onchange={(e) => {
+                twitch = {
+                  ...twitch,
+                  emote_sources: {
+                    ...emoteSources(),
+                    ffz: (e.currentTarget as HTMLInputElement).checked,
+                  },
+                };
+                saveNow();
+              }}
+            />
+            <span>{tr("tts.twitch.emote_ffz")}</span>
+          </label>
         </div>
         <label class="checkbox-row">
           <input
@@ -1122,6 +1177,7 @@
               };
               queueSave();
             }}
+            onblur={() => flushPendingSave()}
           />
           <span class="muted">{tr("tts.twitch.speak_template_hint")}</span>
         </label>

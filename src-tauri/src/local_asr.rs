@@ -5,6 +5,9 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tracing::info;
 use voicesub_asr_local::{LOCAL_ASR_WINDOW_LABEL, build_local_asr_module_url};
+use voicesub_runtime::append_bootstrap_query;
+
+use crate::AppState;
 
 pub struct LocalAsrState {
     pub bind_addr: std::net::SocketAddr,
@@ -30,7 +33,11 @@ pub async fn local_asr_open_window(
         return Ok(());
     }
 
-    let url = build_local_asr_module_url(state.bind_addr);
+    let bootstrap = app
+        .state::<AppState>()
+        .runtime
+        .issue_loopback_bootstrap_nonce();
+    let url = append_bootstrap_query(&build_local_asr_module_url(state.bind_addr), &bootstrap);
     info!(
         target: "voicesub.asr_local.ipc",
         url = %url,

@@ -203,6 +203,7 @@ async fn google_asr_served_from_svelte_worker() {
     let client = reqwest::Client::new();
     let response = client
         .get(format!("http://{addr}/google-asr"))
+        .header(reqwest::header::COOKIE, runtime.session_cookie())
         .timeout(Duration::from_secs(3))
         .send()
         .await
@@ -314,6 +315,7 @@ async fn worker_page_and_assets() {
 
     let page = reqwest::Client::new()
         .get(format!("http://{addr}/google-asr"))
+        .header(reqwest::header::COOKIE, runtime.session_cookie())
         .timeout(Duration::from_secs(3))
         .send()
         .await
@@ -362,11 +364,17 @@ async fn tts_module_page_and_assets() {
 
     let page = reqwest::Client::new()
         .get(format!("http://{addr}/tts"))
+        .header(reqwest::header::COOKIE, runtime.session_cookie())
         .timeout(Duration::from_secs(3))
         .send()
         .await
         .expect("tts page");
     assert!(page.status().is_success());
+    let page_body = page.text().await.expect("tts page body");
+    assert!(
+        page_body.contains("/tts-assets/") || page_body.contains("<!doctype html"),
+        "authed /tts should serve full module HTML"
+    );
 
     let asset_name = index
         .lines()
@@ -754,10 +762,12 @@ async fn phase0_soak_checklist_automated() {
     let handle = runtime.start().await;
     let addr = handle.bind_addr;
     let client = reqwest::Client::new();
+    let cookie = runtime.session_cookie();
     let base = format!("http://{addr}");
 
     let dashboard = client
         .get(&base)
+        .header(reqwest::header::COOKIE, &cookie)
         .timeout(Duration::from_secs(3))
         .send()
         .await
@@ -766,6 +776,7 @@ async fn phase0_soak_checklist_automated() {
 
     let worker = client
         .get(format!("{base}/google-asr"))
+        .header(reqwest::header::COOKIE, &cookie)
         .timeout(Duration::from_secs(3))
         .send()
         .await

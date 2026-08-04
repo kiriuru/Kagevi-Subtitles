@@ -214,6 +214,22 @@ impl TtsSpeechPipeline {
         self.apply_effective_enabled();
     }
 
+    /// Drop queued + prefetched audio on both channels (provider / mode / clear UI).
+    pub fn clear_queues(&self) {
+        info!(target: "voicesub.tts.pipeline", "clearing speech and twitch queues");
+        self.speech.clear();
+        self.twitch.clear();
+    }
+
+    /// Clear a single channel queue + prefetch + stop playback.
+    pub fn clear_channel(&self, channel: &str) {
+        if channel == CHANNEL_SPEECH {
+            self.speech.clear();
+        } else if channel == CHANNEL_TWITCH {
+            self.twitch.clear();
+        }
+    }
+
     /// Manual Speak test from the TTS UI — does not require translation runtime.
     pub fn enqueue_speech_test(
         &self,

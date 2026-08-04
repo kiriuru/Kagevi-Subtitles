@@ -63,6 +63,7 @@
   import TwitchPanel from "./components/TwitchPanel.svelte";
   import { defaultTwitchSettings } from "./lib/twitch-defaults";
   import { tryCompleteExternalOAuthCallback } from "./lib/external-oauth-callback";
+  import type { ExternalOAuthCallbackResult } from "./lib/external-oauth-callback";
   import {
     subscribeUiConfigSync,
     subscribeUiLocaleSync,
@@ -96,6 +97,7 @@
   });
 
   let externalOAuthDone = $state(false);
+  let externalOAuthResult = $state<ExternalOAuthCallbackResult | null>(null);
   let tab = $state<TtsTab>("speech");
   let version = $state(PROJECT_VERSION);
   let config = $state<TtsConfig>({
@@ -483,7 +485,9 @@
 
   onMount(async () => {
     await initLoopbackApiToken();
-    if (await tryCompleteExternalOAuthCallback()) {
+    const oauthCallback = await tryCompleteExternalOAuthCallback();
+    if (oauthCallback) {
+      externalOAuthResult = oauthCallback;
       externalOAuthDone = true;
       return;
     }
@@ -525,6 +529,7 @@
           twitch: true,
           bttv: true,
           seventv: true,
+          ffz: true,
         };
         config.twitch = {
           ...twitchDefaults,
@@ -533,6 +538,7 @@
             twitch: config.twitch.emote_sources?.twitch ?? defaultEmoteSources.twitch,
             bttv: config.twitch.emote_sources?.bttv ?? defaultEmoteSources.bttv,
             seventv: config.twitch.emote_sources?.seventv ?? defaultEmoteSources.seventv,
+            ffz: config.twitch.emote_sources?.ffz ?? defaultEmoteSources.ffz,
           },
         };
       }
@@ -611,6 +617,8 @@
       });
       window.addEventListener("sst:locale-changed", handleLocaleChanged);
       window.addEventListener("focus", handleWindowFocus);
+      window.addEventListener("pagehide", onTtsPageHide);
+      document.addEventListener("visibilitychange", onTtsVisibilityChange);
       status = config.enabled ? tr("tts.status.listening") : tr("tts.status.disabled");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -627,11 +635,14 @@
 
   onDestroy(() => {
     ttsTrace("app", "destroy", {});
+    flushSpeechSettingsSave();
     stopTtsKeepalive();
     unsubscribeUiSync?.();
     unsubscribeUiLocale?.();
     window.removeEventListener("sst:locale-changed", handleLocaleChanged);
     window.removeEventListener("focus", handleWindowFocus);
+    window.removeEventListener("pagehide", onTtsPageHide);
+    document.removeEventListener("visibilitychange", onTtsVisibilityChange);
     void clearSpeechChannels();
     runtimeEventsUnlisten?.();
     speechActivityUnlisten?.();
@@ -639,8 +650,6 @@
     if (runtimeTimer) clearInterval(runtimeTimer);
     if (resourceTelemetryTimer) clearInterval(resourceTelemetryTimer);
     if (speechContextTimer) clearInterval(speechContextTimer);
-    if (settingsTimer) clearTimeout(settingsTimer);
-    if (voiceSettingsTimer) clearTimeout(voiceSettingsTimer);
   });
 
   async function handleAudioDeviceChange(event: Event) {
@@ -678,8 +687,22 @@
   function queueSpeechSettingsSave() {
     if (settingsTimer) clearTimeout(settingsTimer);
     settingsTimer = setTimeout(() => {
+      settingsTimer = null;
       void persistSpeechSettings();
     }, 350);
+  }
+
+  function flushSpeechSettingsSave() {
+    if (settingsTimer) {
+      clearTimeout(settingsTimer);
+      settingsTimer = null;
+      void persistSpeechSettings();
+    }
+    if (voiceSettingsTimer) {
+      clearTimeout(voiceSettingsTimer);
+      voiceSettingsTimer = null;
+      void persistVoiceSettings();
+    }
   }
 
   async function persistSpeechSettings() {
@@ -721,8 +744,19 @@
   function queueVoiceSettingsSave() {
     if (voiceSettingsTimer) clearTimeout(voiceSettingsTimer);
     voiceSettingsTimer = setTimeout(() => {
+      voiceSettingsTimer = null;
       void persistVoiceSettings();
     }, 350);
+  }
+
+  function onTtsPageHide() {
+    flushSpeechSettingsSave();
+  }
+
+  function onTtsVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      flushSpeechSettingsSave();
+    }
   }
 
   async function handlePlaybackModeChange(event: Event) {
@@ -816,10 +850,19 @@
     <section class="surface-card bento-tile panel-padding stack">
       <div class="section-heading section-heading--stacked">
         <p class="eyebrow">{tr("tts.oauth.eyebrow")}</p>
-        <h2>{tr("tts.oauth.done_title")}</h2>
+        {#if externalOAuthResult?.kind === "error"}
+          <h2>{tr("tts.oauth.denied_title")}</h2>
+        {:else}
+          <h2>{tr("tts.oauth.done_title")}</h2>
+        {/if}
       </div>
-      <p class="muted">{tr("tts.oauth.done_body")}</p>
-      <p class="muted">{tr("tts.oauth.done_close")}</p>
+      {#if externalOAuthResult?.kind === "error"}
+        <p class="muted">{tr("tts.oauth.denied_body")}</p>
+        <p class="muted">{tr("tts.oauth.denied_close")}</p>
+      {:else}
+        <p class="muted">{tr("tts.oauth.done_body")}</p>
+        <p class="muted">{tr("tts.oauth.done_close")}</p>
+      {/if}
     </section>
     <footer class="app-footer tts-module-footer">
       <span class="app-footer__line">
@@ -1054,20 +1097,41 @@
           </ul>
         </div>
 
-        <label class="stack-field">
-          <span>{tr("tts.speech.min_chars")}</span>
-          <input
-            class="control"
-            type="number"
-            min="1"
-            max="32"
-            value={config.speech.min_chars}
-            onchange={(e) => {
-              config.speech.min_chars = Number((e.currentTarget as HTMLInputElement).value) || 1;
-              queueSpeechSettingsSave();
-            }}
-          />
-        </label>
+        <div class="tts-settings-grid stack-field--full tts-speech-limits">
+          <label class="stack-field">
+            <span>{tr("tts.speech.min_chars")}</span>
+            <input
+              class="control"
+              type="number"
+              min="1"
+              max="32"
+              value={config.speech.min_chars}
+              onchange={(e) => {
+                config.speech.min_chars = Number((e.currentTarget as HTMLInputElement).value) || 1;
+                queueSpeechSettingsSave();
+              }}
+              onblur={() => flushSpeechSettingsSave()}
+            />
+          </label>
+
+          <label class="stack-field">
+            <span>{tr("tts.speech.max_queue")}</span>
+            <input
+              class="control"
+              type="number"
+              min="1"
+              max="64"
+              value={config.speech.max_queue_items}
+              onchange={(e) => {
+                config.speech.max_queue_items =
+                  Number((e.currentTarget as HTMLInputElement).value) || 8;
+                queueSpeechSettingsSave();
+              }}
+              onblur={() => flushSpeechSettingsSave()}
+            />
+            <span class="muted">{tr("tts.speech.max_queue_hint")}</span>
+          </label>
+        </div>
 
         {#if !nativePlayback}
           <label class="stack-field stack-field--range">

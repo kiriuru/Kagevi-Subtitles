@@ -1,4 +1,4 @@
-use voicesub_subtitle::SubtitlePayloadEvent;
+use voicesub_subtitle::{SubtitleLineItem, SubtitlePayloadEvent};
 
 pub fn normalize_text(text: &str) -> String {
     text.lines()
@@ -11,27 +11,29 @@ pub fn normalize_text(text: &str) -> String {
 }
 
 pub fn select_payload_text(payload: &SubtitlePayloadEvent, mode: &str) -> String {
-    let visible: Vec<_> = payload
-        .visible_items
-        .iter()
-        .filter(|item| !item.is_live_draft && !item.text.trim().is_empty())
-        .collect();
     if mode == "first_visible_line" {
         return select_first_visible_text(payload);
     }
-    if let Some(index_str) = mode.strip_prefix("translation_")
-        && let Ok(index) = index_str.parse::<usize>()
-    {
-        let translations: Vec<_> = visible
-            .iter()
-            .filter(|item| item.kind == "translation")
-            .collect();
-        return translations
-            .get(index.saturating_sub(1))
-            .map(|item| item.text.clone())
-            .unwrap_or_default();
+    if mode.starts_with("translation_") {
+        // translation_N is a Translation line slot_id (same as UI), not the Nth visible line.
+        return find_non_draft_translation(payload, mode).unwrap_or_default();
     }
     String::new()
+}
+
+fn find_non_draft_translation(payload: &SubtitlePayloadEvent, mode: &str) -> Option<String> {
+    let matching = |item: &&SubtitleLineItem| {
+        item.kind == "translation"
+            && !item.is_live_draft
+            && !item.text.trim().is_empty()
+            && (item.slot_id.as_deref() == Some(mode) || item.style_slot.as_deref() == Some(mode))
+    };
+    payload
+        .visible_items
+        .iter()
+        .find(matching)
+        .or_else(|| payload.items.iter().find(matching))
+        .map(|item| item.text.clone())
 }
 
 /// Live-draft text for `translation_N` modes (empty for other modes / missing draft).
@@ -169,6 +171,102 @@ mod tests {
             ..SubtitlePayloadEvent::default()
         };
         assert_eq!(select_payload_text(&payload, "translation_1"), "Hello");
+    }
+
+    #[test]
+    fn selects_translation_slot_by_id_not_visible_index() {
+        // display_order has translation_1 then translation_3 — only two visible lines.
+        // Mode translation_3 must resolve by slot_id, not as "3rd visible translation".
+        let payload = SubtitlePayloadEvent {
+            visible_items: vec![
+                SubtitleLineItem {
+                    kind: "translation".into(),
+                    lang: "ja".into(),
+                    label: "JA".into(),
+                    text: "こんにちは".into(),
+                    style_slot: Some("translation_1".into()),
+                    slot_id: Some("translation_1".into()),
+                    target_lang: Some("ja".into()),
+                    provider: None,
+                    visible: true,
+                    success: true,
+                    error: None,
+                    is_live_draft: false,
+                },
+                SubtitleLineItem {
+                    kind: "translation".into(),
+                    lang: "en".into(),
+                    label: "EN".into(),
+                    text: "Hello world".into(),
+                    style_slot: Some("translation_3".into()),
+                    slot_id: Some("translation_3".into()),
+                    target_lang: Some("en".into()),
+                    provider: None,
+                    visible: true,
+                    success: true,
+                    error: None,
+                    is_live_draft: false,
+                },
+            ],
+            lifecycle_state: LifecycleState::CompletedOnly,
+            completed_block_visible: true,
+            ..SubtitlePayloadEvent::default()
+        };
+        assert_eq!(
+            select_payload_text(&payload, "translation_3"),
+            "Hello world"
+        );
+        assert_eq!(select_payload_text(&payload, "translation_1"), "こんにちは");
+        assert_eq!(
+            select_payload_text(&payload, "translation_2"),
+            "",
+            "missing slot must stay empty (no positional steal from later slots)"
+        );
+    }
+
+    #[test]
+    fn selects_completed_translation_from_items_when_hidden_by_live_partial() {
+        let mut hidden = SubtitleLineItem {
+            kind: "translation".into(),
+            lang: "en".into(),
+            label: "EN".into(),
+            text: "Completed final".into(),
+            style_slot: None,
+            slot_id: Some("translation_3".into()),
+            target_lang: Some("en".into()),
+            provider: None,
+            visible: false,
+            success: true,
+            error: None,
+            is_live_draft: false,
+        };
+        let draft = SubtitleLineItem {
+            kind: "translation".into(),
+            lang: "en".into(),
+            label: "EN".into(),
+            text: "draft".into(),
+            style_slot: Some("translation_3".into()),
+            slot_id: Some("translation_3".into()),
+            target_lang: Some("en".into()),
+            provider: None,
+            visible: true,
+            success: true,
+            error: None,
+            is_live_draft: true,
+        };
+        let payload = SubtitlePayloadEvent {
+            items: vec![draft.clone(), hidden.clone()],
+            visible_items: vec![draft],
+            lifecycle_state: LifecycleState::CompletedWithPartial,
+            completed_block_visible: true,
+            completed_sequence: Some(5),
+            ..SubtitlePayloadEvent::default()
+        };
+        let _ = &mut hidden;
+        assert_eq!(
+            select_payload_text(&payload, "translation_3"),
+            "Completed final"
+        );
     }
 
     #[test]

@@ -35,8 +35,13 @@ describe("loopback-api", () => {
     expect(loopbackApiToken()).toBe("legacy-token");
   });
 
-  it("throws when token is missing for protected API calls", () => {
+  it("throws when token is missing for loopbackApiHeaders", () => {
     expect(() => loopbackApiHeaders()).toThrow(/loopback API token is missing/i);
-    expect(() => withLoopbackAuth({ method: "POST" })).toThrow(/loopback API token is missing/i);
+  });
+
+  it("withLoopbackAuth allows cookie-only fetch when JS token is missing", () => {
+    const init = withLoopbackAuth({ method: "POST" });
+    expect(init.credentials).toBe("same-origin");
+    expect(init.headers).toBeUndefined();
   });
 });

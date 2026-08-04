@@ -319,6 +319,8 @@ pub struct MockObsClient {
     pub fail_caption_remaining: std::sync::Arc<std::sync::atomic::AtomicU32>,
     pub fail_debug_mirror_remaining: std::sync::Arc<std::sync::atomic::AtomicU32>,
     pub fail_ping: bool,
+    /// Artificial delay for SendStreamCaption (tests queue/coalesce behaviour).
+    pub caption_delay_ms: u64,
 }
 
 #[cfg(test)]
@@ -342,6 +344,9 @@ impl MockObsClient {
             .lock()
             .unwrap()
             .push((request_type.to_string(), request_data));
+        if request_type == "SendStreamCaption" && self.caption_delay_ms > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(self.caption_delay_ms));
+        }
         if request_type == "SendStreamCaption" {
             let remaining = self.fail_caption_remaining.load(Ordering::SeqCst);
             if remaining > 0 {

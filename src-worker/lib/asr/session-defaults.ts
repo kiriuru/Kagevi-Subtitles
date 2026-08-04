@@ -16,7 +16,8 @@ export const INSTANCE_DEFAULTS = {
   maxNetworkBackoffMs: 30000,
   watchdogIntervalMs: 1000,
   maxStoppingMs: 2000,
-  visibleIdleRestartMs: 30000,
+  // Recover dead Web Speech sooner after quiet gaps; <12s risks false rearm on long Chrome pauses.
+  visibleIdleRestartMs: 15000,
   hiddenIdleRestartMs: 60000,
   // Chrome continuous often pauses interim for >6s while still alive; 6s caused false stalls.
   stallDegradedAfterMs: 12000,

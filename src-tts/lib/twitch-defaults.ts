@@ -19,7 +19,7 @@ export const defaultTwitchSettings = (): TwitchTtsSettings => ({
   strip_emotes: true,
   strip_emoji: true,
   strip_links: true,
-  emote_sources: { twitch: true, bttv: true, seventv: true },
+  emote_sources: { twitch: true, bttv: true, seventv: true, ffz: true },
   detect_language: true,
   lang_min_chars: 2,
   enabled_languages: [],

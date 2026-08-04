@@ -11,6 +11,7 @@ use crate::settings::TwitchEmoteSources;
 pub const DEFAULT_TWITCH_CLIENT_ID: &str = "oraf2d29s9mm8kxq4xx97zo28xaj7b";
 const SEVENTV_API_BASE: &str = "https://7tv.io/v3";
 const BTTV_API_BASE: &str = "https://api.betterttv.net/3/cached";
+const FFZ_API_BASE: &str = "https://api.frankerfacez.com/v1";
 const HTTP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Debug, Default, Clone)]
@@ -18,10 +19,12 @@ pub struct EmoteSets {
     pub twitch: HashSet<String>,
     pub bttv: HashSet<String>,
     pub seventv: HashSet<String>,
+    pub ffz: HashSet<String>,
     pub channel_login: String,
     pub twitch_count: usize,
     pub bttv_count: usize,
     pub seventv_count: usize,
+    pub ffz_count: usize,
     pub last_refresh: Option<Instant>,
 }
 
@@ -44,7 +47,7 @@ impl EmoteRegistry {
 
     #[cfg(test)]
     pub(crate) fn seed_test_emotes(&self, twitch: &[&str], bttv: &[&str]) {
-        self.seed_test_emotes_with_seventv(twitch, bttv, &[]);
+        self.seed_test_emotes_with_providers(twitch, bttv, &[], &[]);
     }
 
     #[cfg(test)]
@@ -53,6 +56,17 @@ impl EmoteRegistry {
         twitch: &[&str],
         bttv: &[&str],
         seventv: &[&str],
+    ) {
+        self.seed_test_emotes_with_providers(twitch, bttv, seventv, &[]);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn seed_test_emotes_with_providers(
+        &self,
+        twitch: &[&str],
+        bttv: &[&str],
+        seventv: &[&str],
+        ffz: &[&str],
     ) {
         let mut guard = self.inner.write().expect("emote lock");
         for name in twitch {
@@ -64,6 +78,9 @@ impl EmoteRegistry {
         for code in seventv {
             insert_third_party_code(&mut guard.seventv, code);
         }
+        for code in ffz {
+            insert_third_party_code(&mut guard.ffz, code);
+        }
     }
 
     pub fn clean_message_text(
@@ -73,7 +90,8 @@ impl EmoteRegistry {
         sources: &TwitchEmoteSources,
         strip_emoji: bool,
     ) -> String {
-        let mut working = text.trim().to_string();
+        // IRC `emotes` indices are relative to the raw PRIVMSG body — strip before trim.
+        let mut working = text.to_string();
         if let Some(tag) = irc_emotes_tag.filter(|value| !value.is_empty()) {
             working = strip_irc_emotes(&working, tag);
         }
@@ -92,7 +110,7 @@ impl EmoteRegistry {
         } else {
             text.to_string()
         };
-        if !sources.twitch && !sources.bttv && !sources.seventv {
+        if !sources.twitch && !sources.bttv && !sources.seventv && !sources.ffz {
             return normalize_whitespace(&working);
         }
         let words: Vec<String> = working
@@ -109,14 +127,16 @@ impl EmoteRegistry {
                 if is_plain_decimal_token(&no_emoji) {
                     return no_emoji;
                 }
-                let lc = no_emoji.to_ascii_lowercase();
-                if sources.twitch && sets.twitch.contains(&lc) {
+                if token_is_known_emote(&no_emoji, &sets, sources) {
                     return String::new();
                 }
-                if sources.bttv && emote_set_contains(&sets.bttv, &no_emoji) {
-                    return String::new();
-                }
-                if sources.seventv && emote_set_contains(&sets.seventv, &no_emoji) {
+                // Chat often attaches punctuation: `Kappa!`, `(OMEGALUL)`, `"Clap"`.
+                let (_prefix, core, _suffix) = peel_emote_punctuation(&no_emoji);
+                if !core.is_empty()
+                    && core != no_emoji.as_str()
+                    && !is_plain_decimal_token(core)
+                    && token_is_known_emote(core, &sets, sources)
+                {
                     return String::new();
                 }
                 no_emoji
@@ -163,6 +183,7 @@ impl EmoteRegistry {
                     merged.twitch.extend(partial.twitch);
                     merged.bttv.extend(partial.bttv);
                     merged.seventv.extend(partial.seventv);
+                    merged.ffz.extend(partial.ffz);
                 }
                 Err(err) => {
                     warn!(
@@ -178,6 +199,7 @@ impl EmoteRegistry {
         merged.twitch_count = merged.twitch.len();
         merged.bttv_count = merged.bttv.len();
         merged.seventv_count = merged.seventv.len();
+        merged.ffz_count = merged.ffz.len();
         merged.last_refresh = Some(Instant::now());
 
         if let Ok(mut guard) = self.inner.write() {
@@ -190,6 +212,7 @@ impl EmoteRegistry {
             twitch = merged.twitch_count,
             bttv = merged.bttv_count,
             seventv = merged.seventv_count,
+            ffz = merged.ffz_count,
             "emote cache refreshed"
         );
         Ok(merged)
@@ -211,11 +234,12 @@ async fn fetch_sets_for_login(
     let mut twitch = HashSet::new();
     let mut bttv = HashSet::new();
     let mut seventv = HashSet::new();
+    let mut ffz = HashSet::new();
 
     let bearer = normalize_bearer(oauth_token);
     let mut broadcaster_id: Option<String> = None;
 
-    if sources.twitch || sources.bttv || sources.seventv {
+    if sources.twitch || sources.bttv || sources.seventv || sources.ffz {
         broadcaster_id = fetch_broadcaster_id(client, &login, client_id, &bearer).await;
         if broadcaster_id.is_none() {
             broadcaster_id = fetch_broadcaster_id_fallback(client, &login).await;
@@ -224,7 +248,7 @@ async fn fetch_sets_for_login(
             warn!(
                 target: "voicesub.twitch.emotes",
                 channel = %login,
-                "broadcaster id lookup failed — channel BTTV/7TV emotes unavailable"
+                "broadcaster id lookup failed — channel BTTV/7TV/FFZ-by-id emotes unavailable"
             );
         }
     }
@@ -256,19 +280,29 @@ async fn fetch_sets_for_login(
         warn!(target: "voicesub.twitch.emotes", error = %err, "7tv emote fetch failed");
     }
 
+    if sources.ffz
+        && let Err(err) =
+            fetch_ffz_emotes(client, &login, broadcaster_id.as_deref(), &mut ffz).await
+    {
+        warn!(target: "voicesub.twitch.emotes", error = %err, "ffz emote fetch failed");
+    }
+
     let mut snapshot = EmoteSets {
         twitch,
         bttv,
         seventv,
+        ffz,
         channel_login: login.clone(),
         twitch_count: 0,
         bttv_count: 0,
         seventv_count: 0,
+        ffz_count: 0,
         last_refresh: Some(Instant::now()),
     };
     snapshot.twitch_count = snapshot.twitch.len();
     snapshot.bttv_count = snapshot.bttv.len();
     snapshot.seventv_count = snapshot.seventv.len();
+    snapshot.ffz_count = snapshot.ffz.len();
     Ok(snapshot)
 }
 
@@ -509,6 +543,93 @@ fn insert_seventv_emote(out: &mut HashSet<String>, emote: &SevenTvEmote) {
     }
 }
 
+async fn fetch_ffz_emotes(
+    client: &reqwest::Client,
+    login: &str,
+    broadcaster_id: Option<&str>,
+    out: &mut HashSet<String>,
+) -> Result<(), String> {
+    let global_url = format!("{FFZ_API_BASE}/set/global");
+    let global: FfzGlobalResponse = ffz_api_request(client, global_url)
+        .send()
+        .await
+        .map_err(|err| err.to_string())?
+        .error_for_status()
+        .map_err(|err| err.to_string())?
+        .json()
+        .await
+        .map_err(|err| err.to_string())?;
+    collect_ffz_default_sets(out, &global);
+
+    // Prefer room-by-login (no Helix id required); fall back to room-by-id.
+    let room_urls = [
+        format!("{FFZ_API_BASE}/room/{login}"),
+        broadcaster_id
+            .map(|id| format!("{FFZ_API_BASE}/room/id/{id}"))
+            .unwrap_or_default(),
+    ];
+    let mut room_ok = false;
+    let mut last_err = String::new();
+    for url in room_urls.into_iter().filter(|url| !url.is_empty()) {
+        match ffz_api_request(client, url).send().await {
+            Ok(response) if response.status().is_success() => {
+                match response.json::<FfzRoomResponse>().await {
+                    Ok(room) => {
+                        collect_ffz_sets(out, &room.sets);
+                        room_ok = true;
+                        break;
+                    }
+                    Err(err) => last_err = err.to_string(),
+                }
+            }
+            Ok(response) => {
+                last_err = format!("HTTP {}", response.status());
+            }
+            Err(err) => last_err = err.to_string(),
+        }
+    }
+    if !room_ok && !last_err.is_empty() {
+        debug!(
+            target: "voicesub.twitch.emotes",
+            channel = %login,
+            error = %last_err,
+            "ffz room fetch failed — global set still applied"
+        );
+    }
+    Ok(())
+}
+
+fn ffz_api_request(client: &reqwest::Client, url: String) -> reqwest::RequestBuilder {
+    client.get(url).header("User-Agent", HTTP_USER_AGENT)
+}
+
+fn collect_ffz_default_sets(out: &mut HashSet<String>, global: &FfzGlobalResponse) {
+    for set_id in &global.default_sets {
+        let key = set_id.to_string();
+        if let Some(set) = global.sets.get(&key) {
+            collect_ffz_emoticons(out, &set.emoticons);
+        }
+    }
+}
+
+fn collect_ffz_sets(
+    out: &mut HashSet<String>,
+    sets: &std::collections::HashMap<String, FfzEmoteSet>,
+) {
+    for set in sets.values() {
+        collect_ffz_emoticons(out, &set.emoticons);
+    }
+}
+
+fn collect_ffz_emoticons(out: &mut HashSet<String>, emoticons: &[FfzEmote]) {
+    for emote in emoticons {
+        if emote.hidden {
+            continue;
+        }
+        insert_third_party_code(out, &emote.name);
+    }
+}
+
 /// Strip Twitch IRC `emotes` tag ranges (UTF-16 indices, inclusive).
 pub fn strip_irc_emotes(text: &str, emotes_tag: &str) -> String {
     let ranges = parse_irc_emote_ranges(emotes_tag);
@@ -557,6 +678,55 @@ fn insert_third_party_code(set: &mut HashSet<String>, code: &str) {
 
 fn emote_set_contains(set: &HashSet<String>, word: &str) -> bool {
     set.contains(word) || set.contains(&word.to_ascii_lowercase())
+}
+
+fn token_is_known_emote(token: &str, sets: &EmoteSets, sources: &TwitchEmoteSources) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+    let lc = token.to_ascii_lowercase();
+    if sources.twitch && sets.twitch.contains(&lc) {
+        return true;
+    }
+    if sources.bttv && emote_set_contains(&sets.bttv, token) {
+        return true;
+    }
+    if sources.seventv && emote_set_contains(&sets.seventv, token) {
+        return true;
+    }
+    if sources.ffz && emote_set_contains(&sets.ffz, token) {
+        return true;
+    }
+    false
+}
+
+/// Peel common chat punctuation so lexical emote codes still match (`Kappa!`, `(OMEGALUL)`).
+fn peel_emote_punctuation(token: &str) -> (&str, &str, &str) {
+    const EDGE: &[char] = &[
+        '!', '?', '.', ',', ';', ':', '"', '\'', '(', ')', '[', ']', '{', '}', '<', '>', '*', '«',
+        '»', '„', '“', '”', '‘', '’',
+    ];
+    let bytes = token.as_bytes();
+    let mut start = 0;
+    while start < bytes.len() {
+        let ch = token[start..].chars().next().unwrap_or('\0');
+        if !EDGE.contains(&ch) {
+            break;
+        }
+        start += ch.len_utf8();
+    }
+    let mut end = bytes.len();
+    while end > start {
+        let ch = token[..end].chars().next_back().unwrap_or('\0');
+        if !EDGE.contains(&ch) {
+            break;
+        }
+        end -= ch.len_utf8();
+    }
+    if start == 0 && end == bytes.len() {
+        return ("", token, "");
+    }
+    (&token[..start], &token[start..end], &token[end..])
 }
 
 async fn fetch_broadcaster_id_fallback(client: &reqwest::Client, login: &str) -> Option<String> {
@@ -653,6 +823,34 @@ struct SevenTvEmoteData {
     name: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct FfzGlobalResponse {
+    #[serde(default)]
+    default_sets: Vec<i64>,
+    #[serde(default)]
+    sets: std::collections::HashMap<String, FfzEmoteSet>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FfzRoomResponse {
+    #[serde(default)]
+    sets: std::collections::HashMap<String, FfzEmoteSet>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FfzEmoteSet {
+    #[serde(default)]
+    emoticons: Vec<FfzEmote>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FfzEmote {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    hidden: bool,
+}
+
 #[cfg(test)]
 #[allow(clippy::field_reassign_with_default)]
 mod tests {
@@ -675,6 +873,56 @@ mod tests {
     fn strips_irc_emote_positions() {
         let out = strip_irc_emotes("baleGIGA", "25:0-7");
         assert_eq!(out, "");
+    }
+
+    #[test]
+    fn irc_emote_indices_apply_before_trim() {
+        let registry = EmoteRegistry::new();
+        let sources = TwitchEmoteSources {
+            twitch: false,
+            bttv: false,
+            seventv: false,
+            ffz: false,
+        };
+        // Leading spaces must not shift UTF-16 indices from the IRC tag.
+        let out = registry.clean_message_text("  Kappa hi", Some("25:2-6"), &sources, false);
+        assert_eq!(out, "hi");
+    }
+
+    #[test]
+    fn lexical_emote_strips_trailing_punctuation() {
+        let registry = EmoteRegistry::new();
+        registry.seed_test_emotes(&["kappa"], &["OMEGALUL"]);
+        let sources = TwitchEmoteSources::default();
+        assert_eq!(
+            registry.remove_emotes_from_text("hello Kappa! world", &sources, false),
+            "hello world"
+        );
+        assert_eq!(
+            registry.remove_emotes_from_text("(OMEGALUL) nice", &sources, false),
+            "nice"
+        );
+        assert_eq!(
+            registry.remove_emotes_from_text("\"Kappa\" ok", &sources, false),
+            "ok"
+        );
+    }
+
+    #[test]
+    fn lexical_emote_keeps_punctuation_only_tokens() {
+        let registry = EmoteRegistry::new();
+        registry.seed_test_emotes(&["kappa"], &[]);
+        let sources = TwitchEmoteSources::default();
+        assert_eq!(
+            registry.remove_emotes_from_text("!!! ???", &sources, false),
+            "!!! ???"
+        );
+    }
+
+    #[test]
+    fn strips_multiple_irc_emote_ranges() {
+        let out = strip_irc_emotes("Kappa Keepo hi", "25:0-4/1902:6-10");
+        assert_eq!(crate::emoji::normalize_whitespace(&out), "hi");
     }
 
     #[test]
@@ -817,6 +1065,7 @@ mod tests {
         sources.twitch = false;
         sources.bttv = false;
         sources.seventv = false;
+        sources.ffz = false;
         assert_eq!(
             registry.remove_emotes_from_text("RainbowPls gg", &sources, false),
             "RainbowPls gg"
@@ -876,5 +1125,85 @@ mod tests {
         assert!(emote_set_contains(&out, "MyClap"));
         assert!(emote_set_contains(&out, "Clap"));
         assert!(emote_set_contains(&out, "RainbowPls"));
+    }
+
+    #[test]
+    fn ffz_strips_channel_and_global_codes() {
+        let registry = EmoteRegistry::new();
+        registry.seed_test_emotes_with_providers(&[], &[], &[], &["CatBag", "BeanieHipster"]);
+        let mut sources = TwitchEmoteSources::default();
+        sources.twitch = false;
+        sources.bttv = false;
+        sources.seventv = false;
+        assert_eq!(
+            registry.remove_emotes_from_text("CatBag hi BeanieHipster", &sources, false),
+            "hi"
+        );
+    }
+
+    #[test]
+    fn ffz_respects_source_toggle() {
+        let registry = EmoteRegistry::new();
+        registry.seed_test_emotes_with_providers(&[], &[], &[], &["CatBag"]);
+        let mut sources = TwitchEmoteSources::default();
+        sources.twitch = false;
+        sources.bttv = false;
+        sources.seventv = false;
+        sources.ffz = false;
+        assert_eq!(
+            registry.remove_emotes_from_text("CatBag hello", &sources, false),
+            "CatBag hello"
+        );
+        sources.ffz = true;
+        assert_eq!(
+            registry.remove_emotes_from_text("CatBag hello", &sources, false),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn parses_ffz_global_default_sets_only() {
+        let payload = r#"{
+            "default_sets": [3],
+            "sets": {
+                "3": {
+                    "emoticons": [
+                        { "name": "CatBag", "hidden": false },
+                        { "name": "HiddenOne", "hidden": true }
+                    ]
+                },
+                "4330": {
+                    "emoticons": [
+                        { "name": "DonorOnly", "hidden": false }
+                    ]
+                }
+            }
+        }"#;
+        let global: FfzGlobalResponse = serde_json::from_str(payload).expect("json");
+        let mut out = HashSet::new();
+        collect_ffz_default_sets(&mut out, &global);
+        assert!(emote_set_contains(&out, "CatBag"));
+        assert!(!emote_set_contains(&out, "HiddenOne"));
+        assert!(
+            !emote_set_contains(&out, "DonorOnly"),
+            "non-default global sets must not be indexed"
+        );
+    }
+
+    #[test]
+    fn parses_ffz_room_sets() {
+        let payload = r#"{
+            "sets": {
+                "1": {
+                    "emoticons": [
+                        { "name": "BeanieHipster", "hidden": false }
+                    ]
+                }
+            }
+        }"#;
+        let room: FfzRoomResponse = serde_json::from_str(payload).expect("json");
+        let mut out = HashSet::new();
+        collect_ffz_sets(&mut out, &room.sets);
+        assert!(emote_set_contains(&out, "BeanieHipster"));
     }
 }

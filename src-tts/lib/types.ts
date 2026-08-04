@@ -42,6 +42,7 @@ export interface TwitchEmoteSources {
   twitch: boolean;
   bttv: boolean;
   seventv: boolean;
+  ffz: boolean;
 }
 
 export type TtsPlaybackMode = "native" | "sonic";

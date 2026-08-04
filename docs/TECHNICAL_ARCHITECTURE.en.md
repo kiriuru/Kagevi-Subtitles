@@ -375,7 +375,7 @@ Any other unrecognized provider name falls back to the caller's default provider
 **Default bind:** `127.0.0.1:8765` (`voicesub-config::paths`)  
 **LAN:** `VOICESUB_ALLOW_LAN=1` → bind `0.0.0.0`
 
-**LAN security (OWASP ASVS V7):** with `VOICESUB_ALLOW_LAN=1`, HTTP `/api/*` still requires the per-session `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`), but **WebSocket endpoints remain unauthenticated** — any host on the same network can connect to `/ws/events` (read subtitles/runtime) and `/ws/asr_worker` (send ASR/control). Use LAN bind only on trusted networks; for production streaming prefer default `127.0.0.1` + OBS Browser Source on localhost.
+**LAN security (OWASP ASVS V7):** with `VOICESUB_ALLOW_LAN=1`, HTTP `/api/*` still requires the per-session `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`), and **non-loopback WebSocket clients must present `loopback_token` (query) or the same session header/cookie**. Loopback peers (OBS on the same PC) keep unauthenticated `/ws/events` + `/ws/asr_worker`. Prefer default `127.0.0.1` + OBS Browser Source on localhost.
 
 Global middleware: CSP header, `Cache-Control: no-store`.
 
@@ -387,7 +387,7 @@ Global middleware: CSP header, `Cache-Control: no-store`.
 | GET | `/api/health` | loopback token | Liveness + WS connections + worker connected |
 | GET | `/api/version` | loopback token | Product metadata + `sync` (updates config, `update_available`, `latest_known_version`) |
 
-**Loopback API auth:** trusted UI pages (`/`, `/google-asr`, `/tts`, `/local-asr`) receive a per-session token via HTML injection (`window.__KAGEVI_SUBTITLES_API_TOKEN__`, also `__KAGEVI_VOICE_API_TOKEN__` and legacy `__VOICESUB_API_TOKEN__`); clients send `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`). Tauri IPC `get_loopback_api_token`. OBS overlay does **not** call protected `/api/*` (only `/live` + WebSocket).
+**Loopback API auth:** Tauri UI windows obtain the per-session token via IPC `get_loopback_api_token` and send `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`). App HTML (`/`, `/tts`, `/local-asr`, `/google-asr`) requires a one-time `?bootstrap=<nonce>` (sets HttpOnly cookie `kagevi_loopback`) **or** an already-valid session cookie/header — otherwise **401** (except unauthenticated `/tts`, which serves a minimal Twitch OAuth shell only). `POST /api/tts/twitch/oauth-complete` is public (system-browser Twitch redirect bridge — pending token/error only). OBS overlay does **not** call protected `/api/*` (only `/live` + WebSocket).
 
 ### Devices / OpenAI helpers
 
@@ -433,8 +433,8 @@ Global middleware: CSP header, `Cache-Control: no-store`.
 | GET | `/api/tts/python` | TTS via embedded Python module |
 | GET | `/api/tts/python/status` | Python runtime probe |
 | POST | `/api/tts/twitch/oauth-open` | Open Twitch OAuth in system browser |
-| GET | `/api/tts/twitch/oauth-pending` | Poll pending token |
-| POST | `/api/tts/twitch/oauth-complete` | Store OAuth token |
+| GET | `/api/tts/twitch/oauth-pending` | Poll pending token **or** OAuth error (`status`: `token` \| `error` \| `none`) |
+| POST | `/api/tts/twitch/oauth-complete` | **Public** bridge: store OAuth token **or** browser cancel/deny (`error` + `message`) |
 
 ### Local ASR (`/api/asr/local/*`)
 
@@ -473,7 +473,7 @@ Protected like other `/api/*`. Full table in [§18 Local ASR Module](#18-local-a
 
 ## 9. WebSocket Surface
 
-**Authentication:** WS endpoints do **not** use loopback API tokens (by design — OBS overlay and browser worker). With default bind `127.0.0.1` risk is limited to the local machine. With `VOICESUB_ALLOW_LAN=1` see the warning in §8.
+**Authentication:** WebSocket from **loopback** stays unauthenticated (OBS overlay + Chrome worker on the same PC). **Non-loopback** clients must pass `loopback_token` query (or session header/cookie). With `VOICESUB_ALLOW_LAN=1` see §8.
 
 ### `/ws/events` — OBS overlay (+ optional external clients)
 
@@ -544,7 +544,7 @@ Payload enrichment: `event_sequence`, `created_at_ms`, `event_type` (`WsEventPub
 
 | Command | Purpose |
 | --- | --- |
-| `get_loopback_api_token` | Per-session token for protected `/api/*` (fallback when HTML injection unavailable) |
+| `get_loopback_api_token` | Per-session token for protected `/api/*` (Tauri windows; HTML must not embed the token) |
 | `get_runtime_state_snapshot` | Replay runtime/subtitle/overlay/translation/diagnostics for Tauri shell on connect |
 | `set_dashboard_layout` | Compact (390×844) vs standard (1280×900) window |
 | `tts_open_window` | Open/focus `/tts` webview |
@@ -705,6 +705,8 @@ ZIP files are written under `user-data/exports/` as `diagnostics-{unix}_{ms}.zip
 **Worker UI defaults:** lang `ru-RU`, interim/continuous on, force-finalization idle **1600 ms** (worker settings panel), max session age **180 s**.
 
 **Silence rearm (native continuous only):** with `continuous=true`, Chrome often waits ~8 s of silence before `no-speech`. The watchdog cycles recognition after **2500 ms** without start/result when `currentPartial` is empty. Overlap / `continuous=false` does **not** use silence_rearm. `no_speech` restart delay is fixed (`no_speech_restart_delay_ms`, default 150) without accumulating +800 ms backoff. `network` / `audio_capture` restart delay is also fixed (`network_reconnect_initial_ms`, default 500) — no exponential growth.
+
+**Visible idle rearm (all modes):** if the worker window is visible and there is no transcript activity (`lastStartAtMs` / `lastResultAtMs`) for **15 s** (`visibleIdleRestartMs`; hidden window **60 s`), the watchdog force-rearms recognition (`watchdog forced rearm`). Separate from `web_speech_stalled` (12 s with active mic).
 
 **Overlap (dual-buffer):** with `continuous=false`, two `SpeechRecognition` slots alternate: **`preStartNextInstance`** on natural/forced final (immediate buddy `start()` while active lives, so the next phrase start is not lost); **`switchToNextInstance`** on active `onend` when the buddy is listening/warming; **`safeRestartRecognition`** (~50 ms in-generation flip+start) when no buddy is ready (capped empty restarts, then generation `scheduleRestart`). Idle slots are recreated before `start()`. Mid-speech buddy warm (onstart / sound-end / post-handoff) is **not** used — that chopped phrases into one-word finals. Hard errors (`network`, `audio_capture`) still force a global restart.
 
@@ -904,11 +906,11 @@ Without cleanup the last subtitle frame can stick in OBS. Contract: `crates/voic
 **Config:** `obs_closed_captions` in config
 
 - OBS WebSocket v5 client (`host`, `port`, `password`)
-- `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1`…`translation_4` | `first_visible_line`
+- `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1`…`translation_4` | `first_visible_line` (`translation_N` matches Translation line `slot_id`, not the Nth visible translation)
 - `debug_mirror` — optional OBS Text Source mirror (`SetInputSettings`)
 - `timing` — partial throttle, final replace delay, clear after ms, dedup; `send_partials` (source_live); optional `send_translation_partials` (default off) for live MT drafts on `translation_N`
 - Two inputs: ASR **source events** (`source_live` / `source_final_only`) and **subtitle payload** (`translation_*`, `first_visible_line`, debug mirror)
-- Translation live partials: when `send_translation_partials` is on, growing `is_live_draft` text for the selected slot is throttled like source_live; completed non-draft finals still send (fallback for LLM / providers without live partials)
+- Translation live partials: when `send_translation_partials` is on, growing `is_live_draft` text for the selected slot is throttled like source_live; completed non-draft finals still send (fallback for LLM / providers without live partials). On `CompletedWithPartial`, the completed final is delivered before the next-phrase draft in the same payload; publishing a sendable translation draft cancels pending `clear_after` so an in-flight DelayedClear cannot wipe the next phrase. Final dedupe keys on `completed_sequence` (not active partial `sequence`); payload queue coalesces sticky/draft frames only and retains distinct completed finals; `avoid_duplicate_text` blocks sticky republish of the same phrase after `clear_after`. Presentation keeps completed non-draft translations in `items` (possibly `visible=false`) during live-partial merge for OBS/TTS.
 - Send/clear/dedup algorithm with 0.5.2 fixes (501 debug clear, supersede generation, partial native stop after 501)
 
 Enabled when `obs_closed_captions.enabled = true` and connection succeeds (`enabled` is the master gate for both native captions and the optional debug mirror). Native `SendStreamCaption` only during an active stream; `stream_not_running` (obs-websocket 501) is readiness, not a connection error. Debug-mirror `SetInputSettings` failures must not block native caption delivery or tear down the WebSocket. Stop/disable clears remote outputs with short retries; empty native clear accepts 501 (no active stream).
@@ -992,14 +994,14 @@ Normalization on every config save/load (`normalize_tts_config`, `update_voice_s
 | Channels | Up to **5** logins in `TwitchTtsSettings.channels`; IRC `JOIN #a,#b,…`; legacy `channel` → `channels[0]` |
 | Hot-apply | `TwitchChatService.apply_settings()` on `tts_update_twitch_settings` — no reconnect for filter changes |
 | Reconnect | `run_session_with_reconnect()` — auto-retry on stream/TCP/TLS loss; backoff 1→30 s; auth/settings errors stop the loop |
-| Emotes | Twitch IRC tag + BTTV/7TV/Twitch lexical; **pure numeric tokens** are not matched as emote codes |
+| Emotes | Twitch IRC tag (indices applied **before** trim) + BTTV/7TV/FFZ/Twitch lexical; edge punctuation peeled (`Kappa!`); **pure numeric tokens** are not matched as emote codes |
 | Emoji strip | `strip_unicode_emoji` preserves decimal digits (ASCII / Arabic-Indic / Fullwidth); `\p{Emoji}` does not eat `0–9` in chat text |
 | Invisible chars | `strip_invisible_chat_characters` (U+034F, U+3164, `\p{Cf}`, …) before symbol/link/lang filters |
 | Links | When **`strip_links=true`**: `links.rs` removes URLs; link-only → `speakable: false`. When **`strip_links=false`**: URLs stay in speak text; rejection only if no linguistic content without link stripping |
 | Mentions | TTS path: `normalize_twitch_mentions` (`@user` → `user`, message text kept). Clean/detection path: `strip_twitch_mentions` |
 | Symbols | `strip_symbols` — comma-separated tokens (default `@, &, $, _`); `&`/`$` between digits → space only (URL query `&` preserved); digit groups (`500&100`) stay speakable; optional `replace_underscore_with_space` |
 | Lang | Lingua 1.8 subset + Unicode heuristics + whatlang; `strip_leading_speaker_label` (does not treat `https:` as speaker label) |
-| UI | `TwitchPanel.svelte`: connection card, save queue (`saveNow` / debounce), “Settings applied” badge, `?` nick help (`popover-position.ts`); advanced overrides — live **rate/volume** numeric labels (`playback-format.ts`) |
+| UI | `TwitchPanel.svelte`: connection card, `speak_chat` toggle, save queue (`saveNow` / debounce + `pagehide` flush), “Settings applied” badge; Speech tab exposes `speech.max_queue_items`; provider/playback-mode change clears queues + prefetch |
 
 Config: `user-data/modules/tts/config.toml` → `[twitch]` section.
 
@@ -1209,7 +1211,7 @@ Standard layout uses the same destinations via `NavRail` / `BottomNav`. Command 
 | File | Role |
 | --- | --- |
 | `src/lib/api.ts` | REST helpers (prefer `loopback-api-client.ts` for authed fetch) |
-| `src/lib/loopback-api.ts` | Token bootstrap (`get_loopback_api_token` + HTML injection) |
+| `src/lib/loopback-api.ts` | Token bootstrap (`get_loopback_api_token`; cookie-tolerant fetch for Chrome worker) |
 | `src/lib/runtime-events.ts` | **Production** Tauri `runtime-event` consumer + snapshot replay |
 | `src/lib/ui-config-sync.ts` | Cross-window UI sync → `POST /api/ui/sync` + `ui_config_sync` |
 | `src/lib/ws.ts` | Legacy `/ws/events` client (dev / external browser) |
@@ -1340,7 +1342,7 @@ Config key: `ui.language` (empty = browser default).
 ## 29. Security & Privacy Model
 
 - **Bind policy:** localhost default; LAN only via explicit `VOICESUB_ALLOW_LAN=1`
-- **Loopback API auth:** `/api/*` requires per-session `x-kagevi-subtitles-token` (also `x-kagevi-voice-token`, legacy `x-voicesub-token`); WS endpoints unauthenticated by design
+- **Loopback API auth:** `/api/*` requires per-session `x-kagevi-subtitles-token` (also `x-kagevi-voice-token`, legacy `x-voicesub-token`) **or** HttpOnly `kagevi_loopback` cookie from Chrome worker bootstrap; HTML pages do not embed the token; `POST /api/tts/twitch/oauth-complete` is a public OAuth bridge; WS endpoints unauthenticated by design
 - **CSP** on all HTTP responses (restrictive `default-src 'self'`)
 - **Diagnostics export:** config redaction before ZIP
 - **No telemetry** to vendor servers by default

@@ -11,8 +11,10 @@ mod trace;
 mod transcript_controller;
 
 pub use http::{
-    BackgroundTaskRegistry, HttpState, LOOPBACK_TOKEN_HEADER, LoopbackAuth, PartialEmitCoordinator,
-    RuntimeMetricsCollector, StylePresetsFn, build_router, partial_emit_settings_from_config,
+    BackgroundTaskRegistry, HttpState, LOOPBACK_BOOTSTRAP_QUERY, LOOPBACK_COOKIE_NAME,
+    LOOPBACK_TOKEN_HEADER, LOOPBACK_WS_TOKEN_QUERY, LoopbackAuth, PartialEmitCoordinator,
+    RuntimeMetricsCollector, StylePresetsFn, append_bootstrap_query, build_router,
+    partial_emit_settings_from_config,
 };
 pub use service::{RuntimeError, RuntimeHandle, RuntimeService, SubtitlePayloadListener};
 pub use voicesub_ws::RuntimeStateSnapshot;

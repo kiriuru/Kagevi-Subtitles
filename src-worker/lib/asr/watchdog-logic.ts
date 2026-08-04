@@ -57,7 +57,7 @@ export function evaluateWatchdogTick(ctx: {
   const lastActivityAt = Math.max(Number(state.lastStartAtMs || 0), Number(state.lastResultAtMs || 0));
   const idleThresholdMs = documentHidden
     ? Number(limits.hiddenIdleRestartMs || 60000)
-    : Number(limits.visibleIdleRestartMs || 30000);
+    : Number(limits.visibleIdleRestartMs || 15000);
   if (lastActivityAt > 0 && now - lastActivityAt >= idleThresholdMs && state.browserSupervisorState === "running") {
     return { type: "idle_rearm" };
   }

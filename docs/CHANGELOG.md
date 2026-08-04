@@ -14,7 +14,7 @@
 
 ## [Unreleased]
 
-## [0.6.3] - 2026-08-04
+## [0.6.3] - 2026-08-05
 
 ### Added
 
@@ -25,6 +25,7 @@
 
 ### Changed
 
+- Browser worker: idle watchdog rearm при видимом окне — **15 с** без transcript (было 30 с), быстрее восстановление после «тихого» stall Web Speech.
 - Стиль → выбор шрифта: метки алфавитов больше не переводятся через UI-локаль — всегда в соответствующем скрипте, чтобы было видно покрытие CJK/latin-only шрифтов.
 - Desktop updater: NSIS-установщик кладётся в корень install/project (не в `%TEMP%`); хвосты удаляются при следующем запуске после успешного обновления (или сразу при неудачной попытке).
 - NSIS upgrade: перед копированием ресурсов сносятся shipped-деревья `$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}` (и то же под `resources\bin`), чтобы сиротские Vite content-hash файлы и прочий мусор прошлых сборок не копились при обновлении; `user-data/` и `logs/` не трогаются.
@@ -33,6 +34,13 @@
 
 ### Fixed
 
+- Loopback API: session token больше не вшивается в HTML `/`, `/tts`, `/local-asr`, `/google-asr` (раньше любой локальный браузер мог управлять `/api/*`). Сам HTML теперь тоже требует bootstrap/cookie (иначе 401); без сессии `/tts` отдаёт только минимальный Twitch OAuth shell. Launch URL Tauri/Chrome несут одноразовый `bootstrap`; Twitch `oauth-complete` требует CSRF `state`. Не-loopback WebSocket нужны с `loopback_token` (localhost OBS/worker без изменений).
+- TTS: настройки применяются надёжнее — flush debounce при `pagehide`/blur, Twitch rate/volume debounce на `oninput`, очистка очереди+prefetch при смене provider/playback mode; в UI — `speech.max_queue_items` и `speak_chat`.
+- Twitch emotes: IRC `emotes` индексы применяются до trim; lexical strip снимает эмоуты с пунктуацией (`Kappa!`, `(OMEGALUL)`); добавлен источник **FFZ** (FrankerFaceZ); Clear queue останавливает playback и сбрасывает prefetch.
+- Twitch OAuth: при отмене авторизации в браузере (`?error=access_denied`) показывается минимальная страница, ошибка уходит в TTS-модуль приложения через bridge — полный UI `/tts` в браузере не монтируется.
+- OBS CC (`send_translation_partials`): финальный перевод больше не теряется в `CompletedWithPartial` (раньше live-draft следующей фразы перехватывал payload); pending `clear_after` отменяется при появлении следующего draft, чтобы не стирать растущий текст.
+- OBS CC: режимы `translation_1…4` выбирают слот по `slot_id`, а не N-ю видимую линию — иначе при `translation_1`+`translation_3` и output `translation_3` финалы не уходили (особенно с выключенными live-partials).
+- OBS CC: dedupe финалов по `completed_sequence` (не по sequence активного partial) — иначе sticky completed при keep_completed засорял очередь и дропал фразы; sticky republish того же текста после `clear_after` не обходит `avoid_duplicate_text`; payload-очередь коалесцирует только sticky/draft-кадры и сохраняет разные completed finals (важно при realtime-переводе с выключенным OBS live-partial).
 - Установщик / релизный пакет: промежуточная папка Nuitka `google_tts_fetch.build` (~13 MB) больше не попадает рядом с sidecar и не остаётся после апдейта; сиротские hashed-ассеты worker/dashboard/tts/local-asr вычищаются при upgrade.
 - OBS overlay: мерцание линий live-partial перевода — `is_live_draft` прокидывается в renderer, draft MT идёт по transient/fast-path (как source); смена completed-текста патчится in-place без remount; entrance-эффекты стартуют с opacity ≥0.85; preview дашборда использует ту же OBS paint-policy (`obsPaintPolicy`); coalesce ~40 ms при видимых drafts; glow без `color-mix` для старого OBS CEF.
 - UI-локаль: подписи слотов стиля («Translation 1 · Russian») и опции OBS Output mode обновляются сразу при смене языка интерфейса, без перезагрузки страницы; то же для бейджей Modules и лейблов полей провайдера в Translation.
