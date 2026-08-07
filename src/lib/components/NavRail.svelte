@@ -9,7 +9,6 @@
   import Blocks from "lucide-svelte/icons/blocks";
   import LayoutGrid from "lucide-svelte/icons/layout-grid";
   import brandAvatar from "../../assets/brand-avatar.png";
-  import brandAvatarHover from "../../assets/brand-avatar-hover.png";
   import CreditsDialog from "./CreditsDialog.svelte";
   import { PROJECT_VERSION } from "../project-version";
   import { BRAND_MAIN, BRAND_SUB } from "../brand";
@@ -76,8 +75,7 @@
       title={tr("credits.open")}
       on:click={openCredits}
     >
-      <img class="nav-rail__avatar-img nav-rail__avatar-img--base" src={brandAvatar} alt="" />
-      <img class="nav-rail__avatar-img nav-rail__avatar-img--hover" src={brandAvatarHover} alt="" />
+      <img class="nav-rail__avatar-img" src={brandAvatar} alt="" />
     </button>
   </div>
 </nav>

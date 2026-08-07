@@ -146,6 +146,11 @@ fn normalize_asr_browser_config(root: &mut Map<String, Value>) {
         launch = "auto".into();
     }
     browser.insert("worker_launch_browser".into(), json!(launch));
+    let compact_worker_ui = browser
+        .get("compact_worker_ui")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    browser.insert("compact_worker_ui".into(), json!(compact_worker_ui));
 
     let chrome_defaults = default_config_payload()
         .get("asr")

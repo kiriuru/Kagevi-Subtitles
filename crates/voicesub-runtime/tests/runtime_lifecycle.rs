@@ -136,7 +136,7 @@ async fn gated_app_pages_reject_unauthenticated_browser() {
     let addr = handle.bind_addr;
 
     let client = reqwest::Client::new();
-    for path in ["/", "/google-asr", "/local-asr"] {
+    for path in ["/", "/google-asr", "/google-asr-compact", "/local-asr"] {
         let response = client
             .get(format!("http://{addr}{path}"))
             .timeout(Duration::from_secs(3))
@@ -186,7 +186,13 @@ async fn gated_app_pages_serve_html_with_session_cookie() {
     );
 
     let client = reqwest::Client::new();
-    for path in ["/", "/google-asr", "/tts", "/local-asr"] {
+    for path in [
+        "/",
+        "/google-asr",
+        "/google-asr-compact",
+        "/tts",
+        "/local-asr",
+    ] {
         let response = client
             .get(format!("http://{addr}{path}"))
             .header(reqwest::header::COOKIE, &cookie)

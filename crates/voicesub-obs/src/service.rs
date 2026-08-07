@@ -16,8 +16,8 @@ use crate::diagnostics::{ConnectionState, ObsCaptionDiagnostics};
 use crate::error_codes::{self, native_status};
 use crate::settings::{CONNECTABLE_OUTPUT_MODES, ObsCaptionSettings, SOURCE_EVENT_OUTPUT_MODES};
 use crate::text::{
-    normalize_text, select_payload_live_draft_text, select_payload_text,
-    should_throttle_partial_update,
+    finalize_after_partials, normalize_text, select_payload_live_draft_text, select_payload_text,
+    should_throttle_partial_update, trailing_caption_window,
 };
 use crate::trace::{ObsCaptionLog, StructuredLogFn};
 
@@ -357,6 +357,10 @@ impl ObsCaptionService {
         if is_final {
             bump_delayed_generation(&self.inner);
             bump_clear_generation(&self.inner);
+        } else {
+            // Cancel pending clear_after from the previous final so the next live partial is
+            // not blocked behind DelayedClear's sleep on the worker.
+            bump_clear_generation(&self.inner);
         }
         let item = if is_final {
             QueueItem::SourceFinal(text.to_string())
@@ -610,10 +614,7 @@ async fn process_item(inner: Arc<Inner>, item: QueueItem) -> Result<(), String> 
             delay_ms,
             generation,
         } => {
-            if delay_ms > 0 {
-                tokio::time::sleep(Duration::from_millis(delay_ms)).await;
-            }
-            if inner.delayed_generation.load(Ordering::SeqCst) != generation {
+            if !wait_interruptible(&inner, delay_ms, generation, DelayKind::FinalReplace).await {
                 return Ok(());
             }
             let settings = ObsCaptionSettings::from_config(&(inner.config_getter)());
@@ -634,10 +635,7 @@ async fn process_item(inner: Arc<Inner>, item: QueueItem) -> Result<(), String> 
             delay_ms,
             generation,
         } => {
-            if delay_ms > 0 {
-                tokio::time::sleep(Duration::from_millis(delay_ms)).await;
-            }
-            if inner.clear_generation.load(Ordering::SeqCst) != generation {
+            if !wait_interruptible(&inner, delay_ms, generation, DelayKind::ClearAfter).await {
                 return Ok(());
             }
             let settings = ObsCaptionSettings::from_config(&(inner.config_getter)());
@@ -647,6 +645,54 @@ async fn process_item(inner: Arc<Inner>, item: QueueItem) -> Result<(), String> 
         QueueItem::SourceFinal(text) => handle_source_final(inner.clone(), &text).await,
         QueueItem::Payload(payload) => handle_payload(inner, *payload).await,
     }
+}
+
+#[derive(Clone, Copy)]
+enum DelayKind {
+    ClearAfter,
+    FinalReplace,
+}
+
+/// Sleep for delayed clear/final replace without blocking cancellation: any enqueue that bumps
+/// the matching generation wakes the wait so the next phrase/partial is not stuck behind
+/// `clear_after_ms` / `final_replace_delay_ms`.
+async fn wait_interruptible(
+    inner: &Inner,
+    delay_ms: u64,
+    generation: u64,
+    kind: DelayKind,
+) -> bool {
+    let current = || match kind {
+        DelayKind::ClearAfter => inner.clear_generation.load(Ordering::SeqCst),
+        DelayKind::FinalReplace => inner.delayed_generation.load(Ordering::SeqCst),
+    };
+    if current() != generation {
+        return false;
+    }
+    if delay_ms == 0 {
+        return true;
+    }
+    let deadline = Instant::now() + Duration::from_millis(delay_ms);
+    loop {
+        if current() != generation {
+            return false;
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            break;
+        }
+        let notified = inner.queue_notify.notified();
+        tokio::pin!(notified);
+        // Subscribe before re-checking so a bump between the earlier check and wait is not lost.
+        if current() != generation {
+            return false;
+        }
+        tokio::select! {
+            () = tokio::time::sleep(remaining) => break,
+            () = &mut notified => {}
+        }
+    }
+    current() == generation
 }
 
 async fn handle_source_partial(inner: Arc<Inner>, text: &str) -> Result<(), String> {
@@ -698,9 +744,13 @@ async fn handle_source_partial(inner: Arc<Inner>, text: &str) -> Result<(), Stri
     }
     *inner.last_partial_text.lock().await = normalized.clone();
     *inner.last_partial_sent.lock().await = Some(Instant::now());
+    // Next-phrase growth supersedes any pending clear_after from the previous final.
+    bump_clear_generation(&inner);
+    let outbound =
+        trailing_caption_window(&normalized, settings.max_partial_caption_chars as usize);
     send_text(
         inner,
-        &normalized,
+        &outbound,
         &settings,
         send_stream,
         mirror_debug,
@@ -723,13 +773,19 @@ async fn handle_source_final(inner: Arc<Inner>, text: &str) -> Result<(), String
     if normalized.is_empty() {
         return Ok(());
     }
+    let last_partial = inner.last_partial_text.lock().await.clone();
     *inner.last_partial_text.lock().await = String::new();
     *inner.last_partial_sent.lock().await = None;
     *inner
         .last_payload_signature
         .lock()
         .unwrap_or_else(|e| e.into_inner()) = None;
-    schedule_final_send(inner, normalized, send_stream, mirror_debug).await?;
+    let outbound = finalize_after_partials(
+        &normalized,
+        &last_partial,
+        settings.max_partial_caption_chars as usize,
+    );
+    schedule_final_send(inner, outbound, send_stream, mirror_debug).await?;
     Ok(())
 }
 
@@ -784,15 +840,21 @@ async fn handle_payload(inner: Arc<Inner>, payload: SubtitlePayloadEvent) -> Res
                     .last_payload_signature
                     .lock()
                     .unwrap_or_else(|e| e.into_inner()) = Some(signature);
+                let last_partial = inner.last_partial_text.lock().await.clone();
                 *inner.last_partial_text.lock().await = String::new();
                 *inner.last_partial_sent.lock().await = None;
+                let outbound = finalize_after_partials(
+                    &normalized,
+                    &last_partial,
+                    settings.max_partial_caption_chars as usize,
+                );
                 if has_live_draft {
                     // Same-payload next-phrase draft: deliver the completed final immediately
                     // without clear_after / replace-delay so a deferred send cannot overwrite
                     // the growing draft that follows in this tick.
                     send_text(
                         inner.clone(),
-                        &normalized,
+                        &outbound,
                         &settings,
                         send_stream,
                         mirror_debug,
@@ -801,8 +863,7 @@ async fn handle_payload(inner: Arc<Inner>, payload: SubtitlePayloadEvent) -> Res
                     )
                     .await?;
                 } else {
-                    schedule_final_send(inner.clone(), normalized, send_stream, mirror_debug)
-                        .await?;
+                    schedule_final_send(inner.clone(), outbound, send_stream, mirror_debug).await?;
                 }
             }
         }
@@ -868,12 +929,13 @@ async fn handle_translation_partial(
     *inner.last_partial_sent.lock().await = Some(Instant::now());
     // Next-phrase live growth supersedes any pending clear_after from the previous final.
     bump_clear_generation(&inner);
+    let outbound = trailing_caption_window(normalized, settings.max_partial_caption_chars as usize);
     inner
         .log
-        .payload_routed(sequence, mode, normalized.chars().count());
+        .payload_routed(sequence, mode, outbound.chars().count());
     send_text(
         inner,
-        normalized,
+        &outbound,
         settings,
         send_stream,
         mirror_debug,

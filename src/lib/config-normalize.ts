@@ -192,6 +192,7 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
   browser.worker_launch_browser = ["auto", "google_chrome"].includes(launchBrowser)
     ? launchBrowser
     : "auto";
+  browser.compact_worker_ui = Boolean(browser.compact_worker_ui);
   if (browser.interim_results === undefined) browser.interim_results = true;
   if (browser.continuous_results === undefined) browser.continuous_results = true;
   if (browser.force_finalization_enabled === undefined) browser.force_finalization_enabled = true;
@@ -355,6 +356,7 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
     debugInput: "CC_DEBUG",
     partialThrottleMs: 140,
     minPartialDeltaChars: 1,
+    maxPartialCaptionChars: 80,
     finalReplaceDelayMs: 0,
     clearAfterMs: 2500,
   } as const;
@@ -385,6 +387,10 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
       min_partial_delta_chars: Math.max(
         0,
         intOr(timing.min_partial_delta_chars, OBS_CC_DEFAULTS.minPartialDeltaChars),
+      ),
+      max_partial_caption_chars: Math.max(
+        0,
+        Math.min(500, intOr(timing.max_partial_caption_chars, OBS_CC_DEFAULTS.maxPartialCaptionChars)),
       ),
       final_replace_delay_ms: Math.max(
         0,

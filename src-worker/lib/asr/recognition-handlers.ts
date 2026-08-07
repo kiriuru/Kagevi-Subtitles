@@ -11,6 +11,7 @@ import {
   handleOverlapRecognitionEnded,
   markOverlapSlotActivity,
   noteOverlapActiveActivity,
+  noteOverlapBuddyShadow,
   onOverlapActiveSlotReady,
   overlapActiveSlotIndex,
   overlapResultAllowed,
@@ -24,6 +25,7 @@ import {
   maybeFlushAfterCommittedLongSegment,
   noteSegmentPartialPeak,
 } from "./long-segment-flush-logic";
+import { overlapDisplayText, preferStableOverlapPartial } from "./overlap-phrase-logic";
 import { registerNetworkErrorForPreflight } from "./network-preflight-bridge";
 
 function shouldIgnoreAbortedOverlapActiveGuard(
@@ -162,6 +164,20 @@ function handleRecognitionResult(
   if (!manager.isActiveGeneration(generationId)) {
     return;
   }
+  // Warming buddy: cache hypothesis only — publishing is deferred until handoff flush.
+  if (
+    recognitionOverlapActive(manager.state) &&
+    overlapSlotIndex != null &&
+    !overlapResultAllowed(manager.state, overlapSlotIndex)
+  ) {
+    markOverlapSlotActivity(manager.state, overlapSlotIndex, manager.now());
+    const { interimText, finalText } = parseRecognitionResultEvent(event);
+    const shadowText = String(finalText || interimText || "").trim();
+    if (shadowText) {
+      noteOverlapBuddyShadow(manager.state, overlapSlotIndex, shadowText, manager.now());
+    }
+    return;
+  }
   if (!overlapResultAllowed(manager.state, overlapSlotIndex)) {
     return;
   }
@@ -177,18 +193,29 @@ function handleRecognitionResult(
     manager.markActivityInternal("result");
     const clientSegmentId = manager.ensureClientSegmentIdInternal();
     const nowMs = manager.now();
-    const normalizedInterimText = manager.normalizeTranscriptTextInternal(interimText);
+    const joinedInterim =
+      recognitionOverlapActive(manager.state) && manager.state.overlapPhrasePrefix
+        ? overlapDisplayText(manager.state.overlapPhrasePrefix, interimText)
+        : interimText;
+    // Hold the longer mid-phrase display when Chrome briefly rewrites a shorter interim.
+    const displayInterim = recognitionOverlapActive(manager.state)
+      ? preferStableOverlapPartial(
+          manager.state.currentPartial || manager.state.overlapPhrasePrefix || "",
+          joinedInterim,
+        )
+      : joinedInterim;
+    const normalizedInterimText = manager.normalizeTranscriptTextInternal(displayInterim);
     if (normalizedInterimText !== manager.state.currentSegmentLastPartialText) {
       manager.state.currentPartialStableSinceMs = nowMs;
     }
-    manager.state.currentPartial = interimText;
-    manager.options.setPartialText?.(interimText);
-    if (!manager.shouldSuppressDuplicatePartialInternal(interimText)) {
+    manager.state.currentPartial = displayInterim;
+    manager.options.setPartialText?.(displayInterim);
+    if (!manager.shouldSuppressDuplicatePartialInternal(displayInterim)) {
       manager.state.currentSegmentLastPartialText = normalizedInterimText;
       manager.state.currentSegmentForcedFinalized = false;
-      noteSegmentPartialPeak(manager.state, interimText);
+      noteSegmentPartialPeak(manager.state, displayInterim);
       manager.sendUpdateInternal({
-        partial: interimText,
+        partial: displayInterim,
         final: "",
         is_final: false,
         source_lang: manager.state.sourceLang,
@@ -196,12 +223,26 @@ function handleRecognitionResult(
         forced_final: false,
       });
     }
+    if (recognitionOverlapActive(manager.state) && manager.state.overlapPhrasePrefix) {
+      manager.scheduleOverlapPhraseCoalesceInternal();
+    }
     manager.scheduleForceFinalizeInternal();
     manager.setStatusInternal("interim");
   }
 
   if (finalText) {
     manager.markActivityInternal("result");
+    if (recognitionOverlapActive(manager.state)) {
+      manager.clearForceFinalizeTimerInternal();
+      // Do not blank the UI before soft-join — that flashes an empty partial mid-phrase.
+      const softOk = manager.softCommitOverlapPhraseInternal(finalText, "natural-final");
+      if (softOk && overlapSlotIndex === overlapActiveSlotIndex(manager.state)) {
+        preStartNextOverlapInstance(manager, "natural-final");
+      }
+      manager.emitWorkerStatus("result");
+      manager.updateCountersInternal();
+      return;
+    }
     const clientSegmentId = manager.state.currentClientSegmentId || manager.ensureClientSegmentIdInternal();
     if (manager.shouldSuppressFinalInternal(finalText)) {
       manager.clearForceFinalizeTimerInternal();
@@ -351,8 +392,15 @@ export function wireRecognitionHandlers(
     if (overlapSlotIndex != null && handleInactiveOverlapBuddyEnded(manager, overlapSlotIndex)) {
       return;
     }
-    // 0.5.5: no orphan commit / prestart on onend — force-finalize timer already
-    // committed + prestarted buddy while active was alive; handoff or generation restart.
+    // Commit leftover interim before handoff — Chrome continuous=false often ends without isFinal.
+    // (Force-finalize timer is floored high in overlap so it may not have fired yet.)
+    if (
+      overlapSlotIndex != null &&
+      overlapSlotIndex === overlapActiveSlotIndex(manager.state) &&
+      String(manager.state.currentPartial || "").trim()
+    ) {
+      manager.commitForcedPartialInternal("overlap-active-onend");
+    }
     manager.state.lastEndAtMs = manager.now();
     manager.state.lastSessionEndedAtMs = manager.state.lastEndAtMs;
     manager.state.onSound = false;

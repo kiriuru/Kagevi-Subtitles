@@ -64,6 +64,12 @@ export function createBrowserAsrStateSeed(existing?: Partial<BrowserAsrState>): 
     overlapLastPrestartReason: null,
     overlapLastPrestartError: null,
     overlapLastBuddyError: null,
+    overlapPhrasePrefix: seed.overlapPhrasePrefix || "",
+    overlapPhraseCoalesceTimer: null,
+    overlapBuddyShadowPartial: seed.overlapBuddyShadowPartial || "",
+    overlapBuddyShadowSlot:
+      seed.overlapBuddyShadowSlot == null ? null : Number(seed.overlapBuddyShadowSlot),
+    overlapBuddyShadowAtMs: Number(seed.overlapBuddyShadowAtMs || 0),
     webSpeechPhraseHintsSuppressed: Boolean(seed.webSpeechPhraseHintsSuppressed),
     webSpeechLanguageSoftFallbackUsed: Boolean(seed.webSpeechLanguageSoftFallbackUsed),
     recognitionGenerationId: 0,

@@ -195,7 +195,11 @@ export function requestRecognitionFlush(manager: AsrManagerHost, reason: string)
   }
 }
 
-export function transitionToStopping(manager: AsrManagerHost, reason: string): void {
+export function transitionToStopping(
+  manager: AsrManagerHost,
+  reason: string,
+  options: { abort?: boolean } = {}
+): void {
   const slots = collectRecognitionInstances(manager);
   if (reason !== "user-stop" && reason !== "long_segment_flush") {
     manager.forceFinalizeOnInterruptionInternal("browser_recognition_interrupted");
@@ -216,15 +220,21 @@ export function transitionToStopping(manager: AsrManagerHost, reason: string): v
   manager.setRecognitionStateInternal("stopping");
   manager.state.stoppingSinceMs = manager.now();
   manager.setStatusInternal("stopping");
+  // Watchdog recovery: abort() ends faster than stop() (which waits for a final).
+  const endMethod = options.abort ? "abort" : "stop";
   try {
     slots.forEach((rec) => {
       try {
-        rec.stop();
+        if (options.abort) {
+          rec.abort();
+        } else {
+          rec.stop();
+        }
       } catch {
         // best effort
       }
     });
-    manager.appendLogInternal(`recognition.stop (${reason})`);
+    manager.appendLogInternal(`recognition.${endMethod} (${reason})`);
   } catch {
     cleanupRecognitionInstance(manager, manager.state.recognitionGenerationId);
     manager.setRecognitionStateInternal("idle");

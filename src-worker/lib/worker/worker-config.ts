@@ -29,6 +29,26 @@ export function readWorkerSettingsFromLocalStorage(): Partial<ResolvedWorkerSett
   }
 }
 
+function hasOwnSetting(source: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(source, key);
+}
+
+function resolveBoolSetting(
+  backend: Record<string, unknown> | Partial<ResolvedWorkerSettings>,
+  stored: Partial<ResolvedWorkerSettings>,
+  key: "interim_results" | "continuous_results" | "force_finalization_enabled",
+  defaultValue: boolean
+): boolean {
+  // Backend (config.toml) is the global source of truth. localStorage is offline cache only.
+  if (hasOwnSetting(backend, key)) {
+    return (backend as Record<string, unknown>)[key] !== false;
+  }
+  if (hasOwnSetting(stored, key)) {
+    return stored[key] !== false;
+  }
+  return defaultValue;
+}
+
 export function resolveWorkerSettings(
   backendBrowserConfig: Record<string, unknown> | Partial<ResolvedWorkerSettings> | null | undefined,
   storedWorkerSettings: Partial<ResolvedWorkerSettings> | null | undefined
@@ -39,21 +59,27 @@ export function resolveWorkerSettings(
     recognition_language: String(
       backend.recognition_language || stored.recognition_language || workerDefaults.recognitionLanguage
     ),
-    interim_results: Object.prototype.hasOwnProperty.call(stored, "interim_results")
-      ? stored.interim_results !== false
-      : backend.interim_results !== false,
-    continuous_results: Object.prototype.hasOwnProperty.call(stored, "continuous_results")
-      ? stored.continuous_results !== false
-      : backend.continuous_results !== false,
-    force_finalization_enabled: Object.prototype.hasOwnProperty.call(stored, "force_finalization_enabled")
-      ? stored.force_finalization_enabled !== false
-      : backend.force_finalization_enabled !== false,
+    interim_results: resolveBoolSetting(backend, stored, "interim_results", workerDefaults.interimResults),
+    continuous_results: resolveBoolSetting(
+      backend,
+      stored,
+      "continuous_results",
+      workerDefaults.continuousResults
+    ),
+    force_finalization_enabled: resolveBoolSetting(
+      backend,
+      stored,
+      "force_finalization_enabled",
+      workerDefaults.forceFinalizationEnabled
+    ),
     force_finalization_timeout_ms: Math.max(
       300,
       Number.parseInt(
         String(
-          stored.force_finalization_timeout_ms ||
-            backend.force_finalization_timeout_ms ||
+          (hasOwnSetting(backend, "force_finalization_timeout_ms")
+            ? backend.force_finalization_timeout_ms
+            : null) ||
+            stored.force_finalization_timeout_ms ||
             workerDefaults.forceFinalizationTimeoutMs
         ),
         10

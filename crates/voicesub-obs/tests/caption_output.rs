@@ -74,6 +74,7 @@ fn settings_default_timing_matches_sst() {
     }));
     assert_eq!(settings.partial_throttle_ms, 140);
     assert_eq!(settings.min_partial_delta_chars, 1);
+    assert_eq!(settings.max_partial_caption_chars, 80);
 }
 
 #[test]

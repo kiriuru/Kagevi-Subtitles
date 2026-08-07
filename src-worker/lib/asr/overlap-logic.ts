@@ -7,6 +7,7 @@ import type {
 import type { WorkerSpeechRecognition } from "./speech-types";
 
 import { webSpeechRecognitionPolicy } from "./web-speech-policy";
+import { preferStableOverlapPartial } from "./overlap-phrase-logic";
 
 /**
  * Dual-slot overlap for `continuous=false`.
@@ -19,8 +20,9 @@ import { webSpeechRecognitionPolicy } from "./web-speech-policy";
  *   `start()` after ~50 ms (in-generation) instead of a full generation thrash.
  *
  * Idle slots are still **recreated** before `start()` (Chrome often rejects restarting
- * the same ended instance). Mid-speech buddy warm (onstart / sound-end / post-handoff)
- * is intentionally **not** used — that caused one-word chops.
+ * the same ended instance). Mid-speech buddy warm is **not** used — starting a second
+ * `SpeechRecognition` while active is speaking makes Chrome abort/chop the active slot.
+ * Buddy is armed on final / forced-final only; hypotheses stay shadowed until handoff.
  *
  * Hard errors (`network`, `audio_capture`) still force a full generation restart.
  */
@@ -32,6 +34,15 @@ export const DEFAULT_OVERLAP_BUDDY_GHOST_ACTIVE_MIC_MS = 3000;
 /** Delayed buddy retry only (buddy-ended). Finals use immediate preStart. */
 export const DEFAULT_OVERLAP_PRESTART_AFTER_START_MS = 100;
 
+/**
+ * Warm the buddy ~1.5 s after the active slot starts listening so audio nabests
+ * before Chrome ends the active session (final-only prestart is often too late).
+ */
+export const DEFAULT_OVERLAP_EARLY_WARM_MS = 1500;
+
+/** When mic is still hot, silence-rearm sooner than the quiet budget. */
+export const DEFAULT_OVERLAP_HOT_MIC_SILENCE_REARM_MS = 3000;
+
 /** Short settle delay when the next instance was not pre-started (~50–100 ms). */
 export const DEFAULT_OVERLAP_SAFE_RESTART_DELAY_MS = 50;
 
@@ -40,9 +51,12 @@ export const MAX_OVERLAP_SAFE_RESTARTS_WITHOUT_RESULT = 3;
 
 /**
  * If an overlap slot has been listening this long with no ASR results, cycle it.
- * Matches the continuous silence_rearm budget (~2.5s) instead of Chrome no-speech (~8s).
+ * Keep well above typical Chrome first-interim latency — 2.5s aborted live slots into crumbs.
  */
-export const DEFAULT_OVERLAP_SILENCE_REARM_MS = 2500;
+export const DEFAULT_OVERLAP_SILENCE_REARM_MS = 8000;
+
+/** Floor for forced-final idle in overlap — Chrome already finals on pause; short timers double-chop. */
+export const OVERLAP_FORCE_FINALIZE_MIN_MS = 8000;
 
 /** Buddy arms allowed before the active slot must show new ASR activity again. */
 export const OVERLAP_MAX_BUDDY_ARMS_WITHOUT_ACTIVITY = 2;
@@ -203,8 +217,10 @@ export function overlapLifecycleLimits(state: BrowserAsrState): {
   buddyGhostTimeoutMs: number;
   buddyGhostActiveMicMs: number;
   prestartAfterStartMs: number;
+  earlyWarmMs: number;
   safeRestartDelayMs: number;
   silenceRearmMs: number;
+  hotMicSilenceRearmMs: number;
 } {
   const cfg = state.browserLifecycleConfig;
   return {
@@ -214,6 +230,10 @@ export function overlapLifecycleLimits(state: BrowserAsrState): {
         cfg?.overlapPrestartAfterStartMs ||
           DEFAULT_OVERLAP_PRESTART_AFTER_START_MS,
       ),
+    ),
+    earlyWarmMs: Math.max(
+      400,
+      Number(cfg?.overlapEarlyWarmMs || DEFAULT_OVERLAP_EARLY_WARM_MS),
     ),
     safeRestartDelayMs: Math.max(
       0,
@@ -225,6 +245,13 @@ export function overlapLifecycleLimits(state: BrowserAsrState): {
       500,
       Number(
         cfg?.overlapSilenceRearmMs || DEFAULT_OVERLAP_SILENCE_REARM_MS,
+      ),
+    ),
+    hotMicSilenceRearmMs: Math.max(
+      800,
+      Number(
+        cfg?.overlapHotMicSilenceRearmMs ||
+          DEFAULT_OVERLAP_HOT_MIC_SILENCE_REARM_MS,
       ),
     ),
     buddyGhostTimeoutMs: Math.max(
@@ -313,7 +340,9 @@ export function onOverlapActiveSlotReady(
 
   markOverlapSlotListenStarted(manager.state, overlapSlotIndex, manager.now());
 
-  // Do not warm buddy on onstart — only on final (preStartNextInstance).
+  // Do NOT early-warm the buddy here. Starting a second SpeechRecognition while the
+  // active slot is mid-utterance makes Chrome abort/chop the active session (~1–2 s
+  // thrash). Buddy is armed on final / forced-final only (true nabest is limited by Chrome).
 }
 
 /**
@@ -390,13 +419,80 @@ export function handleInactiveOverlapBuddyEnded(
 
   manager.state.recognitionOverlapSlotActivityAtMs![overlapSlotIndex] = null;
 
-  // If buddy dies early, wait for the next final to preStart again
-  // (do not thrash dual-start while active is still speaking).
+  // If buddy dies early, wait for the next final to preStart again.
+  // Re-arming immediately while active is speaking restarts dual Web Speech and
+  // Chrome often aborts the active slot (same thrash as early-warm).
   manager.state.recognitionOverlapPrestarted = false;
 
   manager.emitWorkerStatus("overlap-buddy-ended");
 
   return true;
+}
+
+/** Ignore buddy shadow older than this at handoff (stale from a prior cycle). */
+export const OVERLAP_BUDDY_SHADOW_MAX_AGE_MS = 5000;
+
+export function clearOverlapBuddyShadow(state: BrowserAsrState): void {
+  state.overlapBuddyShadowPartial = "";
+  state.overlapBuddyShadowSlot = null;
+  state.overlapBuddyShadowAtMs = 0;
+}
+
+/** Cache warming-buddy hypotheses; active slot still owns live publish. */
+export function noteOverlapBuddyShadow(
+  state: BrowserAsrState,
+  slotIndex: number,
+  text: string,
+  nowMs: number,
+): void {
+  const normalized = String(text || "")
+    .trim()
+    .replace(/\s+/g, " ");
+  if (!normalized) {
+    return;
+  }
+  // Keep the longer buddy hypothesis; Chrome also rewrites buddy interims shorter.
+  state.overlapBuddyShadowPartial = preferStableOverlapPartial(
+    state.overlapBuddyShadowPartial || "",
+    normalized,
+  );
+  state.overlapBuddyShadowSlot = slotIndex;
+  state.overlapBuddyShadowAtMs = nowMs;
+}
+
+/**
+ * After promoting the buddy to active, publish its last cached hypothesis immediately.
+ * Chrome often will not re-fire onresult for an unchanged hypothesis after handoff.
+ */
+export function flushOverlapBuddyShadowOnHandoff(manager: AsrManagerHost): boolean {
+  if (!recognitionOverlapActive(manager.state)) {
+    clearOverlapBuddyShadow(manager.state);
+    return false;
+  }
+  const text = String(manager.state.overlapBuddyShadowPartial || "")
+    .trim()
+    .replace(/\s+/g, " ");
+  const shadowSlot = manager.state.overlapBuddyShadowSlot;
+  const shadowAt = Number(manager.state.overlapBuddyShadowAtMs || 0);
+  const active = overlapActiveSlotIndex(manager.state);
+  const nowMs = manager.now();
+  clearOverlapBuddyShadow(manager.state);
+
+  if (!text || shadowSlot == null || shadowSlot !== active) {
+    return false;
+  }
+  if (!shadowAt || nowMs - shadowAt > OVERLAP_BUDDY_SHADOW_MAX_AGE_MS) {
+    return false;
+  }
+
+  const ok = manager.softCommitOverlapPhraseInternal(text, "overlap-buddy-shadow-flush");
+  if (ok) {
+    manager.appendLogInternal(
+      `overlap: flushed buddy shadow on handoff (chars=${text.length})`,
+    );
+    manager.emitWorkerStatus("overlap-buddy-shadow-flush");
+  }
+  return ok;
 }
 
 export function overlapResultAllowed(
@@ -442,6 +538,7 @@ export function createOverlapRecognitionPair(
   manager.state.overlapSoftRearmEmptyCount = 0;
   manager.state.lastOverlapSoftRearmAtMs = 0;
   manager.state.overlapSafeRestartInProgress = false;
+  clearOverlapBuddyShadow(manager.state);
 
   clearOverlapPrestartTimer(manager.state);
 
@@ -626,6 +723,10 @@ export function recreateOverlapSlot(
   manager.state.recognitionOverlapSlotListenSinceMs![slotIndex] = null;
   manager.state.recognitionOverlapSlotActivityAtMs![slotIndex] = null;
 
+  if (manager.state.overlapBuddyShadowSlot === slotIndex) {
+    clearOverlapBuddyShadow(manager.state);
+  }
+
   manager.wireRecognitionHandlers(
     rec,
     Number(manager.state.recognitionGenerationId || 0),
@@ -654,6 +755,7 @@ export function switchToNextOverlapInstance(
   manager.appendLogInternal(
     `overlap: switchToNextInstance ${endedSlotIndex} → ${next}`,
   );
+  flushOverlapBuddyShadowOnHandoff(manager);
 }
 
 /** @returns true when active end was handed off to a listening/warming buddy. */
@@ -834,10 +936,14 @@ export const safeRestartRecognition = safeRestartOverlapRecognition;
  * Overlap slot has been listening with no ASR results past the silence budget.
  * Used instead of waiting for Chrome's ~8s no-speech end (and instead of marking
  * web_speech_stalled without recovery).
+ *
+ * Soft-join may leave a stale `currentPartial` from the previous slot — that must
+ * not block rearm when this slot never produced a result.
  */
 export function evaluateOverlapSilenceRearm(
   state: BrowserAsrState,
   nowMs: number,
+  options: { micHot?: boolean } = {},
 ): boolean {
   if (
     !recognitionOverlapActive(state) ||
@@ -851,12 +957,12 @@ export function evaluateOverlapSilenceRearm(
     return false;
   }
 
-  const active = overlapActiveSlotIndex(state);
-  if (!state.recognitionOverlapSlotListening?.[active]) {
+  if (state.overlapSafeRestartInProgress) {
     return false;
   }
 
-  if (String(state.currentPartial || "").trim()) {
+  const active = overlapActiveSlotIndex(state);
+  if (!state.recognitionOverlapSlotListening?.[active]) {
     return false;
   }
 
@@ -865,25 +971,35 @@ export function evaluateOverlapSilenceRearm(
     return false;
   }
 
-  const silenceMs = overlapLifecycleLimits(state).silenceRearmMs;
-  if (nowMs - startedAt < silenceMs) {
+  const lastResultAt = Number(state.lastResultAtMs || 0);
+  if (lastResultAt >= startedAt) {
     return false;
   }
 
-  const lastResultAt = Number(state.lastResultAtMs || 0);
-  if (lastResultAt >= startedAt) {
+  // Live partial from *this* slot start — wait for force-final / Chrome end.
+  const partialStable = Number(state.currentPartialStableSinceMs || 0);
+  if (String(state.currentPartial || "").trim() && partialStable >= startedAt) {
+    return false;
+  }
+
+  const limits = overlapLifecycleLimits(state);
+  const silenceMs = options.micHot
+    ? Math.min(limits.silenceRearmMs, limits.hotMicSilenceRearmMs)
+    : limits.silenceRearmMs;
+  if (nowMs - startedAt < silenceMs) {
     return false;
   }
 
   return true;
 }
 
-/** Abort the active overlap slot so onend → generation restart can cycle a zombie/idle session. */
+/** Soft-stop the active overlap slot so onend can hand off / restart a zombie idle session. */
 export function requestOverlapSilenceRearm(
   manager: AsrManagerHost,
   reason = "overlap-silence-rearm",
+  options: { micHot?: boolean } = {},
 ): boolean {
-  if (!evaluateOverlapSilenceRearm(manager.state, manager.now())) {
+  if (!evaluateOverlapSilenceRearm(manager.state, manager.now(), options)) {
     return false;
   }
 
@@ -896,10 +1012,10 @@ export function requestOverlapSilenceRearm(
   manager.appendLogInternal(`overlap: silence rearm (${reason})`);
   manager.state.pendingRestartReason = "normal_onend";
   try {
-    rec.abort();
+    rec.stop();
   } catch {
     try {
-      rec.stop();
+      rec.abort();
     } catch {
       // best effort — soft-rearm path needs onend
     }

@@ -98,6 +98,28 @@ fn launch_argv_matches_sst_worker_window_contract() {
 }
 
 #[test]
+fn launch_argv_compact_uses_app_window_without_omnibox_contract() {
+    let config = BrowserChromeLaunchConfig::default();
+    let chrome = Path::new(r"C:\Program Files\Google\Chrome\Application\chrome.exe");
+    let launcher = BrowserWorkerLauncher::new("user-data");
+    let url = "http://127.0.0.1:8765/google-asr-compact?autostart=1";
+    let profile = launcher.profile_dir(url, chrome);
+    let args = config.launch_args_for_url(&profile, url);
+
+    assert!(
+        args.iter()
+            .any(|a| a == "--app=http://127.0.0.1:8765/google-asr-compact?autostart=1"),
+        "compact launch missing --app=: {}",
+        args.join(" ")
+    );
+    assert!(flag_present(&args, "--window-size=420,720"));
+    assert!(!flag_present(&args, "--new-window"));
+    assert!(!args.iter().any(|a| a == url));
+    assert!(!args.iter().any(|a| a.starts_with("--disable-extensions")));
+    assert!(!args.iter().any(|a| a.starts_with("--bwsi")));
+}
+
+#[test]
 fn disk_bloat_guard_flags_present_in_default_config() {
     let config = BrowserChromeLaunchConfig::default();
     for required in CHROME_DISK_BLOAT_GUARD_FLAGS {

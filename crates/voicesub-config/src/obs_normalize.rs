@@ -18,6 +18,8 @@ pub const OBS_CC_DEFAULT_USE_SSL: bool = false;
 pub const OBS_CC_DEFAULT_DEBUG_INPUT: &str = "CC_DEBUG";
 pub const OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS: u64 = 140;
 pub const OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS: u64 = 1;
+/// Trailing window for realtime OBS CC partials only (finals are never clipped). `0` = unlimited.
+pub const OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS: u64 = 80;
 pub const OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS: u64 = 0;
 pub const OBS_CC_DEFAULT_CLEAR_AFTER_MS: u64 = 2500;
 pub const OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS: bool = false;
@@ -42,6 +44,7 @@ fn obs_defaults() -> Value {
             "send_translation_partials": OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS,
             "partial_throttle_ms": OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS,
             "min_partial_delta_chars": OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS,
+            "max_partial_caption_chars": OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS,
             "final_replace_delay_ms": OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS,
             "clear_after_ms": OBS_CC_DEFAULT_CLEAR_AFTER_MS,
             "avoid_duplicate_text": true
@@ -55,6 +58,10 @@ fn clamp_obs_int(section: &Map<String, Value>, key: &str, default: i64) -> i64 {
         .and_then(|value| value.as_i64().or_else(|| value.as_u64().map(|n| n as i64)))
         .unwrap_or(default);
     value.max(0)
+}
+
+fn clamp_obs_int_range(section: &Map<String, Value>, key: &str, default: i64, max: i64) -> i64 {
+    clamp_obs_int(section, key, default).min(max)
 }
 
 fn enabled_translation_slot_ids(root: &Map<String, Value>) -> Vec<String> {
@@ -207,6 +214,12 @@ pub fn normalize_obs_closed_captions(root: &mut Map<String, Value>) {
         "min_partial_delta_chars",
         OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS as i64,
     );
+    let max_partial_caption_chars = clamp_obs_int_range(
+        &timing_map,
+        "max_partial_caption_chars",
+        OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS as i64,
+        500,
+    );
     let final_replace_delay_ms = clamp_obs_int(
         &timing_map,
         "final_replace_delay_ms",
@@ -249,6 +262,7 @@ pub fn normalize_obs_closed_captions(root: &mut Map<String, Value>) {
             "send_translation_partials": timing_send_translation_partials,
             "partial_throttle_ms": partial_throttle_ms,
             "min_partial_delta_chars": min_partial_delta_chars,
+            "max_partial_caption_chars": max_partial_caption_chars,
             "final_replace_delay_ms": final_replace_delay_ms,
             "clear_after_ms": clear_after_ms,
             "avoid_duplicate_text": avoid_duplicate_text,
@@ -272,6 +286,10 @@ mod tests {
         assert_eq!(
             root["obs_closed_captions"]["timing"]["partial_throttle_ms"],
             OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS
+        );
+        assert_eq!(
+            root["obs_closed_captions"]["timing"]["max_partial_caption_chars"],
+            OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS
         );
     }
 

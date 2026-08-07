@@ -61,10 +61,18 @@ pub const CHROME_ANTI_THROTTLE_FLAGS: &[&str] = &[
     // Raise the audio service process priority (Web Speech / getUserMedia path).
     "--audio-process-high-priority",
     "--noerrdialogs",
-    "--window-size=980,860",
+    CHROME_FULL_WINDOW_SIZE,
 ];
 
-/// Worker launch must never use kiosk/hidden-profile flags (SST contract tests).
+/// Compact worker Chrome window size (app mode / no omnibox).
+pub const CHROME_COMPACT_WINDOW_SIZE: &str = "--window-size=420,720";
+
+/// Full worker Chrome window size (visible address bar).
+pub const CHROME_FULL_WINDOW_SIZE: &str = "--window-size=980,860";
+
+/// Worker launch must never use kiosk/hidden-profile flags in stored config.
+/// `--app=` is stripped from config/extra_args, then re-applied only for
+/// `/google-asr-compact` launch URLs in [`BrowserChromeLaunchConfig::launch_args_for_url`].
 pub const FORBIDDEN_WORKER_LAUNCH_FLAGS: &[&str] = &["--app=", "--disable-extensions", "--bwsi"];
 
 pub fn disabled_chrome_features_csv() -> String {
@@ -103,13 +111,21 @@ impl BrowserChromeLaunchConfig {
         let mut config = self.clone();
         finalize_chrome_launch_config(&mut config);
 
+        let compact = worker_url_targets_compact_page(worker_url);
         let disabled_features = config.disabled_features_csv();
         let mut args = config.launch_args;
         args.extend(config.extra_args);
         strip_launch_time_only_flags(&mut args);
+
+        if compact {
+            apply_compact_app_launch_args(&mut args, worker_url);
+        }
+
         args.push(format!("--user-data-dir={}", profile_dir.display()));
         args.push(format!("--disable-features={disabled_features}"));
-        args.push(worker_url.to_string());
+        if !compact {
+            args.push(worker_url.to_string());
+        }
         args
     }
 }
@@ -190,6 +206,18 @@ fn strip_launch_time_only_flags(args: &mut Vec<String>) {
     args.retain(|arg| {
         !arg.starts_with("--user-data-dir=") && !arg.starts_with("--disable-features=")
     });
+}
+
+/// Compact `/google-asr-compact`: Chrome app window (no omnibox), smaller size.
+fn apply_compact_app_launch_args(args: &mut Vec<String>, worker_url: &str) {
+    args.retain(|arg| arg != "--new-window" && !arg.starts_with("--window-size="));
+    args.push(CHROME_COMPACT_WINDOW_SIZE.to_string());
+    args.push(format!("--app={worker_url}"));
+}
+
+fn worker_url_targets_compact_page(worker_url: &str) -> bool {
+    // Keep in sync with `voicesub_config::WORKER_COMPACT_PATH`.
+    worker_url.contains("/google-asr-compact")
 }
 
 /// Default `asr.browser.chrome_launch` object for config seeding / normalization.
@@ -294,5 +322,41 @@ mod tests {
                 "forbidden flag present: {forbidden}"
             );
         }
+    }
+
+    #[test]
+    fn launch_args_for_compact_url_uses_app_mode() {
+        let config = BrowserChromeLaunchConfig::default();
+        let args = config.launch_args_for_url(
+            std::path::Path::new(r"C:\VoiceSub\user-data\browser-worker-profile-classic-chrome"),
+            "http://127.0.0.1:8765/google-asr-compact?autostart=1&bootstrap=abc",
+        );
+        let joined = args.join(" ");
+        assert!(
+            args.iter().any(|a| a.starts_with(
+                "--app=http://127.0.0.1:8765/google-asr-compact?autostart=1&bootstrap=abc"
+            )),
+            "missing --app= for compact URL: {joined}"
+        );
+        assert!(
+            flag_present(&args, CHROME_COMPACT_WINDOW_SIZE),
+            "missing compact window size: {joined}"
+        );
+        assert!(
+            !flag_present(&args, "--new-window"),
+            "compact launch must not use --new-window: {joined}"
+        );
+        assert!(
+            !args
+                .iter()
+                .any(|a| a == "http://127.0.0.1:8765/google-asr-compact?autostart=1&bootstrap=abc"),
+            "compact launch must not pass bare trailing URL: {joined}"
+        );
+        assert!(
+            !args
+                .iter()
+                .any(|a| a.starts_with("--disable-extensions") || a.starts_with("--bwsi")),
+            "compact launch must not enable other forbidden flags: {joined}"
+        );
     }
 }

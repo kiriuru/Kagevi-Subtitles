@@ -23,6 +23,8 @@ export interface BrowserLifecycleConfig {
   overlapSoftRearmDelayMs?: number;
   overlapPrestartQuietMs?: number;
   overlapSilenceRearmMs?: number;
+  overlapEarlyWarmMs?: number;
+  overlapHotMicSilenceRearmMs?: number;
 }
 
 export interface MicrophoneMonitor {
@@ -107,6 +109,16 @@ export interface BrowserAsrState {
   overlapLastPrestartReason: string | null;
   overlapLastPrestartError: string | null;
   overlapLastBuddyError: string | null;
+  /** Joined phrase text across overlap slot handoffs (soft finals until silence coalesce). */
+  overlapPhrasePrefix: string;
+  overlapPhraseCoalesceTimer: ReturnType<typeof setTimeout> | null;
+  /**
+   * Latest interim/final from the warming buddy slot (results are not published while inactive).
+   * Flushed on handoff so Chrome does not leave a 1–2 s visible stall before the next hypothesis change.
+   */
+  overlapBuddyShadowPartial: string;
+  overlapBuddyShadowSlot: number | null;
+  overlapBuddyShadowAtMs: number;
   webSpeechPhraseHintsSuppressed: boolean;
   webSpeechLanguageSoftFallbackUsed: boolean;
   recognitionGenerationId: number;
@@ -252,6 +264,8 @@ export interface AsrManagerHost {
   voiceBelowRecognitionMicWindowMs: number;
   voiceBelowRecognitionMinNoSpeech: number;
   stallDegradedAfterMs: number;
+  activeSpeechStallMs: number;
+  coldStartStallMs: number;
   recentMicActivityWindowMs: number;
   watchdogIntervalMs: number;
   maxStoppingMs: number;
@@ -304,6 +318,12 @@ export interface AsrManagerHost {
   scheduleForceFinalizeInternal(): void;
   /** Commit currentPartial as forced final (timer / overlap onend). No minChars gate. */
   commitForcedPartialInternal(reason: string): boolean;
+  /** Soft-join Chrome final/interim into one overlap phrase (no segment close). */
+  softCommitOverlapPhraseInternal(rawText: string, reason: string): boolean;
+  /** Hard-close coalesced overlap phrase (is_final + new client_segment_id). */
+  hardCommitOverlapPhraseInternal(reason: string): boolean;
+  clearOverlapPhraseCoalesceTimerInternal(): void;
+  scheduleOverlapPhraseCoalesceInternal(): void;
   clearForceFinalizeTimerInternal(): void;
   clearRestartTimerInternal(): void;
   clearReconnectTimerInternal(): void;
@@ -327,7 +347,7 @@ export interface AsrManagerHost {
   stopInternal(): void;
   scheduleRestartInternal(reason: string, options?: { backoffMs?: number }): void;
   performControlledStartInternal(reason: string): void;
-  transitionToStoppingInternal(reason: string): void;
+  transitionToStoppingInternal(reason: string, options?: { abort?: boolean }): void;
   ensureSocketConnectedInternal(): void;
   handleSocketMessageInternal(raw: string): void;
 }

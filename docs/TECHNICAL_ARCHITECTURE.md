@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.3 — Технический документ
+# Kagevi Subtitles 0.6.4 — Технический документ
 
-Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.3"`.
+Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.4"`.
 
 Этот документ описывает layout проекта Kagevi Subtitles, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
 
@@ -75,7 +75,8 @@ Tauri dev: встроенный HTTP на `http://127.0.0.1:8765`; главны�
 | --- | --- |
 | `http://127.0.0.1:8765/` | Svelte dashboard |
 | `http://127.0.0.1:8765/overlay` | OBS Browser Source |
-| `http://127.0.0.1:8765/google-asr?autostart=1` | Browser Speech worker |
+| `http://127.0.0.1:8765/google-asr?autostart=1` | Browser Speech worker (полный UI) |
+| `http://127.0.0.1:8765/google-asr-compact?autostart=1` | Компактный Browser Speech worker (Chrome `--app=`) |
 | `http://127.0.0.1:8765/tts` | UI TTS-модуля |
 | `http://127.0.0.1:8765/local-asr` | UI модуля Local ASR |
 
@@ -299,7 +300,7 @@ src-tauri (Layer 4: IPC, window, bundle only)
 1. **Старт** (`POST /api/runtime/start`):
    - объединить опциональный inline `config_payload`;
    - применить live-настройки (translation, OBS, subtitle, logging);
-   - если `asr.mode = browser_google`: запустить Chrome worker → `{base}/google-asr?autostart=1[&locale=…]` и ingest browser speech;
+   - если `asr.mode = browser_google`: запустить Chrome worker → `{base}/google-asr` или `/google-asr-compact` (`asr.browser.compact_worker_ui`) с `?autostart=1[&locale=…]` и ingest browser speech;
    - если `asr.mode = local_parakeet`: проверить `asr.local_module.ready`, стартовать `LocalAsrSpeechSource` (без Chrome worker);
    - стартовать translation dispatcher и OBS captions;
    - разослать `preflight_update`, `runtime_update`.
@@ -387,7 +388,7 @@ Ready для `local_parakeet` — runtime gate (`asr.local_module.ready`), не 
 | GET | `/api/health` | loopback token | Liveness + WS connections + worker connected |
 | GET | `/api/version` | loopback token | Product metadata + `sync` (updates config, `update_available`, `latest_known_version`) |
 
-**Loopback API auth:** окна Tauri получают per-session token через IPC `get_loopback_api_token` и шлют `x-kagevi-subtitles-token` (также принимаются `x-kagevi-voice-token`, legacy `x-voicesub-token`). App HTML (`/`, `/tts`, `/local-asr`, `/google-asr`) требует одноразовый `?bootstrap=<nonce>` (HttpOnly cookie `kagevi_loopback`) **или** уже валидную session cookie/header — иначе **401** (исключение: неаутентифицированный `/tts` отдаёт только минимальный Twitch OAuth shell). `POST /api/tts/twitch/oauth-complete` публичный (bridge редиректа Twitch в system browser — только pending token/error). OBS overlay **не** вызывает protected `/api/*` (только `/live` + WebSocket).
+**Loopback API auth:** окна Tauri получают per-session token через IPC `get_loopback_api_token` и шлют `x-kagevi-subtitles-token` (также принимаются `x-kagevi-voice-token`, legacy `x-voicesub-token`). App HTML (`/`, `/tts`, `/local-asr`, `/google-asr`, `/google-asr-compact`) требует одноразовый `?bootstrap=<nonce>` (HttpOnly cookie `kagevi_loopback`) **или** уже валидную session cookie/header — иначе **401** (исключение: неаутентифицированный `/tts` отдаёт только минимальный Twitch OAuth shell). `POST /api/tts/twitch/oauth-complete` публичный (bridge редиректа Twitch в system browser — только pending token/error). OBS overlay **не** вызывает protected `/api/*` (только `/live` + WebSocket).
 
 ### Devices / OpenAI helpers
 
@@ -452,7 +453,8 @@ Protected like other `/api/*`. Полная таблица в [§18 Модуль
 | --- | --- | --- |
 | GET | `/` | `bin/dashboard/index.html` |
 | GET | `/overlay` | `bin/overlay/overlay.html` |
-| GET | `/google-asr` | `bin/worker/index.html` |
+| GET | `/google-asr` | `bin/worker/index.html` (полный UI) |
+| GET | `/google-asr-compact` | `bin/worker/index.html` (компактный UI; тот же бандл) |
 | GET | `/tts` | `bin/tts/index.html` |
 | GET | `/local-asr` | `bin/local-asr/index.html` |
 | GET | `/project-fonts.css` | Generated `@font-face` from `bin/fonts/` |
@@ -671,15 +673,20 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 | Константа | Значение |
 | --- | --- |
 | `WORKER_PATH` | `/google-asr` |
-| Launch URL | `{base}/google-asr?autostart=1[&locale={ui.language}]` |
+| `WORKER_COMPACT_PATH` | `/google-asr-compact` |
+| Launch URL (полный) | `{base}/google-asr?autostart=1[&locale={ui.language}]` |
+| Launch URL (компакт) | `{base}/google-asr-compact?autostart=1[&locale={ui.language}]` при `asr.browser.compact_worker_ui = true` |
 
 `worker_launch_browser`: `auto` | `google_chrome` (unknown → `auto`).
 
+`asr.browser.compact_worker_ui` (bool, default `false`): чекбокс на вкладке Эфир; выбирает компактную страницу + Chrome `--app=`.
+
 ### Инварианты запуска Chrome
 
-- **Отдельное окно** Chrome с **видимой адресной строкой**
+- **Полный worker** (`/google-asr`): **отдельное окно** Chrome с **видимой адресной строкой** (`--new-window` + trailing URL)
+- **Компактный worker** (`/google-asr-compact`): Chrome **`--app=<url>`** (без omnibox), `--window-size=420,720`; без `--new-window` для этого пути
 - Изолированный `--user-data-dir`: `{user-data}/browser-worker-profile-classic-{engine}/`
-- **Никогда** `--disable-extensions` / `--bwsi` / `--app=`
+- **Никогда** `--disable-extensions` / `--bwsi`. В сохранённом конфиге `--app=` не хранится (strip); `--app=` добавляется только при launch компактного URL
 - **Без** скрытых окон и in-tab worker
 - Anti-throttling флаги Chrome + opt-out Windows EcoQoS (`launch_config.rs`, `ecoqos.rs`): occlusion/backgrounding switches, отключены `IntensiveWakeUpThrottling` + `AllowAggressiveThrottlingWithWebSocket` + `BatterySaverModeAvailable`, `--disable-field-trial-config`, `--audio-process-high-priority`, `--hide-crash-restore-bubble`
 - Detached-процесс с **`ABOVE_NORMAL_PRIORITY_CLASS`** при `use_high_priority` (по умолчанию true): ASR отзывчив без `HIGH_PRIORITY_CLASS`, вытесняющего foreground apps. Fallback на normal при `ERROR_ACCESS_DENIED`. Stop через `taskkill /T /F` (только при реальном `pid > 0`)
@@ -704,11 +711,11 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 
 **Defaults UI worker:** lang `ru-RU`, interim/continuous включены, force-finalization idle **1600 ms** (панель worker), max возраст сессии **180 s**.
 
-**Silence rearm (только native continuous):** при `continuous=true` Chrome часто ждёт ~8 с тишины до `no-speech`. Watchdog циклит распознавание после **2500 ms** без start/result при пустом `currentPartial`. В overlap / `continuous=false` silence_rearm **не** используется. Задержка `no_speech` фиксированная (`no_speech_restart_delay_ms`, по умолчанию 150) без накопительного +800 ms backoff. Задержка `network` / `audio_capture` тоже фиксированная (`network_reconnect_initial_ms`, по умолчанию 500) — без экспоненциального роста.
+**Silence rearm (только native continuous):** при `continuous=true` Chrome часто ждёт ~8 с тишины до `no-speech`. Watchdog циклит распознавание после **9000 ms** без start/result, пока mic ещё слышит энергию (`activeSpeechStallMs` / `web_speech_stalled`). В overlap / `continuous=false` этот путь **не** используется (свой silence rearm). Задержка `no_speech` фиксированная (`no_speech_restart_delay_ms`, по умолчанию 150) без накопительного +800 ms backoff. Задержка `network` / `audio_capture` тоже фиксированная (`network_reconnect_initial_ms`, по умолчанию 500) — без экспоненциального роста.
 
-**Visible idle rearm (все режимы):** если окно worker видимо и нет transcript activity (`lastStartAtMs` / `lastResultAtMs`) **15 с** (`visibleIdleRestartMs`; скрытое окно — **60 с**), watchdog force-rearm (`watchdog forced rearm`). Отдельно от `web_speech_stalled` (12 с при активном mic).
+**Visible idle rearm (все режимы):** если окно worker видимо, mic тихий и нет transcript activity (`lastStartAtMs` / `lastResultAtMs`) **30 с** (`visibleIdleRestartMs`; скрытое окно — **60 с**), watchdog force-rearm (`watchdog forced rearm`). Отдельно от active-speech stall (**9 с** при энергии на mic).
 
-**Overlap (dual-buffer):** при `continuous=false` чередуются два слота `SpeechRecognition`: **`preStartNextInstance`** на natural/forced final (сразу `start()` buddy, пока active жив — чтобы не терять начало следующей фразы); **`switchToNextInstance`** на active `onend`, если buddy listening/warming; **`safeRestartRecognition`** (~50 мс in-generation flip+start), если buddy нет (с cap пустых рестартов, затем generation `scheduleRestart`). Idle-слоты пересоздаются перед `start()`. Mid-speech warm buddy (onstart / sound-end / post-handoff) **не** используется — из‑за него фразы резались на однословные final. Hard errors (`network`, `audio_capture`) — global restart.
+**Overlap (dual-buffer):** при `continuous=false` чередуются два слота `SpeechRecognition`: **`preStartNextInstance`** на natural/forced final; **`switchToNextInstance`** на active `onend`; **`safeRestartRecognition`** (~50 мс), если buddy нет. Idle-слоты пересоздаются перед `start()`. **Не** early-warm buddy на active `onstart` — второй одновременный `SpeechRecognition` заставляет Chrome рвать active (thrash ~1–2 с, поток `duplicate-partial`). Гипотезы buddy **shadow** до handoff. Hard errors — global restart. **Склейка:** soft-join (~1.8 с тишины **и** тихий mic, или ≥450 символов). **Silence rearm:** без ASR с старта слота — **8 с** / **3 с** при горячем mic; stale soft-join partial не блокирует. **Buddy shadow:** flush на handoff.
 
 ### Long-segment flush (буфер Web Speech)
 
@@ -719,7 +726,7 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 | `native_continuous` (`continuous=true`, по умолчанию) | `requestRecognitionFlush` → `recognition.stop()` → restart с reason `long_segment_flush` (~100 ms) |
 | Overlap (`continuous=false`) | сначала `preStartNextOverlapInstance`, затем `stop()` только **активного** слота → handoff на warming buddy |
 
-**Не настраивается** (порог `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` в `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, счётчик `longSegmentFlushCount`. **Не заменяет** ротацию по возрасту сессии (`max_browser_session_age_ms`) и idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` после **12 с** без ASR-результатов при активном mic; если есть partial — watchdog **коммитит** без restart (чтобы не было многосекундных дыр); пустой stall по-прежнему rearms (`watchdog_stall`, ~200 ms).
+**Не настраивается** (порог `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` в `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, счётчик `longSegmentFlushCount`. **Не заменяет** ротацию по возрасту сессии (`max_browser_session_age_ms`) и idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` / `active_speech_stall` после **9 с** без ASR-результатов при энергии на mic; если есть partial — watchdog **коммитит** без restart (чтобы не было многосекундных дыр); пустой stall rearms через `abort()` (`watchdog_stall`, ~100 ms).
 
 ### Расширенные настройки Web Speech (dashboard)
 
@@ -908,7 +915,7 @@ http://127.0.0.1:8765/overlay
 - Клиент OBS WebSocket v5 (`host`, `port`, `password`)
 - `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1`…`translation_4` | `first_visible_line` (`translation_N` — `slot_id` линии Translation, не N-я видимая линия)
 - `debug_mirror` — опциональное зеркало OBS Text Source (`SetInputSettings`)
-- `timing` — throttle partial, delay замены final, clear after ms, dedup; `send_partials` (source_live); optional `send_translation_partials` (default off) для live MT drafts на `translation_N`
+- `timing` — throttle partial, delay замены final, clear after ms, dedup; `send_partials` (source_live); optional `send_translation_partials` (default off) для live MT drafts на `translation_N`; `max_partial_caption_chars` (default **80**, `0` = unlimited) — trailing **word** window для realtime partials (максимум целых слов через пробел, умещающихся в бюджет). Completed final после live growth той же фразы — через то же окно; finals без prior partial — без обрезки. Sleep `clear_after` / `final_replace_delay` прерывается: следующий source partial или translation draft сразу разблокирует воркер.
 - Два входа: ASR **source events** (`source_live` / `source_final_only`) и **subtitle payload** (`translation_*`, `first_visible_line`, debug mirror)
 - Translation live partials: при `send_translation_partials` растущий `is_live_draft` выбранного слота троттлится как source_live; completed non-draft finals всё равно отправляются (fallback для LLM / провайдеров без live partials). На `CompletedWithPartial` completed final уходит до next-phrase draft в том же payload; публикация sendable translation draft отменяет pending `clear_after`, чтобы in-flight DelayedClear не стёр следующую фразу. Dedupe финалов по `completed_sequence` (не sequence активного partial); payload-очередь коалесцирует только sticky/draft-кадры и сохраняет разные completed finals; `avoid_duplicate_text` блокирует sticky republish той же фразы после `clear_after`. Presentation сохраняет completed non-draft переводы в `items` (в т.ч. `visible=false`) при live-partial merge для OBS/TTS.
 - Алгоритм send/clear/dedup с fixes 0.5.2 (501 debug clear, supersede generation, partial stream inactive after 501)
@@ -1318,7 +1325,7 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (м�
 ## 27. Продуктовые инварианты
 
 1. **Local-first:** bind на localhost по умолчанию; без облачных допущений.
-2. **Видимость browser worker:** отдельное окно, видимая адресная строка, без скрытых / «задушенных» throttling-режимов.
+2. **Видимость browser worker:** полный worker — видимая адресная строка; компактный — Chrome `--app=` (отдельное окно, не скрытый / «задушенный» throttling-режим).
 3. **Subtitle lifecycle:** completed-блок остаётся до финализации новой фразы; поздние переводы на browser path разрешены.
 4. **Перевод:** 18 провайдеров, полная семантика dispatcher (очередь, stale drop, supersession).
 5. **Отделение overlay:** vanilla HTML для OBS; не входит в Vite chunk dashboard.
@@ -1372,7 +1379,7 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (м�
 | Термин | Значение |
 | --- | --- |
 | **ASR** | Automatic Speech Recognition (распознавание речи) |
-| **Browser worker** | Окно Chrome с Web Speech на `/google-asr` |
+| **Browser worker** | Окно Chrome с Web Speech на `/google-asr` или `/google-asr-compact` |
 | **Completed block** | Финализированный сегмент субтитров, видимый до финализации следующей фразы |
 | **Golden test** | Регрессионный тест на fixtures |
 | **Overlay** | Vanilla-страница OBS Browser Source на `/overlay` |

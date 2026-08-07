@@ -125,6 +125,7 @@ pub fn build_router(state: Arc<HttpState>) -> Router {
         .route("/live", get(live))
         .route("/", get(dashboard_index))
         .route("/google-asr", get(google_asr_page))
+        .route("/google-asr-compact", get(google_asr_compact_page))
         .route("/tts", get(tts_page))
         .route("/local-asr", get(local_asr_page))
         .route("/overlay", get(overlay_page))
@@ -200,6 +201,22 @@ async fn google_asr_page(
         params,
         state.paths.worker_dist.join("index.html"),
         "<!doctype html><html><body><h1>VoiceSub Web Speech worker (run npm run build)</h1></body></html>",
+        AppPageUnauthPolicy::Reject,
+    )
+}
+
+async fn google_asr_compact_page(
+    State(state): State<Arc<HttpState>>,
+    headers: axum::http::HeaderMap,
+    Query(params): Query<HashMap<String, String>>,
+) -> Response {
+    gate_app_html_page(
+        &state,
+        &headers,
+        "/google-asr-compact",
+        params,
+        state.paths.worker_dist.join("index.html"),
+        "<!doctype html><html><body><h1>VoiceSub Web Speech compact worker (run npm run build)</h1></body></html>",
         AppPageUnauthPolicy::Reject,
     )
 }

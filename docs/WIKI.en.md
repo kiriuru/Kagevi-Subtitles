@@ -1,6 +1,6 @@
 # Kagevi Subtitles Wiki
 
-User guide for **Kagevi Subtitles `0.6.3`** — how to get live subtitles on stream, what each screen does, and how to fix common problems.
+User guide for **Kagevi Subtitles `0.6.4`** — how to get live subtitles on stream, what each screen does, and how to fix common problems.
 
 <p align="center">
   <a href="../README.md">README</a> ·
@@ -73,7 +73,7 @@ Everything runs on **your PC**. There is no account and no Kagevi cloud. The app
 | Optional cloud / free translation | **Translation** tab (up to 4 lines) |
 | Read subtitles or chat aloud | **TTS** module |
 
-Current version line: **`0.6.3`** (first Kagevi release was `0.5.0`).
+Current version line: **`0.6.4`** (first Kagevi release was `0.5.0`).
 
 > [!IMPORTANT]
 > In OBS, use exactly: `http://127.0.0.1:8765/overlay`  
@@ -93,7 +93,7 @@ No Python or Node.js is required to run the installed app.
 
 ### Install and update
 
-1. Run `Kagevi Subtitles_0.6.3_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
+1. Run `Kagevi Subtitles_0.6.4_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
 2. Open **Kagevi Subtitles.exe**.
 3. Later updates: the dashboard can show an **update banner**. **Install update** downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in `user-data/` stay put.
 

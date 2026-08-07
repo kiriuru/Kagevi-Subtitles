@@ -46,6 +46,15 @@ fn read_worker_app() -> String {
     fs::read_to_string(worker_src_root().join("WorkerApp.svelte")).expect("WorkerApp.svelte")
 }
 
+fn read_worker_app_compact() -> String {
+    fs::read_to_string(worker_src_root().join("WorkerAppCompact.svelte"))
+        .expect("WorkerAppCompact.svelte")
+}
+
+fn read_worker_main() -> String {
+    fs::read_to_string(worker_src_root().join("main.ts")).expect("main.ts")
+}
+
 fn assert_contains(haystack: &str, needle: &str, context: &str) {
     assert!(
         haystack.contains(needle),
@@ -61,12 +70,22 @@ fn worker_app_visibility_warning_present() {
 }
 
 #[test]
+fn compact_worker_page_mounts_reduced_ui() {
+    let main = read_worker_main();
+    let compact = read_worker_app_compact();
+    assert_contains(&main, "google-asr-compact", "compact path detection");
+    assert_contains(&main, "WorkerAppCompact", "compact mount");
+    assert_contains(&compact, "worker.partial.title", "partial text only");
+    assert!(!compact.contains("worker.final.title"));
+}
+
+#[test]
 fn session_manager_supports_overlap_and_watchdog_defaults() {
     let manager = read_manager_ts_bundle();
     let policy = read_policy_ts();
     assert_contains(&manager, "createOverlapRecognitionPair", "overlap");
     assert_contains(&policy, "shouldEnableRecognitionOverlap", "overlap policy");
-    assert_contains(&manager, "watchdog_stall: 200", "watchdog timing");
+    assert_contains(&manager, "watchdog_stall: 100", "watchdog timing");
     assert_contains(&manager, "maxBrowserSessionAgeMs", "session age");
     assert_contains(&manager, "180000", "session age limit");
     assert_contains(&manager, "acquireWakeLock", "wake lock");

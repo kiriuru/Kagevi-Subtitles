@@ -2,9 +2,9 @@ use serde_json::Value;
 use voicesub_config::{
     OBS_CC_DEFAULT_CLEAR_AFTER_MS, OBS_CC_DEFAULT_DEBUG_INPUT,
     OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS, OBS_CC_DEFAULT_HOST,
-    OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS, OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS,
-    OBS_CC_DEFAULT_PORT, OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS, OBS_CC_DEFAULT_USE_SSL,
-    OBS_CC_OUTPUT_MODES,
+    OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS, OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS,
+    OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS, OBS_CC_DEFAULT_PORT,
+    OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS, OBS_CC_DEFAULT_USE_SSL, OBS_CC_OUTPUT_MODES,
 };
 
 pub const CONNECTABLE_OUTPUT_MODES: &[&str] = &[
@@ -34,6 +34,8 @@ pub struct ObsCaptionSettings {
     pub send_translation_partials: bool,
     pub partial_throttle_ms: u64,
     pub min_partial_delta_chars: u64,
+    /// Trailing char window for realtime partials only (`0` = unlimited). Finals are never clipped.
+    pub max_partial_caption_chars: u64,
     pub final_replace_delay_ms: u64,
     pub clear_after_ms: u64,
     pub avoid_duplicate_text: bool,
@@ -121,6 +123,10 @@ impl ObsCaptionSettings {
                 .and_then(|value| value.get("min_partial_delta_chars"))
                 .and_then(|value| value.as_u64())
                 .unwrap_or(OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS),
+            max_partial_caption_chars: timing
+                .and_then(|value| value.get("max_partial_caption_chars"))
+                .and_then(|value| value.as_u64())
+                .unwrap_or(OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS),
             final_replace_delay_ms: timing
                 .and_then(|value| value.get("final_replace_delay_ms"))
                 .and_then(|value| value.as_u64())
@@ -176,6 +182,10 @@ mod tests {
         assert_eq!(
             settings.min_partial_delta_chars,
             OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS
+        );
+        assert_eq!(
+            settings.max_partial_caption_chars,
+            OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS
         );
         assert!(!settings.use_ssl);
         assert!(!settings.send_translation_partials);

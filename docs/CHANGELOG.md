@@ -14,6 +14,20 @@
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-08-08
+
+### Added
+
+- Компактный Browser Speech worker: чекбокс на Эфире `asr.browser.compact_worker_ui` открывает `/google-asr-compact` в Chrome `--app=` (без адресной строки) с урезанным UI (статус, Старт/Стоп/Сохранить, язык, advanced-чекбоксы, только Live Partial Text).
+
+### Fixed
+
+- OBS CC: realtime partials (`source_live` / translation live drafts) больше не отправляют весь накопленный текст — trailing window `timing.max_partial_caption_chars` (default **80**, `0` = без лимита) сдвигает **целыми словами**; final после live-partials тоже через то же окно (не дублирует полный текст); final без предшествующих partials — без обрезки. Pending `clear_after` / `final_replace_delay` больше не блокируют воркер: следующая фраза/partial отменяет sleep сразу.
+- Browser Web Speech continuous: убраны многосекундные дыры при живом микрофоне — stall/rearm **9 с** (cold-start **4.5 с**); `mic_silent` больше не маскирует `web_speech_stalled`; recovery через `stop()` (не abort), чтобы не рвать фразы на мелкие куски.
+- Browser Web Speech overlap: silence rearm **8 с** (было 2.5 с) + `stop()`, при горячем mic — **3 с**; forced-final floor **8 с**; orphan interim на active `onend`; stale soft-join partial не блокирует rearm.
+- Browser Web Speech overlap: soft-join фразы через handoff (один `client_segment_id` до ~**1.8 с** тишины ASR или **450** символов); buddy shadow flush на handoff; soft-final не blank’ает UI; удержание display при ужимании той же interim-hypothesis.
+- Worker settings (`continuous` / interim / force-finalization): Start/Save из dashboard больше не затирают эти поля устаревшим snapshot — deep-merge `asr` + omit worker-only keys. Язык распознавания по-прежнему сохраняется из main UI.
+
 ## [0.6.3] - 2026-08-05
 
 ### Added
@@ -450,7 +464,8 @@
 
 Более ранняя история `0.2.9.*` SST Desktop остаётся в архивных GitHub release notes и здесь не развёрнута.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD
+[0.6.4]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1

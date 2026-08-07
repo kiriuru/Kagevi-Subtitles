@@ -2,7 +2,7 @@
 
 **Live translated subtitles for streamers — local-first, privacy-first, OBS-ready.**
 
-[![Version](https://img.shields.io/badge/version-0.6.3-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
+[![Version](https://img.shields.io/badge/version-0.6.4-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#system-requirements)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
@@ -19,7 +19,7 @@
 
 Kagevi Subtitles is a Windows desktop app that turns speech into real-time subtitles with optional translation. Recognition runs through **Google Chrome Web Speech** or optional offline **Local ASR** (Parakeet / ONNX). Everything stays on your machine — default bind `127.0.0.1:8765`, no cloud backend, no accounts.
 
-First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.3`**.
+First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.4`**.
 
 <p align="center">
   <img src="./Images/kagevi_live.png" alt="Kagevi Subtitles Live tab" width="860">
@@ -152,7 +152,7 @@ No Python, Node.js, or CUDA in the core installer. CUDA is an optional Local ASR
 
 ## Quick start
 
-1. Install from `Kagevi Subtitles_0.6.3_x64-setup.exe` (or the latest build in your release folder).
+1. Install from `Kagevi Subtitles_0.6.4_x64-setup.exe` (or the latest build in your release folder).
 2. Launch **Kagevi Subtitles.exe** — the dashboard opens at `http://127.0.0.1:8765/`.
 3. In OBS, add a **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. Configure translation and subtitle style if needed, then click **Start**.

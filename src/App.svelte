@@ -43,6 +43,7 @@
     getTranslationConfigErrors,
   } from "./lib/translation-helpers";
   import { normalizeConfigPayload } from "./lib/config-normalize";
+  import { omitWorkerOwnedBrowserSettings } from "./lib/worker-owned-browser-settings";
   import { mergeFontCatalogPreservingSystem } from "./lib/font-catalog";
   import { mergeStylePresetCatalog } from "./lib/style-presets";
   import { appStore, handleWsEvent, patchApp } from "./lib/stores/app";
@@ -280,7 +281,8 @@
     // Persist current in-memory config (not stale lastSavedConfig) so locale
     // changes after profile/import do not wipe unsaved edits.
     try {
-      const res = await saveSettings(inMemoryConfig);
+      // Omit worker-owned asr.browser keys so locale persist does not clobber Chrome worker settings.
+      const res = await saveSettings(omitWorkerOwnedBrowserSettings(inMemoryConfig));
       if (res.ok) {
         const saved = res.payload ? normalizeConfigPayload(res.payload) : inMemoryConfig;
         lastSavedConfig = structuredClone(saved);
@@ -313,7 +315,9 @@
 
     patchApp({ busy: true, saveStatus: { tone: "busy" } });
     try {
-      const res = await saveSettings(normalizeConfigPayload(snapshot.config));
+      const res = await saveSettings(
+        omitWorkerOwnedBrowserSettings(normalizeConfigPayload(snapshot.config)),
+      );
       const nextConfig = res.payload ? normalizeConfigPayload(res.payload) : snapshot.config;
       const restartReasonKeys = getRestartRequiredReasons(
         lastSavedConfig ?? nextConfig,
@@ -355,7 +359,9 @@
   async function handleStart() {
     patchApp({ busy: true });
     try {
-      let startConfig = normalizeConfigPayload(snapshot.config);
+      // Prefer disk for worker-owned browser settings; dashboard memory can be stale after
+      // the Chrome worker saved continuous/interim/force-finalization globally.
+      let startConfig = omitWorkerOwnedBrowserSettings(normalizeConfigPayload(snapshot.config));
       if (
         normalizeAsrMode(startConfig.asr?.mode) === ASR_MODE_LOCAL_PARAKEET &&
         !localAsrReadyFromRuntime(snapshot.runtime)
@@ -366,6 +372,15 @@
         };
       }
       const res = await startRuntime(startConfig);
+      // Refresh dashboard config from store so UI matches what start merged/persisted.
+      try {
+        const settings = await loadSettings();
+        if (settings.payload) {
+          patchApp({ config: normalizeConfigPayload(settings.payload) });
+        }
+      } catch {
+        // start succeeded; config refresh is best-effort
+      }
       patchApp({ runtime: res.runtime, busy: false });
     } catch (err) {
       patchApp({

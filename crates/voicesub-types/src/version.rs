@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 /// Canonical product version — edit here only, then run `npm run version:sync`
 /// (also runs from `npm run build`) to update Cargo / package.json / tauri.conf.json /
 /// `src/lib/project-version.ts`.
-pub const PROJECT_VERSION: &str = "0.6.3";
+pub const PROJECT_VERSION: &str = "0.6.4";
 pub const RELEASE_TRACK: &str = "stable";
 pub const DEFAULT_UPDATE_PROVIDER: &str = "github_releases";
 pub const DEFAULT_RELEASE_CHANNEL: &str = "stable";
@@ -357,17 +357,17 @@ mod tests {
                 "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.5.0")
             },
             {
-                "tag_name": "v0.6.4",
+                "tag_name": "v0.6.5",
                 "draft": false,
                 "prerelease": false,
-                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.4")
+                "html_url": release_url_for(DEFAULT_GITHUB_REPO, "0.6.5")
             }
         ]);
         let (latest, _, url) = extract_latest_github_release(&releases, "stable");
-        assert_eq!(latest.as_deref(), Some("0.6.4"));
+        assert_eq!(latest.as_deref(), Some("0.6.5"));
         assert_eq!(
             url.as_deref(),
-            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.4").as_str())
+            Some(release_url_for(DEFAULT_GITHUB_REPO, "0.6.5").as_str())
         );
         assert!(is_remote_version_newer(
             PROJECT_VERSION,
@@ -385,7 +385,7 @@ mod tests {
         assert_eq!(payload["sync"]["update_available"], true);
         assert_eq!(
             payload["sync"]["release_url"],
-            release_url_for(DEFAULT_GITHUB_REPO, "0.6.4")
+            release_url_for(DEFAULT_GITHUB_REPO, "0.6.5")
         );
     }
 
@@ -396,7 +396,7 @@ mod tests {
                 "enabled": true,
                 "provider": "github_releases",
                 "github_repo": "example/repo",
-                "latest_known_version": "0.6.4"
+                "latest_known_version": "0.6.5"
             }
         })));
         assert_eq!(payload["current_version"], PROJECT_VERSION);

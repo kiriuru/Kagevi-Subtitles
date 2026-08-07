@@ -21,7 +21,7 @@ const limits = {
   voiceBelowRecognitionGraceMs: 8000,
   voiceBelowRecognitionMicWindowMs: 2000,
   voiceBelowRecognitionMinNoSpeech: 1,
-  stallDegradedAfterMs: 12000,
+  stallDegradedAfterMs: 9000,
   recentMicActivityWindowMs: 2000,
 };
 

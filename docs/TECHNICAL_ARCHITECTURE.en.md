@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.3 — Technical Architecture Document
+# Kagevi Subtitles 0.6.4 — Technical Architecture Document
 
-Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.6.3"`.
+Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.6.4"`.
 
 This document describes the Kagevi Subtitles project layout, HTTP/WebSocket/Tauri IPC contracts, configuration schema, data flow through the Rust runtime, and frontend surfaces. It is the **canonical technical reference** for active development. README is a short product overview; CHANGELOG is release history; agent policy is `AGENTS.md`.
 
@@ -75,7 +75,8 @@ Tauri dev: embedded HTTP on `http://127.0.0.1:8765`; main webview opens the dash
 | --- | --- |
 | `http://127.0.0.1:8765/` | Svelte dashboard |
 | `http://127.0.0.1:8765/overlay` | OBS Browser Source |
-| `http://127.0.0.1:8765/google-asr?autostart=1` | Browser Speech worker |
+| `http://127.0.0.1:8765/google-asr?autostart=1` | Browser Speech worker (full UI) |
+| `http://127.0.0.1:8765/google-asr-compact?autostart=1` | Compact Browser Speech worker (Chrome `--app=`) |
 | `http://127.0.0.1:8765/tts` | TTS module UI |
 | `http://127.0.0.1:8765/local-asr` | Local ASR module UI |
 
@@ -299,7 +300,7 @@ src-tauri (Layer 4: IPC, window, bundle only)
 1. **Start** (`POST /api/runtime/start`):
    - merge optional inline `config_payload`;
    - apply live settings (translation, OBS, subtitle, logging);
-   - if `asr.mode = browser_google`: launch Chrome worker → `{base}/google-asr?autostart=1[&locale=…]` and browser speech ingest;
+   - if `asr.mode = browser_google`: launch Chrome worker → `{base}/google-asr` or `/google-asr-compact` (`asr.browser.compact_worker_ui`) with `?autostart=1[&locale=…]` and browser speech ingest;
    - if `asr.mode = local_parakeet`: assert `asr.local_module.ready`, start `LocalAsrSpeechSource` (no Chrome worker);
    - start translation dispatcher, OBS captions;
    - broadcast `preflight_update`, `runtime_update`.
@@ -387,7 +388,7 @@ Global middleware: CSP header, `Cache-Control: no-store`.
 | GET | `/api/health` | loopback token | Liveness + WS connections + worker connected |
 | GET | `/api/version` | loopback token | Product metadata + `sync` (updates config, `update_available`, `latest_known_version`) |
 
-**Loopback API auth:** Tauri UI windows obtain the per-session token via IPC `get_loopback_api_token` and send `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`). App HTML (`/`, `/tts`, `/local-asr`, `/google-asr`) requires a one-time `?bootstrap=<nonce>` (sets HttpOnly cookie `kagevi_loopback`) **or** an already-valid session cookie/header — otherwise **401** (except unauthenticated `/tts`, which serves a minimal Twitch OAuth shell only). `POST /api/tts/twitch/oauth-complete` is public (system-browser Twitch redirect bridge — pending token/error only). OBS overlay does **not** call protected `/api/*` (only `/live` + WebSocket).
+**Loopback API auth:** Tauri UI windows obtain the per-session token via IPC `get_loopback_api_token` and send `x-kagevi-subtitles-token` (also accepted: `x-kagevi-voice-token`, legacy `x-voicesub-token`). App HTML (`/`, `/tts`, `/local-asr`, `/google-asr`, `/google-asr-compact`) requires a one-time `?bootstrap=<nonce>` (sets HttpOnly cookie `kagevi_loopback`) **or** an already-valid session cookie/header — otherwise **401** (except unauthenticated `/tts`, which serves a minimal Twitch OAuth shell only). `POST /api/tts/twitch/oauth-complete` is public (system-browser Twitch redirect bridge — pending token/error only). OBS overlay does **not** call protected `/api/*` (only `/live` + WebSocket).
 
 ### Devices / OpenAI helpers
 
@@ -452,7 +453,8 @@ Protected like other `/api/*`. Full table in [§18 Local ASR Module](#18-local-a
 | --- | --- | --- |
 | GET | `/` | `bin/dashboard/index.html` |
 | GET | `/overlay` | `bin/overlay/overlay.html` |
-| GET | `/google-asr` | `bin/worker/index.html` |
+| GET | `/google-asr` | `bin/worker/index.html` (full worker UI) |
+| GET | `/google-asr-compact` | `bin/worker/index.html` (compact worker UI; same bundle) |
 | GET | `/tts` | `bin/tts/index.html` |
 | GET | `/local-asr` | `bin/local-asr/index.html` |
 | GET | `/project-fonts.css` | Generated `@font-face` from `bin/fonts/` |
@@ -671,15 +673,20 @@ ZIP files are written under `user-data/exports/` as `diagnostics-{unix}_{ms}.zip
 | Constant | Value |
 | --- | --- |
 | `WORKER_PATH` | `/google-asr` |
-| Launch URL | `{base}/google-asr?autostart=1[&locale={ui.language}]` |
+| `WORKER_COMPACT_PATH` | `/google-asr-compact` |
+| Launch URL (full) | `{base}/google-asr?autostart=1[&locale={ui.language}]` |
+| Launch URL (compact) | `{base}/google-asr-compact?autostart=1[&locale={ui.language}]` when `asr.browser.compact_worker_ui = true` |
 
 `worker_launch_browser`: `auto` | `google_chrome` (unknown → `auto`).
 
+`asr.browser.compact_worker_ui` (bool, default `false`): Live-tab checkbox; selects compact page + Chrome `--app=` launch.
+
 ### Chrome launch invariants
 
-- **Separate** Chrome window with **visible address bar**
+- **Full worker** (`/google-asr`): **separate** Chrome window with **visible address bar** (`--new-window` + trailing URL)
+- **Compact worker** (`/google-asr-compact`): Chrome **`--app=<url>`** (no omnibox), `--window-size=420,720`; never `--new-window` for this path
 - Isolated `--user-data-dir`: `{user-data}/browser-worker-profile-classic-{engine}/`
-- **Never** `--disable-extensions` / `--bwsi` / `--app=`
+- **Never** `--disable-extensions` / `--bwsi`. Stored config never keeps `--app=` (stripped); `--app=` is applied only at launch for compact URLs
 - **No** hidden windows or in-tab worker
 - Anti-throttling Chrome flags + Windows EcoQoS opt-out (`launch_config.rs`, `ecoqos.rs`): occlusion/backgrounding switches, `IntensiveWakeUpThrottling` + `AllowAggressiveThrottlingWithWebSocket` + `BatterySaverModeAvailable` disabled, `--disable-field-trial-config`, `--audio-process-high-priority`, `--hide-crash-restore-bubble`
 - Detached process at **`ABOVE_NORMAL_PRIORITY_CLASS`** when `use_high_priority` (default true): keeps ASR responsive without `HIGH_PRIORITY_CLASS` preempting foreground apps and starving the rest of the system. Falls back to normal priority on `ERROR_ACCESS_DENIED`. Stop via `taskkill /T /F` (only when real `pid > 0`)
@@ -704,11 +711,11 @@ ZIP files are written under `user-data/exports/` as `diagnostics-{unix}_{ms}.zip
 
 **Worker UI defaults:** lang `ru-RU`, interim/continuous on, force-finalization idle **1600 ms** (worker settings panel), max session age **180 s**.
 
-**Silence rearm (native continuous only):** with `continuous=true`, Chrome often waits ~8 s of silence before `no-speech`. The watchdog cycles recognition after **2500 ms** without start/result when `currentPartial` is empty. Overlap / `continuous=false` does **not** use silence_rearm. `no_speech` restart delay is fixed (`no_speech_restart_delay_ms`, default 150) without accumulating +800 ms backoff. `network` / `audio_capture` restart delay is also fixed (`network_reconnect_initial_ms`, default 500) — no exponential growth.
+**Silence rearm (native continuous only):** with `continuous=true`, Chrome often waits ~8 s of silence before `no-speech`. The watchdog cycles recognition after **9000 ms** without start/result when the mic still hears energy (`activeSpeechStallMs` / `web_speech_stalled`). Overlap / `continuous=false` does **not** use this path (own silence rearm). `no_speech` restart delay is fixed (`no_speech_restart_delay_ms`, default 150) without accumulating +800 ms backoff. `network` / `audio_capture` restart delay is also fixed (`network_reconnect_initial_ms`, default 500) — no exponential growth.
 
-**Visible idle rearm (all modes):** if the worker window is visible and there is no transcript activity (`lastStartAtMs` / `lastResultAtMs`) for **15 s** (`visibleIdleRestartMs`; hidden window **60 s`), the watchdog force-rearms recognition (`watchdog forced rearm`). Separate from `web_speech_stalled` (12 s with active mic).
+**Visible idle rearm (all modes):** if the worker window is visible, the mic is quiet, and there is no transcript activity (`lastStartAtMs` / `lastResultAtMs`) for **30 s** (`visibleIdleRestartMs`; hidden window **60 s`), the watchdog force-rearms recognition (`watchdog forced rearm`). Separate from active-speech stall (**9 s** with mic energy).
 
-**Overlap (dual-buffer):** with `continuous=false`, two `SpeechRecognition` slots alternate: **`preStartNextInstance`** on natural/forced final (immediate buddy `start()` while active lives, so the next phrase start is not lost); **`switchToNextInstance`** on active `onend` when the buddy is listening/warming; **`safeRestartRecognition`** (~50 ms in-generation flip+start) when no buddy is ready (capped empty restarts, then generation `scheduleRestart`). Idle slots are recreated before `start()`. Mid-speech buddy warm (onstart / sound-end / post-handoff) is **not** used — that chopped phrases into one-word finals. Hard errors (`network`, `audio_capture`) still force a global restart.
+**Overlap (dual-buffer):** with `continuous=false`, two `SpeechRecognition` slots alternate: **`preStartNextInstance`** on natural/forced final (immediate buddy `start()` while active lives); **`switchToNextInstance`** on active `onend` when the buddy is listening/warming; **`safeRestartRecognition`** (~50 ms in-generation flip+start) when no buddy is ready. Idle slots are recreated before `start()`. **Do not** early-warm buddy on active `onstart` — a second simultaneous `SpeechRecognition` makes Chrome abort/chop the active session (observed thrash: ~1–2 s slot flips, flood of `duplicate-partial`). Buddy hypotheses are **shadowed** until handoff. Hard errors (`network`, `audio_capture`) still force a global restart. **Phrase coalesce:** soft-join under one `client_segment_id` (~1.8 s quiet **and mic quiet**, or ≥450 chars). **Silence rearm:** slot with no ASR results since start — **8 s** quiet / **3 s** while mic hot; stale soft-join `currentPartial` does not block. **Buddy shadow:** flushed on handoff against 1–2 s stalls.
 
 ### Long-segment flush (Web Speech buffer)
 
@@ -719,7 +726,7 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 | `native_continuous` (`continuous=true`, default) | `requestRecognitionFlush` → `recognition.stop()` → restart with reason `long_segment_flush` (~100 ms delay) |
 | Overlap (`continuous=false`) | `preStartNextOverlapInstance` then `stop()` on the **active** slot → handoff to warming buddy |
 
-**Not configurable** (hardcoded threshold `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` in `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, counter `longSegmentFlushCount`. Does **not** replace session-age rotation (`max_browser_session_age_ms`) or idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` after **12 s** without ASR results while mic is active; if a partial exists the watchdog **commits** it without restart (avoids multi-second gaps); empty stall still rearms (`watchdog_stall`, ~200 ms).
+**Not configurable** (hardcoded threshold `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` in `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, counter `longSegmentFlushCount`. Does **not** replace session-age rotation (`max_browser_session_age_ms`) or idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` / `active_speech_stall` after **9 s** without ASR results while mic still hears energy; if a partial exists the watchdog **commits** it without restart (avoids multi-second gaps); empty stall rearms via `abort()` (`watchdog_stall`, ~100 ms).
 
 ### Advanced Web Speech settings (dashboard)
 
@@ -908,7 +915,7 @@ Without cleanup the last subtitle frame can stick in OBS. Contract: `crates/voic
 - OBS WebSocket v5 client (`host`, `port`, `password`)
 - `output_mode`: `disabled` | `source_live` | `source_final_only` | `translation_1`…`translation_4` | `first_visible_line` (`translation_N` matches Translation line `slot_id`, not the Nth visible translation)
 - `debug_mirror` — optional OBS Text Source mirror (`SetInputSettings`)
-- `timing` — partial throttle, final replace delay, clear after ms, dedup; `send_partials` (source_live); optional `send_translation_partials` (default off) for live MT drafts on `translation_N`
+- `timing` — partial throttle, final replace delay, clear after ms, dedup; `send_partials` (source_live); optional `send_translation_partials` (default off) for live MT drafts on `translation_N`; `max_partial_caption_chars` (default **80**, `0` = unlimited) trailing **word** window for realtime partials (longest trailing whitespace-separated words that fit the budget). A completed final that follows live growth for the same phrase uses the same window so OBS CC does not dump the full phrase after scrolled partials; finals with no prior partial stay unclipped. Delayed clear/final-replace sleeps are interruptible — the next source partial or translation draft bumps generation and unblocks the worker immediately.
 - Two inputs: ASR **source events** (`source_live` / `source_final_only`) and **subtitle payload** (`translation_*`, `first_visible_line`, debug mirror)
 - Translation live partials: when `send_translation_partials` is on, growing `is_live_draft` text for the selected slot is throttled like source_live; completed non-draft finals still send (fallback for LLM / providers without live partials). On `CompletedWithPartial`, the completed final is delivered before the next-phrase draft in the same payload; publishing a sendable translation draft cancels pending `clear_after` so an in-flight DelayedClear cannot wipe the next phrase. Final dedupe keys on `completed_sequence` (not active partial `sequence`); payload queue coalesces sticky/draft frames only and retains distinct completed finals; `avoid_duplicate_text` blocks sticky republish of the same phrase after `clear_after`. Presentation keeps completed non-draft translations in `items` (possibly `visible=false`) during live-partial merge for OBS/TTS.
 - Send/clear/dedup algorithm with 0.5.2 fixes (501 debug clear, supersede generation, partial native stop after 501)
@@ -1320,7 +1327,7 @@ Config key: `ui.language` (empty = browser default).
 ## 27. Product Invariants
 
 1. **Local-first:** default localhost bind; no cloud assumptions.
-2. **Browser worker visibility:** separate window, visible URL bar, no hidden/throttled-to-death modes.
+2. **Browser worker visibility:** full worker keeps a visible URL bar; compact worker uses Chrome `--app=` (still a separate window, not hidden/throttled-to-death).
 3. **Subtitle lifecycle:** completed block persists until new phrase finalized; late translations allowed on browser path.
 4. **Translation:** 18 providers, full dispatcher semantics (queue, stale drop, supersession).
 5. **Overlay separation:** vanilla HTML for OBS; not bundled in dashboard Vite chunk.
@@ -1374,7 +1381,7 @@ Config key: `ui.language` (empty = browser default).
 | Term | Meaning |
 | --- | --- |
 | **ASR** | Automatic Speech Recognition |
-| **Browser worker** | Chrome window running Web Speech at `/google-asr` |
+| **Browser worker** | Chrome window running Web Speech at `/google-asr` or `/google-asr-compact` |
 | **Completed block** | Finalized subtitle segment shown until next phrase finalizes |
 | **Golden test** | Fixture-based regression test |
 | **Overlay** | Vanilla OBS Browser Source page at `/overlay` |

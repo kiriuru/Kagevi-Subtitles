@@ -9,6 +9,7 @@ export const voicesubNewKeysEn = {
   "overview.recognition.hint.browser_google.warning":
     "Keep the worker window visible while listening. Minimized or fully hidden windows are throttled by the browser and Web Speech may stall or drop audio. Browser Speech opens `/google-asr` in Google Chrome with an isolated profile. Save settings, then reopen the worker if you changed recognition options.",
   "overview.recognition.mode.label": "Recognition engine",
+  "overview.recognition.compact_worker_ui": "Compact worker window",
   "overview.recognition.mode.local_asr": "Local ASR",
   "overview.recognition.mode.local_parakeet": "Local ASR",
   "overview.recognition.hint.local_parakeet.summary": "Local ASR notes",
@@ -308,8 +309,6 @@ export const voicesubNewKeysEn = {
   "translation.live_partial.hint":
     "Sends throttled ASR partials to classic MT providers so translations appear while you speak. LLM lines still wait for the final. Uses more API quota; off by default.",
   "worker.advanced.title": "Advanced",
-  "worker.continuous.note":
-    "Turning this off can leave recognition unstable or dead in current Chrome. Prefer leaving it enabled.",
   "settings.fonts.eyebrow": "Resources",
   "settings.fonts.title": "Font catalog",
   "style.custom_preset.delete": "Delete preset",
@@ -514,6 +513,8 @@ export const voicesubNewKeysEn = {
   "obs.use_ssl.help": "Enable when OBS WebSocket has SSL turned on. Self-signed certificates are accepted for local OBS.",
   "obs.translation_live_partials": "Send live-partial translations in translation modes",
   "obs.translation_live_partials.help": "Uses growing MT drafts when available. Final translations still send if the provider only returns finals (for example LLM).",
+  "obs.max_partial_caption_chars": "Max characters for live partials",
+  "obs.max_partial_caption_chars.help": "Applies to realtime partials for source (source_live) and translations (with live-partial translations enabled). Keeps the trailing whole words that fit this budget (recommended 50–100). Scrolls by word as speech grows. A final after live partials uses the same window (no full-text duplicate). Finals without prior partials stay unclipped. Use 0 for unlimited.",
   "obs.note.languages":
     "Twitch native CC (via OBS SendStreamCaption) uses CEA-608/708. Latin-script languages are reliable (e.g. English, Spanish, French, German, Portuguese, Italian, Dutch). Cyrillic, CJK, Arabic, and other non-Latin scripts usually fail or garble — use the browser overlay (or debug mirror text) for those.",
   "obs.output.translation_active": "Translation {number} · {lang}",
@@ -568,6 +569,7 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "Нажмите Старт. После смены языка Web Speech используйте Стоп/Старт.",
     "overview.recognition.mode.label": "Движок распознавания",
+    "overview.recognition.compact_worker_ui": "Компактное окно worker",
     "overview.recognition.hint.browser_google.warning":
       "Держите окно worker видимым во время распознавания. Свёрнутые или полностью скрытые окна браузер троттлит — Web Speech может зависнуть или потерять звук. Browser Speech открывает `/google-asr` в Google Chrome с изолированным профилем. Сохраните настройки и заново откройте worker, если меняли параметры распознавания.",
     "overview.recognition.hint.local_parakeet.summary": "Заметки Local ASR",
@@ -657,8 +659,6 @@ const voicesubExtrasLocalized = {
     "worker.force_finalization_timeout_ms.note":
       "Сколько ждать без обновлений partial перед отправкой текущего текста как final.",
     "worker.advanced.title": "Дополнительно",
-    "worker.continuous.note":
-      "Отключение может сделать распознавание нестабильным или полностью нерабочим в текущем Chrome. Лучше оставить включённым.",
     "translation.latest.show": "Показывать переведённый результат",
     "translation.latest.hidden":
       "Блок скрыт. Включите переключатель, чтобы видеть live-вывод перевода.",
@@ -1051,6 +1051,8 @@ const voicesubExtrasLocalized = {
     "obs.use_ssl.help": "Включите, если в OBS WebSocket включён SSL. Самоподписанные сертификаты локального OBS принимаются.",
     "obs.translation_live_partials": "Отправлять live-partial переводы в режимах translation",
     "obs.translation_live_partials.help": "Использует растущие MT-drafts, если они есть. Финальные переводы всё равно отправляются, если провайдер отдаёт только final (например LLM).",
+    "obs.max_partial_caption_chars": "Макс. символов для live-partial",
+    "obs.max_partial_caption_chars.help": "Для realtime partials исходного текста (source_live) и переводов (если включены live-partial переводы). Оставляет хвост из целых слов в пределах бюджета (рекомендуется 50–100). Сдвигает по словам по мере речи. Final после live-partials — через то же окно (без дубля полного текста). Final без prior partial — без обрезки. 0 — без лимита.",
     "obs.note.languages":
       "Нативные CC Twitch (через OBS SendStreamCaption) идут в CEA-608/708. Надёжны языки на латинице (например английский, испанский, французский, немецкий, португальский, итальянский, нидерландский). Кириллица, CJK, арабский и другие нелатинские скрипты обычно не отображаются или искажаются — для них используйте browser overlay (или debug-зеркало).",
     "obs.output.translation_active": "Перевод {number} · {lang}",
@@ -1171,6 +1173,7 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "開始を押します。Web Speech の認識言語を変更した後は停止してから再開してください。",
     "overview.recognition.mode.label": "認識エンジン",
+    "overview.recognition.compact_worker_ui": "コンパクトワーカー窓",
     "overview.recognition.hint.browser_google.warning":
       "認識中はワーカーウィンドウを表示したままにしてください。最小化や完全な非表示はブラウザにスロットルされ、Web Speech が停止したり音声が落ちたりします。Browser Speech は隔離プロファイルの Google Chrome で `/google-asr` を開きます。認識設定を変えたら保存し、ワーカーを開き直してください。",
     "overview.recognition.hint.local_parakeet.summary": "Local ASR の注意",
@@ -1261,8 +1264,6 @@ const voicesubExtrasLocalized = {
     "translation.validation.missing_provider_fields":
       "必須のプロバイダー設定が未入力です: {fields}。プロバイダー設定を開いて入力してください。",
     "worker.advanced.title": "詳細設定",
-    "worker.continuous.note":
-      "オフにすると、現行の Chrome では認識が不安定になるか止まることがあります。可能な限りオンのままにしてください。",
     "translation.latest.show": "翻訳結果を表示",
     "translation.latest.hidden":
       "翻訳結果は非表示です。ライブ出力を監視するにはトグルをオンにしてください。",
@@ -1502,6 +1503,8 @@ const voicesubExtrasLocalized = {
     "obs.use_ssl.help": "OBS WebSocket で SSL が有効なときにオンにします。ローカル OBS の自己署名証明書は受け入れます。",
     "obs.translation_live_partials": "翻訳モードでライブ部分翻訳を送信",
     "obs.translation_live_partials.help": "利用可能な場合は成長中の MT ドラフトを使います。プロバイダーが final のみ返す場合（LLM など）でも最終翻訳は送信されます。",
+    "obs.max_partial_caption_chars": "ライブ部分の最大文字数",
+    "obs.max_partial_caption_chars.help": "ソース（source_live）と翻訳（ライブ部分翻訳が有効な場合）のリアルタイム partial に適用。この文字数に収まる末尾の単語だけを保持（推奨 50–100）。発話に合わせて単語単位でスクロール。ライブ partial 後の final も同じウィンドウ（全文の二重送信なし）。prior partial のない final は切り詰めません。0 で無制限。",
     "obs.note.languages":
       "Twitch のネイティブ CC（OBS SendStreamCaption 経由）は CEA-608/708 です。ラテン文字の言語は安定します（例: 英語・スペイン語・フランス語・ドイツ語・ポルトガル語・イタリア語・オランダ語）。キリル文字、CJK、アラビア文字など非ラテン文字は通常表示されないか化けます — その場合はブラウザオーバーレイ（またはデバッグミラー）を使ってください。",
     "obs.output.translation_active": "翻訳 {number} · {lang}",
@@ -1619,6 +1622,7 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "시작을 누르세요. Web Speech 인식 언어를 변경한 뒤에는 중지 후 다시 시작하세요.",
     "overview.recognition.mode.label": "인식 엔진",
+    "overview.recognition.compact_worker_ui": "컴팩트 워커 창",
     "overview.recognition.hint.browser_google.warning":
       "인식 중에는 워커 창을 화면에 보이게 두세요. 최소화하거나 완전히 숨기면 브라우저가 스로틀해 Web Speech가 멈추거나 오디오가 끊길 수 있습니다. Browser Speech는 격리 프로필의 Google Chrome에서 `/google-asr`를 엽니다. 인식 옵션을 바꿨다면 저장한 뒤 워커를 다시 여세요.",
     "overview.recognition.hint.local_parakeet.summary": "Local ASR 참고",
@@ -1709,8 +1713,6 @@ const voicesubExtrasLocalized = {
     "translation.validation.missing_provider_fields":
       "필수 제공자 설정이 비어 있습니다: {fields}. 제공자 설정을 열고 입력하세요.",
     "worker.advanced.title": "고급",
-    "worker.continuous.note":
-      "끄면 현재 Chrome에서 인식이 불안정해지거나 멈출 수 있습니다. 가능하면 켠 상태로 두세요.",
     "translation.latest.show": "번역 결과 표시",
     "translation.latest.hidden":
       "번역 결과가 숨겨져 있습니다. 라이브 출력을 보려면 토글을 켜세요.",
@@ -1950,6 +1952,8 @@ const voicesubExtrasLocalized = {
     "obs.use_ssl.help": "OBS WebSocket에서 SSL이 켜져 있을 때 사용합니다. 로컬 OBS 자체 서명 인증서를 허용합니다.",
     "obs.translation_live_partials": "번역 모드에서 라이브 부분 번역 전송",
     "obs.translation_live_partials.help": "가능한 경우 성장 중인 MT 초안을 사용합니다. 제공자가 final만 반환해도(예: LLM) 최종 번역은 전송됩니다.",
+    "obs.max_partial_caption_chars": "라이브 partial 최대 글자 수",
+    "obs.max_partial_caption_chars.help": "소스(source_live)와 번역(라이브 partial 번역 사용 시) 실시간 partial에 적용됩니다. 이 예산에 맞는 끝부분 단어만 유지(권장 50–100). 말할수록 단어 단위로 스크롤됩니다. 라이브 partial 이후 final도 같은 창을 씁니다(전체 텍스트 중복 없음). prior partial이 없는 final은 잘리지 않습니다. 0은 무제한.",
     "obs.note.languages":
       "Twitch 네이티브 CC(OBS SendStreamCaption 경유)는 CEA-608/708을 사용합니다. 라틴 문자 언어는 안정적입니다(예: 영어, 스페인어, 프랑스어, 독일어, 포르투갈어, 이탈리아어, 네덜란드어). 키릴, CJK, 아랍 등 비라틴 문자는 보통 표시되지 않거나 깨집니다 — 그런 경우 브라우저 오버레이(또는 디버그 미러)를 사용하세요.",
     "obs.output.translation_active": "번역 {number} · {lang}",
@@ -2066,6 +2070,7 @@ const voicesubExtrasLocalized = {
     "help.quick_start.5":
       "按开始。更改 Web Speech 识别语言后请停止再启动。",
     "overview.recognition.mode.label": "识别引擎",
+    "overview.recognition.compact_worker_ui": "紧凑 Worker 窗口",
     "overview.recognition.hint.browser_google.warning":
       "识别时请保持 worker 窗口可见。最小化或完全隐藏会被浏览器节流，Web Speech 可能卡住或丢音频。Browser Speech 会在带独立配置的 Google Chrome 中打开 `/google-asr`。若更改了识别选项，请保存设置并重新打开 worker。",
     "overview.recognition.hint.local_parakeet.summary": "Local ASR 说明",
@@ -2155,8 +2160,6 @@ const voicesubExtrasLocalized = {
     "translation.validation.missing_provider_fields":
       "缺少必需的提供商设置：{fields}。请打开提供商设置并填写。",
     "worker.advanced.title": "高级",
-    "worker.continuous.note":
-      "关闭后，在当前 Chrome 中识别可能不稳定或完全停止。建议保持开启。",
     "translation.latest.show": "显示翻译结果",
     "translation.latest.hidden": "翻译结果已隐藏。打开开关以查看实时输出。",
     "translation.live_partial.enable":
@@ -2393,6 +2396,8 @@ const voicesubExtrasLocalized = {
     "obs.use_ssl.help": "当 OBS WebSocket 启用 SSL 时打开。接受本地 OBS 的自签名证书。",
     "obs.translation_live_partials": "在翻译模式发送实时部分翻译",
     "obs.translation_live_partials.help": "有可用的增长中 MT 草稿时使用。若提供方只返回最终结果（如 LLM），最终翻译仍会发送。",
+    "obs.max_partial_caption_chars": "实时 partial 最大字符数",
+    "obs.max_partial_caption_chars.help": "适用于源文本（source_live）和翻译（启用实时部分翻译时）的 realtime partial。只保留能装进此预算的末尾整词（建议 50–100）。随说话按词滚动。live partial 之后的 final 使用同一窗口（不会再发全文）。没有 prior partial 的 final 不截断。0 表示不限制。",
     "obs.note.languages":
       "Twitch 原生 CC（经 OBS SendStreamCaption）使用 CEA-608/708。拉丁字母语言较可靠（如英语、西班牙语、法语、德语、葡萄牙语、意大利语、荷兰语）。西里尔文、CJK、阿拉伯文等非拉丁文字通常无法显示或会乱码 — 请改用浏览器叠加层（或调试镜像文本）。",
     "obs.output.translation_active": "翻译 {number} · {lang}",

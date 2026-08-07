@@ -95,7 +95,6 @@
             <input type="checkbox" bind:checked={ui.continuousResults} onchange={() => void actions.onContinuousChange()} />
             <span>{ui.tr("worker.continuous")}</span>
           </label>
-          <p class="worker-settings-note">{ui.tr("worker.continuous.note")}</p>
           <label class="checkbox-row">
             <input
               type="checkbox"

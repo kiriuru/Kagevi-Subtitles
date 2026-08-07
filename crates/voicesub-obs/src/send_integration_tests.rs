@@ -1295,3 +1295,231 @@ async fn rapid_distinct_finals_are_not_dropped_by_payload_coalesce() {
         "distinct completed finals must not be coalesced away while OBS WS is busy"
     );
 }
+
+#[tokio::test]
+async fn source_live_next_partial_is_not_blocked_by_clear_after_sleep() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "source_live",
+            false,
+            json!({
+                "send_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "max_partial_caption_chars": 80,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 800,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    service.publish_source("first phrase", true);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    let started = std::time::Instant::now();
+    service.publish_source("second", false);
+    wait_for_requests(&requests, "SendStreamCaption", 2).await;
+    let elapsed = started.elapsed();
+
+    assert!(
+        elapsed < Duration::from_millis(400),
+        "next live partial must not wait behind clear_after sleep, elapsed={elapsed:?}"
+    );
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["first phrase".to_string(), "second".to_string()],
+        "pending clear must be cancelled; next partial should replace the prior final"
+    );
+}
+
+#[tokio::test]
+async fn source_live_final_after_partial_does_not_dump_full_text() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "source_live",
+            false,
+            json!({
+                "send_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "max_partial_caption_chars": 20,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 50,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let full = "one two three four five six seven eight";
+    service.publish_source(full, false);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+    service.publish_source(full, true);
+    wait_for_requests(&requests, "SendStreamCaption", 2).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["five six seven eight".to_string(), String::new()],
+        "final after realtime partials must not re-send the full phrase"
+    );
+}
+
+#[tokio::test]
+async fn source_live_partial_applies_trailing_caption_window() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "source_live",
+            false,
+            json!({
+                "send_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "max_partial_caption_chars": 20,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    service.publish_source("one two three four five six seven eight", false);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["five six seven eight".to_string()],
+        "realtime partials must send a trailing window, not the full phrase"
+    );
+}
+
+#[tokio::test]
+async fn translation_final_after_partial_does_not_dump_full_text() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "max_partial_caption_chars": 20,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 50,
+                "avoid_duplicate_text": true
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let full = "one two three four five six seven eight";
+    let mut draft = payload_for_sequence(
+        21,
+        vec![
+            source_line_item("фраза"),
+            translation_live_draft_item(full, "translation_1", "en", "EN"),
+        ],
+    );
+    draft.completed_block_visible = false;
+    draft.lifecycle_state = LifecycleState::PartialOnly;
+    service.publish_payload(draft);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    service.publish_payload(payload_for_sequence(
+        21,
+        vec![
+            source_line_item("фраза"),
+            translation_line_item(full, "translation_1", "en", "EN"),
+        ],
+    ));
+    wait_for_requests(&requests, "SendStreamCaption", 2).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["five six seven eight".to_string(), String::new()],
+        "translation final after live partial must not re-send the full phrase"
+    );
+}
+
+#[tokio::test]
+async fn source_final_ignores_partial_caption_window() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "source_final_only",
+            false,
+            json!({
+                "send_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "max_partial_caption_chars": 20,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let full = "one two three four five six seven eight";
+    service.publish_source(full, true);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec![full.to_string()],
+        "finals without prior live partials must not be clipped by max_partial_caption_chars"
+    );
+}
+
+#[tokio::test]
+async fn translation_live_partial_applies_trailing_caption_window() {
+    let (service, requests) = start_with_mock(
+        obs_config_with_timing(
+            "translation_1",
+            false,
+            json!({
+                "send_partials": true,
+                "send_translation_partials": true,
+                "partial_throttle_ms": 0,
+                "min_partial_delta_chars": 1,
+                "max_partial_caption_chars": 20,
+                "final_replace_delay_ms": 0,
+                "clear_after_ms": 0,
+                "avoid_duplicate_text": false
+            }),
+        ),
+        MockObsClient::new(),
+    )
+    .await;
+
+    let mut draft = payload_for_sequence(
+        1,
+        vec![
+            source_line_item("длинный исходный текст"),
+            translation_live_draft_item(
+                "one two three four five six seven eight",
+                "translation_1",
+                "en",
+                "EN",
+            ),
+        ],
+    );
+    draft.completed_block_visible = false;
+    draft.lifecycle_state = LifecycleState::PartialOnly;
+    service.publish_payload(draft);
+    wait_for_requests(&requests, "SendStreamCaption", 1).await;
+
+    assert_eq!(
+        stream_caption_texts(&requests),
+        vec!["five six seven eight".to_string()],
+        "translation live partials must use the same trailing window as source_live"
+    );
+}

@@ -14,6 +14,20 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-08-08
+
+### Added
+
+- Compact Browser Speech worker: Live-tab checkbox `asr.browser.compact_worker_ui` opens `/google-asr-compact` in a Chrome `--app=` window (no address bar) with a reduced UI (status, Start/Stop/Save, language, advanced checkboxes, Live Partial Text only).
+
+### Fixed
+
+- OBS CC: realtime partials (`source_live` / translation live drafts) no longer send the full accumulated phrase — trailing window via `timing.max_partial_caption_chars` (default **80**, `0` = unlimited) scrolls by **whole words**; a final that follows live partials uses the same window (no full-text duplicate); finals without prior partials stay unclipped. Pending `clear_after` / `final_replace_delay` no longer block the worker — the next phrase/partial cancels the sleep immediately.
+- Browser Web Speech continuous: close multi-second gaps while the mic still hears speech — stall/rearm **9 s** (cold-start **4.5 s**); `mic_silent` no longer masks `web_speech_stalled`; recovery uses `stop()` (not abort) so phrases are not chopped into tiny finals.
+- Browser Web Speech overlap: silence rearm **8 s** (was 2.5 s) + `stop()`, **3 s** while mic is hot; forced-final floor **8 s**; orphan interim on active `onend`; stale soft-join partial no longer blocks rearm.
+- Browser Web Speech overlap: soft-join across handoffs (one `client_segment_id` until ~**1.8 s** ASR quiet or **450** chars); buddy shadow flush on handoff; soft-final does not blank the UI; hold display when Chrome trims the same interim hypothesis.
+- Worker settings (`continuous` / interim / force-finalization): dashboard Start/Save no longer clobbers these with a stale snapshot — deep-merge `asr` + omit worker-only keys. Recognition language still saves from the main UI.
+
 ## [0.6.3] - 2026-08-05
 
 ### Added
@@ -450,7 +464,8 @@ First VoiceSub release (successor to SST Desktop `0.4.4`). Stack and delivery ar
 
 Earlier `0.2.9.*` SST Desktop history lives in archived GitHub release notes and is not expanded here.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD
+[0.6.4]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1

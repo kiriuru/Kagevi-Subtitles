@@ -33,15 +33,15 @@ pub use normalize::{normalize_config_payload, repair_legacy_keep_completed_false
 pub use obs_normalize::{
     OBS_CC_DEFAULT_CLEAR_AFTER_MS, OBS_CC_DEFAULT_DEBUG_INPUT,
     OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS, OBS_CC_DEFAULT_HOST,
-    OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS, OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS,
-    OBS_CC_DEFAULT_PORT, OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS, OBS_CC_DEFAULT_USE_SSL,
-    OBS_CC_OUTPUT_MODES,
+    OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS, OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS,
+    OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS, OBS_CC_DEFAULT_PORT,
+    OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS, OBS_CC_DEFAULT_USE_SSL, OBS_CC_OUTPUT_MODES,
 };
 pub use paths::{
     AppConfig, HttpBindConfig, LEGACY_SST_CONFIG_JSON, ProjectPaths, RUNTIME_CONFIG_TOML,
-    WORKER_PATH, base_url_from_socket, discover_project_root, ensure_runtime_data_dirs,
-    install_root_from_bin_dir, locate_bin_dir, overlay_url, worker_url, worker_url_for_base,
-    worker_url_for_payload,
+    WORKER_COMPACT_PATH, WORKER_PATH, base_url_from_socket, discover_project_root,
+    ensure_runtime_data_dirs, install_root_from_bin_dir, locate_bin_dir, overlay_url, worker_url,
+    worker_url_for_base, worker_url_for_payload, worker_url_is_compact,
 };
 pub use profile_store::{ProfileError, ProfileStore};
 pub use secrets::{

@@ -23,6 +23,7 @@ export function ensureClientSegmentId(state: BrowserAsrState): string {
   state.currentSegmentLastFinalText = "";
   state.currentSegmentForcedFinalized = false;
   state.currentSegmentPeakPartialChars = 0;
+  state.overlapPhrasePrefix = "";
   return state.currentClientSegmentId;
 }
 
@@ -32,6 +33,7 @@ export function consumeCompletedSegment(state: BrowserAsrState): void {
   state.currentSegmentLastFinalText = "";
   state.currentSegmentForcedFinalized = false;
   state.currentSegmentPeakPartialChars = 0;
+  state.overlapPhrasePrefix = "";
 }
 
 export function resetSegmentTrackingFields(state: BrowserAsrState): void {
@@ -42,6 +44,10 @@ export function resetSegmentTrackingFields(state: BrowserAsrState): void {
   state.currentSegmentForcedFinalized = false;
   state.currentSegmentPeakPartialChars = 0;
   state.lastForcedFinal = null;
+  state.overlapPhrasePrefix = "";
+  state.overlapBuddyShadowPartial = "";
+  state.overlapBuddyShadowSlot = null;
+  state.overlapBuddyShadowAtMs = 0;
 }
 
 export function shouldSuppressDuplicatePartial(state: BrowserAsrState, text: string): boolean {

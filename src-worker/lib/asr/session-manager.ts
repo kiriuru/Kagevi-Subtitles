@@ -33,7 +33,7 @@ import {
   restartDelayForReason,
 } from "./restart-timing-logic";
 import { computeHealthDegradedReason } from "./health-signals-logic";
-import { evaluateWatchdogTick } from "./watchdog-logic";
+import { evaluateWatchdogTick, isMicHearingEnergy } from "./watchdog-logic";
 import { buildWorkerPayload } from "./worker-payload-logic";
 import { ensureSocketConnected, parseBrowserAsrControlMessage } from "./socket-bridge";
 import { waitUntilDocumentVisibleForRecognition } from "./visibility-wait-logic";
@@ -49,9 +49,17 @@ import { wireRecognitionHandlers } from "./recognition-handlers";
 import {
   recognitionOverlapActive,
   recoverGhostOverlapBuddy,
+  requestOverlapSilenceRearm,
   preStartNextOverlapInstance,
+  OVERLAP_FORCE_FINALIZE_MIN_MS,
 } from "./overlap-logic";
-import { maybeFlushAfterCommittedLongSegment } from "./long-segment-flush-logic";
+import { maybeFlushAfterCommittedLongSegment, noteSegmentPartialPeak } from "./long-segment-flush-logic";
+import {
+  appendOverlapPhrase,
+  preferStableOverlapPartial,
+  OVERLAP_PHRASE_COALESCE_MS,
+  OVERLAP_PHRASE_MAX_CHARS,
+} from "./overlap-phrase-logic";
 import { webSpeechRecognitionPolicy } from "./web-speech-policy";
 import { INSTANCE_DEFAULTS } from "./session-defaults";
 
@@ -69,6 +77,8 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
   visibleIdleRestartMs: number = INSTANCE_DEFAULTS.visibleIdleRestartMs;
   hiddenIdleRestartMs: number = INSTANCE_DEFAULTS.hiddenIdleRestartMs;
   stallDegradedAfterMs: number = INSTANCE_DEFAULTS.stallDegradedAfterMs;
+  activeSpeechStallMs: number = INSTANCE_DEFAULTS.activeSpeechStallMs;
+  coldStartStallMs: number = INSTANCE_DEFAULTS.coldStartStallMs;
   micSilentDegradedAfterMs: number = INSTANCE_DEFAULTS.micSilentDegradedAfterMs;
   recentMicActivityWindowMs: number = INSTANCE_DEFAULTS.recentMicActivityWindowMs;
   minimumReconnectIntervalMs: number = INSTANCE_DEFAULTS.minimumReconnectIntervalMs;
@@ -229,6 +239,7 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
   }
 
   resetSegmentTrackingInternal(): void {
+    this.clearOverlapPhraseCoalesceTimerInternal();
     resetSegmentTrackingFields(this.state);
     this.clearForceFinalizeTimerInternal();
   }
@@ -346,6 +357,122 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     }
   }
 
+  clearOverlapPhraseCoalesceTimerInternal(): void {
+    if (this.state.overlapPhraseCoalesceTimer) {
+      clearTimeout(this.state.overlapPhraseCoalesceTimer);
+      this.state.overlapPhraseCoalesceTimer = null;
+    }
+  }
+
+  scheduleOverlapPhraseCoalesceInternal(): void {
+    this.clearOverlapPhraseCoalesceTimerInternal();
+    if (!recognitionOverlapActive(this.state) || !this.state.desiredRunning) {
+      return;
+    }
+    if (!String(this.state.overlapPhrasePrefix || "").trim()) {
+      return;
+    }
+    // Coalesce on ASR quiet only (timer resets on soft/interim). Do NOT gate on mic RMS —
+    // noisy interfaces keep mic "hot" forever and never finalize (1900+ char partials).
+    this.state.overlapPhraseCoalesceTimer = window.setTimeout(() => {
+      this.state.overlapPhraseCoalesceTimer = null;
+      if (!recognitionOverlapActive(this.state) || !this.state.desiredRunning) {
+        return;
+      }
+      this.hardCommitOverlapPhraseInternal("overlap-phrase-coalesce");
+    }, OVERLAP_PHRASE_COALESCE_MS);
+  }
+
+  /**
+   * Keep one client_segment_id across Chrome overlap finals; emit growing partial until silence coalesce.
+   */
+  softCommitOverlapPhraseInternal(rawText: string, reason: string): boolean {
+    if (!recognitionOverlapActive(this.state) || !this.state.desiredRunning) {
+      return false;
+    }
+    const chunk = this.normalizeTranscriptTextInternal(rawText);
+    if (!chunk) {
+      return false;
+    }
+    const joinedRaw = appendOverlapPhrase(this.state.overlapPhrasePrefix || "", chunk);
+    const joined = preferStableOverlapPartial(
+      this.state.currentPartial || this.state.overlapPhrasePrefix || "",
+      joinedRaw,
+    );
+    const clientSegmentId = this.ensureClientSegmentIdInternal();
+    // ensureClientSegmentId may clear prefix when opening a new segment id — restore joined text.
+    this.state.overlapPhrasePrefix = joined;
+    this.clearForceFinalizeTimerInternal();
+    this.state.currentPartial = joined;
+    this.state.currentPartialStableSinceMs = this.now();
+    this.state.currentSegmentForcedFinalized = false;
+    this.options.setPartialText?.(joined);
+    noteSegmentPartialPeak(this.state, joined);
+    if (!this.shouldSuppressDuplicatePartialInternal(joined)) {
+      this.state.currentSegmentLastPartialText = this.normalizeTranscriptTextInternal(joined);
+      this.sendUpdateInternal({
+        partial: joined,
+        final: "",
+        is_final: false,
+        source_lang: this.state.sourceLang,
+        client_segment_id: clientSegmentId,
+        forced_final: false,
+      });
+    }
+    this.appendLogInternal(`overlap: soft-join phrase (${reason}, chars=${joined.length})`);
+    this.emitWorkerStatus("overlap-phrase-soft");
+    this.setStatusInternal("interim");
+    if (joined.length >= OVERLAP_PHRASE_MAX_CHARS) {
+      return this.hardCommitOverlapPhraseInternal("overlap-phrase-max-chars");
+    }
+    this.scheduleOverlapPhraseCoalesceInternal();
+    this.updateCountersInternal();
+    return true;
+  }
+
+  hardCommitOverlapPhraseInternal(reason: string): boolean {
+    this.clearOverlapPhraseCoalesceTimerInternal();
+    const text = this.normalizeTranscriptTextInternal(
+      this.state.overlapPhrasePrefix || this.state.currentPartial || ""
+    );
+    if (!text) {
+      this.state.overlapPhrasePrefix = "";
+      return false;
+    }
+    const clientSegmentId =
+      this.state.currentClientSegmentId || this.ensureClientSegmentIdInternal();
+    if (this.shouldSuppressFinalInternal(text)) {
+      this.state.overlapPhrasePrefix = "";
+      this.state.currentPartial = "";
+      this.options.setPartialText?.("");
+      this.consumeCompletedSegmentInternal();
+      return false;
+    }
+    this.clearForceFinalizeTimerInternal();
+    this.state.finalCount = Number(this.state.finalCount || 0) + 1;
+    this.state.currentSegmentLastFinalText = text;
+    this.state.overlapPhrasePrefix = "";
+    this.state.currentPartial = "";
+    this.state.currentPartialStableSinceMs = 0;
+    this.options.setFinalText?.(text);
+    this.options.setPartialText?.("");
+    this.sendUpdateInternal({
+      partial: "",
+      final: text,
+      is_final: true,
+      source_lang: this.state.sourceLang,
+      client_segment_id: clientSegmentId,
+      forced_final: false,
+    });
+    this.consumeCompletedSegmentInternal();
+    this.appendLogInternal(`overlap: hard-commit phrase (${reason}, chars=${text.length})`);
+    this.emitWorkerStatus("overlap-phrase-final");
+    this.setStatusInternal("final");
+    maybeFlushAfterCommittedLongSegment(this, text, reason || "overlap-phrase-coalesce");
+    this.updateCountersInternal();
+    return true;
+  }
+
   /**
    * Commit orphan interim as forced final. Used by the force-finalize timer and by
    * overlap active onend — Chrome continuous=false often ends with interim only, and
@@ -357,6 +484,17 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
       return false;
     }
     const finalText = this.state.currentPartial;
+    // Overlap: soft-join instead of hard final so Chrome pauses do not chop the phrase.
+    if (recognitionOverlapActive(this.state)) {
+      const softOk = this.softCommitOverlapPhraseInternal(finalText, reason || "force-finalize");
+      if (softOk) {
+        this.state.missingFinalCount = Number(this.state.missingFinalCount || 0) + 1;
+        this.state.forcedCount = Number(this.state.forcedCount || 0) + 1;
+        preStartNextOverlapInstance(this, reason || "force-finalize");
+        this.updateCountersInternal();
+      }
+      return softOk;
+    }
     const clientSegmentId = this.ensureClientSegmentIdInternal();
     if (this.shouldSuppressFinalInternal(finalText, { forcedFinal: true })) {
       this.state.currentPartial = "";
@@ -388,10 +526,6 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     this.options.setFinalText?.(finalText);
     this.options.setPartialText?.("");
     this.setStatusInternal("forced-finalized");
-    // 0.5.5: force-finalize commits text AND prestarts buddy while active still lives.
-    if (recognitionOverlapActive(this.state)) {
-      preStartNextOverlapInstance(this, reason || "force-finalize");
-    }
     maybeFlushAfterCommittedLongSegment(this, finalText, reason || "force-finalize");
     this.updateCountersInternal();
     return true;
@@ -402,7 +536,11 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     if (!this.isForceFinalizationEnabled() || !this.state.currentPartial) {
       return;
     }
-    const timeoutMs = Number(this.state.forceFinalizationTimeoutMs || 1600);
+    let timeoutMs = Number(this.state.forceFinalizationTimeoutMs || 1600);
+    // Overlap already ends on Chrome pauses; a short forced-final timer double-chops phrases.
+    if (this.recognitionOverlapActiveInternal()) {
+      timeoutMs = Math.max(timeoutMs, OVERLAP_FORCE_FINALIZE_MIN_MS);
+    }
     this.state.forceFinalizeTimer = window.setTimeout(() => {
       this.commitForcedPartialInternal("force-finalize");
     }, timeoutMs);
@@ -431,6 +569,7 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
 
   clearAllTimersInternal(): void {
     this.clearForceFinalizeTimerInternal();
+    this.clearOverlapPhraseCoalesceTimerInternal();
     this.clearRestartTimerInternal();
     this.clearReconnectTimerInternal();
   }
@@ -452,6 +591,21 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
       return false;
     }
     const finalText = this.normalizeTranscriptTextInternal(this.state.currentPartial);
+    if (recognitionOverlapActive(this.state)) {
+      const softOk = this.softCommitOverlapPhraseInternal(
+        finalText,
+        reason || "browser_recognition_interrupted"
+      );
+      if (softOk) {
+        this.state.missingFinalCount = Number(this.state.missingFinalCount || 0) + 1;
+        this.state.forcedCount = Number(this.state.forcedCount || 0) + 1;
+        this.state.browserForcedFinalOnInterruptionCount =
+          Number(this.state.browserForcedFinalOnInterruptionCount || 0) + 1;
+        preStartNextOverlapInstance(this, "forced-finalize-interruption");
+        this.updateCountersInternal();
+      }
+      return softOk;
+    }
     const clientSegmentId = this.state.currentClientSegmentId || this.ensureClientSegmentIdInternal();
     if (this.shouldSuppressFinalInternal(finalText, { forcedFinal: true })) {
       return false;
@@ -484,9 +638,6 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
       forced_final_reason: String(reason || "browser_recognition_interrupted"),
     });
     this.setStatusInternal("forced-finalized");
-    if (recognitionOverlapActive(this.state)) {
-      preStartNextOverlapInstance(this, "forced-finalize-interruption");
-    }
     maybeFlushAfterCommittedLongSegment(this, finalText, "forced-finalize-interruption");
     this.updateCountersInternal();
     return true;
@@ -545,8 +696,8 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     performControlledStart(this, reason);
   }
 
-  transitionToStoppingInternal(reason: string): void {
-    transitionToStopping(this, reason);
+  transitionToStoppingInternal(reason: string, options: { abort?: boolean } = {}): void {
+    transitionToStopping(this, reason, options);
   }
 
   ensureSocketConnectedInternal(): void {
@@ -761,6 +912,12 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
 
   stop(): void {
     this.appendLogInternal("stop requested by user");
+    if (
+      recognitionOverlapActive(this.state) &&
+      String(this.state.overlapPhrasePrefix || this.state.currentPartial || "").trim()
+    ) {
+      this.hardCommitOverlapPhraseInternal("user-stop");
+    }
     this.state.desiredRunning = false;
     this.state.pendingStart = false;
     this.state.generationId = Number(this.state.generationId || 0) + 1;
@@ -849,47 +1006,49 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
     }
   }
 
+  private handleActiveSpeechStallRecovery(now: number): boolean {
+    if (
+      this.recognitionOverlapActiveInternal() ||
+      this.state.effectiveContinuousMode === "segmented_restart" ||
+      this.state.browserSupervisorState !== "running"
+    ) {
+      return false;
+    }
+    const orphanPartial = String(this.state.currentPartial || "").trim();
+    if (orphanPartial) {
+      // Prefer committing the live draft over killing the session — the old path
+      // force-finalized AND restarted, causing multi-second recognition gaps.
+      if (this.commitForcedPartialInternal("watchdog-stall-commit")) {
+        this.markActivityInternal("result");
+        this.refreshHealthSignalsInternal();
+        this.appendLogInternal(
+          "watchdog: committed stalled partial without recognition restart",
+        );
+        this.emitWorkerStatus("watchdog-stall-commit");
+        return true;
+      }
+    }
+    const lastForcedAt = Number(this.state.lastForcedFinal?.at_ms || 0);
+    if (lastForcedAt > 0 && now - lastForcedAt < 5000) {
+      this.appendLogInternal(
+        "watchdog: skip stall rearm (recent forced final; give Chrome settle time)",
+      );
+      return true;
+    }
+    this.state.pendingStart = true;
+    this.state.pendingRestartReason = "watchdog_stall";
+    this.appendLogInternal("watchdog rearm: web speech stalled with active mic");
+    // stop() — not abort() — so Chrome can emit a final instead of hard-chopping the phrase.
+    this.transitionToStoppingInternal("watchdog-stall-health");
+    return true;
+  }
+
   private runWatchdog(): void {
     if (!this.state.desiredRunning) {
       return;
     }
     const now = this.now();
     this.refreshHealthSignalsInternal();
-    // Stall-rearm is for native continuous only. Overlap uses dual-buffer
-    // handoff (prestart on final) instead of aborting quiet slots every ~2.5s.
-    if (
-      this.state.healthDegradedReason === "web_speech_stalled" &&
-      this.state.browserSupervisorState === "running" &&
-      !this.recognitionOverlapActiveInternal() &&
-      this.state.effectiveContinuousMode !== "segmented_restart"
-    ) {
-      const orphanPartial = String(this.state.currentPartial || "").trim();
-      if (orphanPartial) {
-        // Prefer committing the live draft over killing the session — the old path
-        // force-finalized AND restarted, causing multi-second recognition gaps.
-        if (this.commitForcedPartialInternal("watchdog-stall-commit")) {
-          this.markActivityInternal("result");
-          this.refreshHealthSignalsInternal();
-          this.appendLogInternal(
-            "watchdog: committed stalled partial without recognition restart",
-          );
-          this.emitWorkerStatus("watchdog-stall-commit");
-          return;
-        }
-      }
-      const lastForcedAt = Number(this.state.lastForcedFinal?.at_ms || 0);
-      if (lastForcedAt > 0 && now - lastForcedAt < 2500) {
-        this.appendLogInternal(
-          "watchdog: skip stall rearm (recent forced final; give Chrome settle time)",
-        );
-        return;
-      }
-      this.state.pendingStart = true;
-      this.state.pendingRestartReason = "watchdog_stall";
-      this.appendLogInternal("watchdog rearm: web speech stalled with active mic");
-      this.transitionToStoppingInternal("watchdog-stall-health");
-      return;
-    }
     const tick = evaluateWatchdogTick({
       state: this.state,
       nowMs: now,
@@ -899,9 +1058,23 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
         maxStoppingMs: this.maxStoppingMs,
         hiddenIdleRestartMs: this.hiddenIdleRestartMs,
         visibleIdleRestartMs: this.visibleIdleRestartMs,
+        activeSpeechStallMs: this.activeSpeechStallMs,
+        coldStartStallMs: this.coldStartStallMs,
+        recentMicActivityWindowMs: this.recentMicActivityWindowMs,
+        voiceRmsThreshold: this.voiceBelowRecognitionRmsThreshold,
       },
       documentHidden: document.hidden,
     });
+    // Stall-rearm is for native continuous only. Overlap uses dual-buffer
+    // handoff (prestart on final) instead of aborting quiet slots every ~2.5s.
+    if (
+      tick.type === "active_speech_stall" ||
+      this.state.healthDegradedReason === "web_speech_stalled"
+    ) {
+      if (this.handleActiveSpeechStallRecovery(now)) {
+        return;
+      }
+    }
     if (tick.type === "session_cycle") {
       this.state.browserCycleCount = Number(this.state.browserCycleCount || 0) + 1;
       this.state.pendingStart = true;
@@ -949,10 +1122,19 @@ export class BrowserAsrSessionManager implements AsrManagerHost {
       this.state.pendingStart = true;
       this.state.pendingRestartReason = "watchdog_stall";
       this.appendLogInternal("watchdog forced rearm");
-      this.transitionToStoppingInternal("watchdog");
+      this.transitionToStoppingInternal("watchdog", { abort: true });
       return;
     }
     if (recoverGhostOverlapBuddy(this, now)) {
+      return;
+    }
+    const micHot = isMicHearingEnergy({
+      state: this.state,
+      nowMs: now,
+      recentMicActivityWindowMs: this.recentMicActivityWindowMs,
+      voiceRmsThreshold: this.voiceBelowRecognitionRmsThreshold,
+    });
+    if (requestOverlapSilenceRearm(this, "watchdog", { micHot })) {
       return;
     }
     if (tick.type === "heartbeat" || tick.type === "cycle_pending") {

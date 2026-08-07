@@ -19,7 +19,7 @@ pub use diagnostics::ObsCaptionDiagnostics;
 pub use service::ObsCaptionService;
 pub use settings::ObsCaptionSettings;
 pub use text::{
-    normalize_text, select_payload_live_draft_text, select_payload_text,
-    should_throttle_partial_update,
+    finalize_after_partials, normalize_text, select_payload_live_draft_text, select_payload_text,
+    should_throttle_partial_update, trailing_caption_window,
 };
 pub use trace::{ObsCaptionLog, StructuredLogFn, structured_log_from_runtime_logger};

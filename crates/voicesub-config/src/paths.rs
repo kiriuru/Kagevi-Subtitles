@@ -7,6 +7,9 @@ use serde_json::Value;
 /// Canonical browser worker page (SST-compatible path).
 pub const WORKER_PATH: &str = "/google-asr";
 
+/// Compact Web Speech worker page (app-window launch; no omnibox).
+pub const WORKER_COMPACT_PATH: &str = "/google-asr-compact";
+
 /// SST 0.4.x persisted settings file inside `user-data/`.
 pub const LEGACY_SST_CONFIG_JSON: &str = "config.json";
 
@@ -146,8 +149,28 @@ pub fn worker_url_for_base(base: &str) -> String {
     format!("{}{}", base.trim_end_matches('/'), WORKER_PATH)
 }
 
+fn worker_path_for_payload(payload: &Value) -> &'static str {
+    let compact = payload
+        .get("asr")
+        .and_then(|asr| asr.get("browser"))
+        .and_then(|browser| browser.get("compact_worker_ui"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    if compact {
+        WORKER_COMPACT_PATH
+    } else {
+        WORKER_PATH
+    }
+}
+
+/// True when the worker launch URL targets the compact app-window page.
+pub fn worker_url_is_compact(worker_url: &str) -> bool {
+    worker_url.contains(WORKER_COMPACT_PATH)
+}
+
 pub fn worker_url_for_payload(base: &str, payload: &Value) -> String {
-    let mut url = worker_url_for_base(base);
+    let path = worker_path_for_payload(payload);
+    let mut url = format!("{}{}", base.trim_end_matches('/'), path);
     let mut params = vec!["autostart=1".to_string()];
     if let Some(lang) = payload
         .get("ui")
@@ -235,6 +258,16 @@ mod tests {
         });
         let url = worker_url_for_payload("http://127.0.0.1:9123", &payload);
         assert_eq!(url, "http://127.0.0.1:9123/google-asr?autostart=1");
+    }
+
+    #[test]
+    fn worker_url_for_payload_uses_compact_path_when_enabled() {
+        let payload = serde_json::json!({
+            "asr": { "browser": { "compact_worker_ui": true } }
+        });
+        let url = worker_url_for_payload("http://127.0.0.1:9123", &payload);
+        assert_eq!(url, "http://127.0.0.1:9123/google-asr-compact?autostart=1");
+        assert!(worker_url_is_compact(&url));
     }
 
     #[test]

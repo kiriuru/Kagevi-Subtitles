@@ -1,4 +1,5 @@
 import type { BrowserAsrState, TimingLimits } from "./types";
+import { isMicHearingEnergy } from "./watchdog-logic";
 
 export function computeHealthDegradedReason(ctx: {
   state: BrowserAsrState;
@@ -11,7 +12,12 @@ export function computeHealthDegradedReason(ctx: {
     .trim()
     .toLowerCase();
   const micActivityAgeMs = state.lastMicActivityAt > 0 ? Math.max(0, nowMs - Number(state.lastMicActivityAt)) : null;
+  // Exclude lastEventAtMs (onsoundstart) — it masks dead continuous sessions while mic hears audio.
   const recognitionQuietMs = Math.max(
+    0,
+    nowMs - Math.max(Number(state.lastResultAtMs || 0), Number(state.lastStartAtMs || 0))
+  );
+  const recognitionQuietIncludingSoundMs = Math.max(
     0,
     nowMs - Math.max(Number(state.lastEventAtMs || 0), Number(state.lastResultAtMs || 0), Number(state.lastStartAtMs || 0))
   );
@@ -23,6 +29,31 @@ export function computeHealthDegradedReason(ctx: {
   if (trackReadyState && trackReadyState !== "live") {
     return "mic_track_unavailable";
   }
+
+  // Overlap/segmented sessions are intentionally short; silence rearm recovers them.
+  // Do not surface web_speech_stalled — it falsely marks healthy ping-pong as degraded.
+  const overlapOrSegmented =
+    state.effectiveContinuousMode === "segmented_restart" ||
+    (Array.isArray(state.recognitionOverlapSlots) && state.recognitionOverlapSlots.length === 2);
+
+  const micHot = isMicHearingEnergy({
+    state,
+    nowMs,
+    recentMicActivityWindowMs: limits.recentMicActivityWindowMs,
+    voiceRmsThreshold: limits.voiceBelowRecognitionRmsThreshold,
+  });
+
+  // Stall before mic_silent — otherwise quiet-gate dips masked dead Web Speech for 12–15s.
+  if (
+    !overlapOrSegmented &&
+    !ctx.documentHidden &&
+    state.browserSupervisorState === "running" &&
+    recognitionQuietMs >= limits.stallDegradedAfterMs &&
+    micHot
+  ) {
+    return "web_speech_stalled";
+  }
+
   if (
     !ctx.documentHidden &&
     state.browserSupervisorState === "running" &&
@@ -40,30 +71,11 @@ export function computeHealthDegradedReason(ctx: {
   if (
     !ctx.documentHidden &&
     state.browserSupervisorState === "running" &&
-    recognitionQuietMs >= limits.voiceBelowRecognitionGraceMs &&
+    recognitionQuietIncludingSoundMs >= limits.voiceBelowRecognitionGraceMs &&
     voiceLevelGoodRecently &&
     Number(state.noSpeechCount || 0) >= limits.voiceBelowRecognitionMinNoSpeech
   ) {
     return "voice_below_recognition_threshold";
-  }
-  // Overlap/segmented sessions are intentionally short; silence rearm recovers them.
-  // Do not surface web_speech_stalled — it falsely marks healthy ping-pong as degraded.
-  if (
-    state.effectiveContinuousMode === "segmented_restart" ||
-    (Array.isArray(state.recognitionOverlapSlots) &&
-      state.recognitionOverlapSlots.length === 2)
-  ) {
-    return null;
-  }
-
-  if (
-    !ctx.documentHidden &&
-    state.browserSupervisorState === "running" &&
-    recognitionQuietMs >= limits.stallDegradedAfterMs &&
-    micActivityAgeMs != null &&
-    micActivityAgeMs <= limits.recentMicActivityWindowMs
-  ) {
-    return "web_speech_stalled";
   }
   return null;
 }

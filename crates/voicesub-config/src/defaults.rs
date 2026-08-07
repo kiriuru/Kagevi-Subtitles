@@ -32,6 +32,7 @@ pub fn default_config_payload() -> Value {
             "browser": {
                 "recognition_language": "en-US",
                 "worker_launch_browser": "auto",
+                "compact_worker_ui": false,
                 "interim_results": true,
                 "continuous_results": true,
                 "force_finalization_enabled": true,
@@ -101,6 +102,7 @@ pub fn default_config_payload() -> Value {
                 "send_translation_partials": crate::OBS_CC_DEFAULT_SEND_TRANSLATION_PARTIALS,
                 "partial_throttle_ms": crate::OBS_CC_DEFAULT_PARTIAL_THROTTLE_MS,
                 "min_partial_delta_chars": crate::OBS_CC_DEFAULT_MIN_PARTIAL_DELTA_CHARS,
+                "max_partial_caption_chars": crate::OBS_CC_DEFAULT_MAX_PARTIAL_CAPTION_CHARS,
                 "final_replace_delay_ms": crate::OBS_CC_DEFAULT_FINAL_REPLACE_DELAY_MS,
                 "clear_after_ms": crate::OBS_CC_DEFAULT_CLEAR_AFTER_MS,
                 "avoid_duplicate_text": true

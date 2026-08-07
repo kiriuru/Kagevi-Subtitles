@@ -29,6 +29,7 @@
       send_translation_partials?: boolean;
       partial_throttle_ms?: number;
       min_partial_delta_chars?: number;
+      max_partial_caption_chars?: number;
       final_replace_delay_ms?: number;
       clear_after_ms?: number;
       avoid_duplicate_text?: boolean;
@@ -286,6 +287,21 @@
                 patchNested("timing", { min_partial_delta_chars: Number((e.currentTarget as HTMLInputElement).value) })}
             />
           </label>
+          <label class="stack-field">
+            <span>{tr("obs.max_partial_caption_chars")}</span>
+            <input
+              class="control"
+              type="number"
+              min="0"
+              max="500"
+              value={obs.timing?.max_partial_caption_chars ?? 80}
+              on:input={(e) =>
+                patchNested("timing", {
+                  max_partial_caption_chars: Number((e.currentTarget as HTMLInputElement).value),
+                })}
+            />
+          </label>
+          <p class="muted panel-note" style="grid-column: 1 / -1;">{tr("obs.max_partial_caption_chars.help")}</p>
         {/if}
         <label class="stack-field">
           <span>{tr("obs.final_delay")}</span>

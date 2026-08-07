@@ -5,15 +5,23 @@ import { createBrowserAsrStateSeed } from "./session-state";
 import {
   buildOverlapTelemetrySnapshot,
   evaluateOverlapBuddyGhost,
+  evaluateOverlapSilenceRearm,
+  flushOverlapBuddyShadowOnHandoff,
   handleInactiveOverlapBuddyEnded,
   handleOverlapRecognitionEnded,
+  noteOverlapBuddyShadow,
   overlapResultAllowed,
   overlapSlotInactive,
   recognitionOverlapActive,
   preStartNextOverlapInstance,
   recoverGhostOverlapBuddy,
   shouldIgnoreOverlapBuddyError,
+  switchToNextOverlapInstance,
   tryOverlapSoftRearmOnActiveEnd,
+  DEFAULT_OVERLAP_SILENCE_REARM_MS,
+  DEFAULT_OVERLAP_HOT_MIC_SILENCE_REARM_MS,
+  DEFAULT_OVERLAP_EARLY_WARM_MS,
+  onOverlapActiveSlotReady,
 } from "./overlap-logic";
 
 import type { AsrManagerHost, BrowserAsrState } from "./types";
@@ -74,6 +82,7 @@ function mockManager(state: BrowserAsrState, nowMs = 10_000): AsrManagerHost {
     setStatusInternal: vi.fn(),
     clearForceFinalizeTimerInternal: vi.fn(),
     scheduleRestartInternal: vi.fn(),
+    softCommitOverlapPhraseInternal: vi.fn(() => true),
   } as unknown as AsrManagerHost;
 }
 
@@ -361,5 +370,99 @@ describe("overlap-logic", () => {
     expect(manager.emitWorkerStatus).toHaveBeenCalledWith(
       "overlap-buddy-ghost-recovered",
     );
+  });
+
+  it("does not silence-rearm before the raised cold-start budget", () => {
+    const state = overlapState(0, 10_000);
+    state.currentPartial = "";
+    state.lastStartAtMs = 10_000;
+    state.lastResultAtMs = 0;
+    state.recognitionOverlapSlotListening = [true, false];
+    expect(evaluateOverlapSilenceRearm(state, 10_000 + 2500)).toBe(false);
+    expect(
+      evaluateOverlapSilenceRearm(state, 10_000 + DEFAULT_OVERLAP_SILENCE_REARM_MS),
+    ).toBe(true);
+  });
+
+  it("silence-rearms sooner when mic is hot", () => {
+    const state = overlapState(0, 10_000);
+    state.currentPartial = "";
+    state.lastStartAtMs = 10_000;
+    state.lastResultAtMs = 0;
+    state.recognitionOverlapSlotListening = [true, false];
+    expect(
+      evaluateOverlapSilenceRearm(state, 10_000 + DEFAULT_OVERLAP_HOT_MIC_SILENCE_REARM_MS, {
+        micHot: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("silence-rearms despite stale soft-join partial from previous slot", () => {
+    const state = overlapState(0, 20_000);
+    state.currentPartial = "stale joined text";
+    state.currentPartialStableSinceMs = 9_000;
+    state.lastStartAtMs = 12_000;
+    state.lastResultAtMs = 11_000;
+    state.recognitionOverlapSlotListening = [true, false];
+    expect(
+      evaluateOverlapSilenceRearm(state, 12_000 + DEFAULT_OVERLAP_SILENCE_REARM_MS),
+    ).toBe(true);
+  });
+
+  it("does not silence-rearm while live partial belongs to this slot start", () => {
+    const state = overlapState(0, 20_000);
+    state.currentPartial = "live";
+    state.currentPartialStableSinceMs = 12_500;
+    state.lastStartAtMs = 12_000;
+    state.lastResultAtMs = 11_000;
+    state.recognitionOverlapSlotListening = [true, false];
+    expect(
+      evaluateOverlapSilenceRearm(state, 12_000 + DEFAULT_OVERLAP_SILENCE_REARM_MS),
+    ).toBe(false);
+  });
+
+  it("does not silence-rearm after the slot already got ASR results", () => {
+    const state = overlapState(0, 20_000);
+    state.currentPartial = "";
+    state.lastStartAtMs = 10_000;
+    state.lastResultAtMs = 12_000;
+    state.recognitionOverlapSlotListening = [true, false];
+    expect(evaluateOverlapSilenceRearm(state, 20_000)).toBe(false);
+  });
+
+  it("does not early-warm buddy on active slot ready (Chrome dual-ASR thrash)", () => {
+    const state = overlapState(0, 10_000);
+    state.recognitionOverlapPrestarted = false;
+    state.recognitionOverlapSlotListening = [true, false];
+    const manager = mockManager(state, 10_000);
+    onOverlapActiveSlotReady(manager, 0);
+    expect(state.overlapPrestartTimerArmed).toBe(false);
+    vi.advanceTimersByTime(DEFAULT_OVERLAP_EARLY_WARM_MS + 500);
+    expect(state.recognitionOverlapPrestarted).toBe(false);
+    expect(state.recognitionOverlapSlots![1].start).not.toHaveBeenCalled();
+  });
+
+  it("caches buddy shadow and flushes it on handoff to the promoted slot", () => {
+    const state = overlapState(0, 20_000);
+    noteOverlapBuddyShadow(state, 1, "hello from buddy", 19_500);
+    expect(state.overlapBuddyShadowPartial).toBe("hello from buddy");
+    expect(state.overlapBuddyShadowSlot).toBe(1);
+
+    const manager = mockManager(state, 20_000);
+    switchToNextOverlapInstance(manager, 0);
+    expect(manager.softCommitOverlapPhraseInternal).toHaveBeenCalledWith(
+      "hello from buddy",
+      "overlap-buddy-shadow-flush",
+    );
+    expect(manager.emitWorkerStatus).toHaveBeenCalledWith("overlap-buddy-shadow-flush");
+    expect(state.overlapBuddyShadowPartial).toBe("");
+  });
+
+  it("does not flush stale buddy shadow", () => {
+    const state = overlapState(1, 20_000);
+    noteOverlapBuddyShadow(state, 1, "stale", 10_000);
+    const manager = mockManager(state, 20_000);
+    expect(flushOverlapBuddyShadowOnHandoff(manager)).toBe(false);
+    expect(manager.softCommitOverlapPhraseInternal).not.toHaveBeenCalled();
   });
 });

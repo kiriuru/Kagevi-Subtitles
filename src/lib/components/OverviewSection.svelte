@@ -268,6 +268,24 @@
 
             </label>
 
+            <label class="checkbox-row recognition-compact-row">
+
+              <input
+
+                type="checkbox"
+
+                checked={Boolean(browser.compact_worker_ui)}
+
+                on:change={(e) =>
+
+                  patchBrowser({ compact_worker_ui: (e.currentTarget as HTMLInputElement).checked })}
+
+              />
+
+              <span>{tr("overview.recognition.compact_worker_ui")}</span>
+
+            </label>
+
           {/if}
 
         {:else}
@@ -463,6 +481,22 @@
     font-size: 13px;
 
     line-height: 1.45;
+
+  }
+
+
+
+  .recognition-compact-row {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: var(--space-2);
+
+    font-size: 14px;
+
+    line-height: 1.4;
 
   }
 
