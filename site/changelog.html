@@ -75,8 +75,21 @@
           <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
             
 <p>This file covers the desktop line: <strong>Kagevi Subtitles</strong> (formerly VoiceSub, from <code>0.5.0</code>).</p>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...HEAD">Unreleased</a></h2>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3">0.6.3</a> - 2026-08-04</h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4">0.6.4</a> - 2026-08-08</h2>
+<h3>Added</h3>
+<ul>
+<li>Compact Browser Speech worker: Live-tab checkbox <code>asr.browser.compact_worker_ui</code> opens <code>/google-asr-compact</code> in a Chrome <code>--app=</code> window (no address bar) with a reduced UI (status, Start/Stop/Save, language, advanced checkboxes, Live Partial Text only).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS CC: realtime partials (<code>source_live</code> / translation live drafts) no longer send the full accumulated phrase — trailing window via <code>timing.max_partial_caption_chars</code> (default <strong>80</strong>, <code>0</code> = unlimited) scrolls by <strong>whole words</strong>; a final that follows live partials uses the same window (no full-text duplicate); finals without prior partials stay unclipped. Pending <code>clear_after</code> / <code>final_replace_delay</code> no longer block the worker — the next phrase/partial cancels the sleep immediately.</li>
+<li>Browser Web Speech continuous: close multi-second gaps while the mic still hears speech — stall/rearm <strong>9 s</strong> (cold-start <strong>4.5 s</strong>); <code>mic_silent</code> no longer masks <code>web_speech_stalled</code>; recovery uses <code>stop()</code> (not abort) so phrases are not chopped into tiny finals.</li>
+<li>Browser Web Speech overlap: silence rearm <strong>8 s</strong> (was 2.5 s) + <code>stop()</code>, <strong>3 s</strong> while mic is hot; forced-final floor <strong>8 s</strong>; orphan interim on active <code>onend</code>; stale soft-join partial no longer blocks rearm.</li>
+<li>Browser Web Speech overlap: soft-join across handoffs (one <code>client_segment_id</code> until ~<strong>1.8 s</strong> ASR quiet or <strong>450</strong> chars); buddy shadow flush on handoff; soft-final does not blank the UI; hold display when Chrome trims the same interim hypothesis.</li>
+<li>Worker settings (<code>continuous</code> / interim / force-finalization): dashboard Start/Save no longer clobbers these with a stale snapshot — deep-merge <code>asr</code> + omit worker-only keys. Recognition language still saves from the main UI.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3">0.6.3</a> - 2026-08-05</h2>
 <h3>Added</h3>
 <ul>
 <li>In-app auto-update via official <code>tauri-plugin-updater</code> (free minisign signatures, no paid Authenticode): banner <strong>Install update</strong> → download/install NSIS → relaunch; <code>latest.json</code> on GitHub Releases; keys under <code>secrets/</code> (gitignored).</li>
@@ -86,12 +99,25 @@
 </ul>
 <h3>Changed</h3>
 <ul>
+<li>Browser worker: visible-window idle watchdog rearm after <strong>15 s</strong> without transcript (was 30 s), so quiet Web Speech stalls recover sooner.</li>
 <li>Style → font picker: alphabet tags no longer follow UI locale — always shown in the matching script so CJK / Latin-only coverage is visible at a glance.</li>
 <li>Desktop updater: NSIS installer is staged under the install/project root (not <code>%TEMP%</code>); leftovers are deleted on the next launch after a successful update (or immediately on a failed attempt).</li>
+<li>NSIS upgrade: before copying resources, wipe shipped <code>$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}</code> (and the same under <code>resources\bin</code>) so orphaned Vite content-hash files and other leftovers from prior builds cannot accumulate across updates; <code>user-data/</code> and <code>logs/</code> are never touched.</li>
+<li>TTS sidecar: <code>build_runtime.py</code> builds Nuitka in a work tree and ships only <code>google_tts_fetch.exe</code>; <code>npm run scrub:shipped-bin</code> (from <code>build-release.ps1</code>) refuses to package <code>*.build</code> / <code>runtime/build</code>.</li>
 <li>Docs / UI: <code>microsoft_edge</code> marked unreliable — Microsoft’s anonymous Edge path can fail with <strong>HTTP 404</strong>; prefer Bing / Google Web when it breaks.</li>
 </ul>
 <h3>Fixed</h3>
 <ul>
+<li>OBS overlay: entrance effects readable again — opacity start lowered from ≥0.85; first (often long) ASR partial no longer drops <code>fade</code>/<code>blur_in</code>/<code>glow</code> via the 12-char cap (cap applies only to mid-phrase bursts); stronger glow + <code>text-shadow</code> CEF fallback; cache-bust <code>?v=20260805c</code>.</li>
+<li>OBS overlay: final translation after a live draft no longer replays entrance (including draft→final text refine / duplicate finals) — fade/glow from opacity 0 was re-blinking already-painted glyphs; cache-bust <code>?v=20260805d</code>.</li>
+<li>Loopback API: session token is no longer embedded in HTML for <code>/</code>, <code>/tts</code>, <code>/local-asr</code>, <code>/google-asr</code> (any local browser could previously control <code>/api/*</code>). App HTML itself now requires bootstrap/cookie (401 otherwise); unauthenticated <code>/tts</code> serves only a minimal Twitch OAuth shell. Tauri/Chrome launch URLs carry one-time <code>bootstrap</code>; Twitch <code>oauth-complete</code> requires CSRF <code>state</code>. Non-loopback WebSocket clients need <code>loopback_token</code> (localhost OBS/worker unchanged).</li>
+<li>TTS: settings apply more reliably — flush debounced saves on <code>pagehide</code>/blur, Twitch rate/volume debounce on <code>oninput</code>, clear queue+prefetch when provider/playback mode changes; UI exposes <code>speech.max_queue_items</code> and <code>speak_chat</code>.</li>
+<li>Twitch emotes: IRC <code>emotes</code> indices applied before trim; lexical strip removes punctuated codes (<code>Kappa!</code>, <code>(OMEGALUL)</code>); added <strong>FFZ</strong> (FrankerFaceZ) emote source; Clear queue stops playback and drops prefetch.</li>
+<li>Twitch OAuth: cancelling auth in the system browser (<code>?error=access_denied</code>) shows a minimal page and forwards the error into the app TTS module via the bridge — full <code>/tts</code> UI is not mounted in the browser.</li>
+<li>OBS CC (<code>send_translation_partials</code>): completed translation finals are no longer dropped on <code>CompletedWithPartial</code> (a next-phrase live draft used to preempt the payload); pending <code>clear_after</code> is cancelled when the next draft arrives so growing caption text is not wiped.</li>
+<li>OBS CC: <code>translation_1…4</code> modes select by <code>slot_id</code>, not the Nth visible translation line — otherwise with <code>translation_1</code>+<code>translation_3</code> and output <code>translation_3</code>, finals never sent (especially with live-partials off).</li>
+<li>OBS CC: dedupe finals by <code>completed_sequence</code> (not the active partial sequence) — sticky completed-block republishes under keep_completed were flooding the queue and dropping phrases; sticky republish of the same text after <code>clear_after</code> no longer bypasses <code>avoid_duplicate_text</code>; payload queue coalesces only sticky/draft frames and keeps distinct completed finals (needed for realtime translation with OBS live-partials off).</li>
+<li>Installer / release package: Nuitka intermediate <code>google_tts_fetch.build</code> (~13 MB) is no longer left next to the sidecar and does not survive upgrades; orphaned hashed assets under worker/dashboard/tts/local-asr are cleared on upgrade.</li>
 <li>OBS overlay: live-partial translation flicker — <code>is_live_draft</code> is forwarded into the renderer so draft MT uses the transient/fast path (like source); completed-text changes patch in place without remount; entrance effects start at opacity ≥0.85; dashboard preview uses the same OBS paint policy (<code>obsPaintPolicy</code>); ~40 ms coalesce while drafts are visible; glow keyframes drop <code>color-mix</code> for older OBS CEF.</li>
 <li>UI locale: style slot tabs (“Translation 1 · Russian”) and OBS Output mode options update immediately when the interface language changes, without a page reload; same for Modules badges and Translation provider field labels.</li>
 <li>Update check: dashboard no longer force-polls GitHub again on bootstrap (reuses the runtime startup check).</li>
@@ -487,8 +513,21 @@
           <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
             
 <p>Файл охватывает desktop-линию: <strong>Kagevi Subtitles</strong> (ранее VoiceSub, с <code>0.5.0</code>).</p>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...HEAD">Unreleased</a></h2>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3">0.6.3</a> - 2026-08-04</h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4">0.6.4</a> - 2026-08-08</h2>
+<h3>Added</h3>
+<ul>
+<li>Компактный Browser Speech worker: чекбокс на Эфире <code>asr.browser.compact_worker_ui</code> открывает <code>/google-asr-compact</code> в Chrome <code>--app=</code> (без адресной строки) с урезанным UI (статус, Старт/Стоп/Сохранить, язык, advanced-чекбоксы, только Live Partial Text).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS CC: realtime partials (<code>source_live</code> / translation live drafts) больше не отправляют весь накопленный текст — trailing window <code>timing.max_partial_caption_chars</code> (default <strong>80</strong>, <code>0</code> = без лимита) сдвигает <strong>целыми словами</strong>; final после live-partials тоже через то же окно (не дублирует полный текст); final без предшествующих partials — без обрезки. Pending <code>clear_after</code> / <code>final_replace_delay</code> больше не блокируют воркер: следующая фраза/partial отменяет sleep сразу.</li>
+<li>Browser Web Speech continuous: убраны многосекундные дыры при живом микрофоне — stall/rearm <strong>9 с</strong> (cold-start <strong>4.5 с</strong>); <code>mic_silent</code> больше не маскирует <code>web_speech_stalled</code>; recovery через <code>stop()</code> (не abort), чтобы не рвать фразы на мелкие куски.</li>
+<li>Browser Web Speech overlap: silence rearm <strong>8 с</strong> (было 2.5 с) + <code>stop()</code>, при горячем mic — <strong>3 с</strong>; forced-final floor <strong>8 с</strong>; orphan interim на active <code>onend</code>; stale soft-join partial не блокирует rearm.</li>
+<li>Browser Web Speech overlap: soft-join фразы через handoff (один <code>client_segment_id</code> до ~<strong>1.8 с</strong> тишины ASR или <strong>450</strong> символов); buddy shadow flush на handoff; soft-final не blank’ает UI; удержание display при ужимании той же interim-hypothesis.</li>
+<li>Worker settings (<code>continuous</code> / interim / force-finalization): Start/Save из dashboard больше не затирают эти поля устаревшим snapshot — deep-merge <code>asr</code> + omit worker-only keys. Язык распознавания по-прежнему сохраняется из main UI.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3">0.6.3</a> - 2026-08-05</h2>
 <h3>Added</h3>
 <ul>
 <li>In-app автообновление через официальный <code>tauri-plugin-updater</code> (бесплатная minisign-подпись, без платного Authenticode): баннер <strong>Установить обновление</strong> → скачивание/установка NSIS → relaunch; <code>latest.json</code> на GitHub Releases; ключи в <code>secrets/</code> (gitignored).</li>
@@ -498,12 +537,25 @@
 </ul>
 <h3>Changed</h3>
 <ul>
+<li>Browser worker: idle watchdog rearm при видимом окне — <strong>15 с</strong> без transcript (было 30 с), быстрее восстановление после «тихого» stall Web Speech.</li>
 <li>Стиль → выбор шрифта: метки алфавитов больше не переводятся через UI-локаль — всегда в соответствующем скрипте, чтобы было видно покрытие CJK/latin-only шрифтов.</li>
 <li>Desktop updater: NSIS-установщик кладётся в корень install/project (не в <code>%TEMP%</code>); хвосты удаляются при следующем запуске после успешного обновления (или сразу при неудачной попытке).</li>
+<li>NSIS upgrade: перед копированием ресурсов сносятся shipped-деревья <code>$INSTDIR\bin\{dashboard,worker,tts,local-asr,overlay,fonts,modules}</code> (и то же под <code>resources\bin</code>), чтобы сиротские Vite content-hash файлы и прочий мусор прошлых сборок не копились при обновлении; <code>user-data/</code> и <code>logs/</code> не трогаются.</li>
+<li>TTS sidecar: <code>build_runtime.py</code> собирает Nuitka во work-tree и в runtime кладёт только <code>google_tts_fetch.exe</code>; <code>npm run scrub:shipped-bin</code> (в <code>build-release.ps1</code>) не даёт упаковать <code>*.build</code> / <code>runtime/build</code>.</li>
 <li>Docs / UI: <code>microsoft_edge</code> помечен как ненадёжный — анонимный Edge-путь Microsoft может отвечать <strong>HTTP 404</strong>; при сбое предпочтительны Bing / Google Web.</li>
 </ul>
 <h3>Fixed</h3>
 <ul>
+<li>OBS overlay: entrance-эффекты снова читаются — старт opacity снижен с ≥0.85; первый (длинный) ASR-partial больше не теряет <code>fade</code>/<code>blur_in</code>/<code>glow</code> из‑за лимита 12 символов (лимит только на mid-phrase burst); glow усилен + <code>text-shadow</code> fallback для CEF; cache-bust <code>?v=20260805c</code>.</li>
+<li>OBS overlay: финальный перевод после live-draft больше не переигрывает entrance (в т.ч. при смене текста draft→final / дубле final) — иначе fade/glow с opacity 0 «ломали» уже нарисованный шрифт; cache-bust <code>?v=20260805d</code>.</li>
+<li>Loopback API: session token больше не вшивается в HTML <code>/</code>, <code>/tts</code>, <code>/local-asr</code>, <code>/google-asr</code> (раньше любой локальный браузер мог управлять <code>/api/*</code>). Сам HTML теперь тоже требует bootstrap/cookie (иначе 401); без сессии <code>/tts</code> отдаёт только минимальный Twitch OAuth shell. Launch URL Tauri/Chrome несут одноразовый <code>bootstrap</code>; Twitch <code>oauth-complete</code> требует CSRF <code>state</code>. Не-loopback WebSocket нужны с <code>loopback_token</code> (localhost OBS/worker без изменений).</li>
+<li>TTS: настройки применяются надёжнее — flush debounce при <code>pagehide</code>/blur, Twitch rate/volume debounce на <code>oninput</code>, очистка очереди+prefetch при смене provider/playback mode; в UI — <code>speech.max_queue_items</code> и <code>speak_chat</code>.</li>
+<li>Twitch emotes: IRC <code>emotes</code> индексы применяются до trim; lexical strip снимает эмоуты с пунктуацией (<code>Kappa!</code>, <code>(OMEGALUL)</code>); добавлен источник <strong>FFZ</strong> (FrankerFaceZ); Clear queue останавливает playback и сбрасывает prefetch.</li>
+<li>Twitch OAuth: при отмене авторизации в браузере (<code>?error=access_denied</code>) показывается минимальная страница, ошибка уходит в TTS-модуль приложения через bridge — полный UI <code>/tts</code> в браузере не монтируется.</li>
+<li>OBS CC (<code>send_translation_partials</code>): финальный перевод больше не теряется в <code>CompletedWithPartial</code> (раньше live-draft следующей фразы перехватывал payload); pending <code>clear_after</code> отменяется при появлении следующего draft, чтобы не стирать растущий текст.</li>
+<li>OBS CC: режимы <code>translation_1…4</code> выбирают слот по <code>slot_id</code>, а не N-ю видимую линию — иначе при <code>translation_1</code>+<code>translation_3</code> и output <code>translation_3</code> финалы не уходили (особенно с выключенными live-partials).</li>
+<li>OBS CC: dedupe финалов по <code>completed_sequence</code> (не по sequence активного partial) — иначе sticky completed при keep_completed засорял очередь и дропал фразы; sticky republish того же текста после <code>clear_after</code> не обходит <code>avoid_duplicate_text</code>; payload-очередь коалесцирует только sticky/draft-кадры и сохраняет разные completed finals (важно при realtime-переводе с выключенным OBS live-partial).</li>
+<li>Установщик / релизный пакет: промежуточная папка Nuitka <code>google_tts_fetch.build</code> (~13 MB) больше не попадает рядом с sidecar и не остаётся после апдейта; сиротские hashed-ассеты worker/dashboard/tts/local-asr вычищаются при upgrade.</li>
 <li>OBS overlay: мерцание линий live-partial перевода — <code>is_live_draft</code> прокидывается в renderer, draft MT идёт по transient/fast-path (как source); смена completed-текста патчится in-place без remount; entrance-эффекты стартуют с opacity ≥0.85; preview дашборда использует ту же OBS paint-policy (<code>obsPaintPolicy</code>); coalesce ~40 ms при видимых drafts; glow без <code>color-mix</code> для старого OBS CEF.</li>
 <li>UI-локаль: подписи слотов стиля («Translation 1 · Russian») и опции OBS Output mode обновляются сразу при смене языка интерфейса, без перезагрузки страницы; то же для бейджей Modules и лейблов полей провайдера в Translation.</li>
 <li>Проверка обновлений: dashboard больше не дублирует force-опрос GitHub при старте (использует результат runtime startup check).</li>
