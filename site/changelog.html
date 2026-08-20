@@ -75,7 +75,21 @@
           <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
             
 <p>This file covers the desktop line: <strong>Kagevi Subtitles</strong> (formerly VoiceSub, from <code>0.5.0</code>).</p>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5">0.6.5</a> - 2026-08-20</h2>
+<h3>Added</h3>
+<ul>
+<li>OBS overlay: captions sit on the <strong>top</strong> of the Browser Source and grow <strong>downward</strong>. Each line (source + up to 4 translations) stays at the <strong>designed font size</strong> and <strong>scrolls on its own</strong> when it is too tall. Toggle <strong>Keep captions inside the OBS box</strong> on the Subtitles tab (<code>overlay.fit_to_box</code>, on by default). After updating, <strong>reload</strong> the Browser Source (cache-bust <code>?v=20260820f</code>).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Translation provider <code>microsoft_edge</code> (keyless Microsoft Edge Translate). Microsoft’s anonymous Edge path is dead (HTTP 404). Existing configs migrate to <code>bing_translator</code> (also keyless) on load/save; <code>public_libretranslate_mirror</code> now maps to Bing as well.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Local ASR: first-install warm-load no longer fails after downloading ORT/CUDA in the same session. ONNX Runtime now initializes on warm-load (not immediately after the ORT zip), retries a failed first <code>init</code>, and registers extracted CUDA/ORT folders on the DLL search path before loading.</li>
+<li>Browser Web Speech: after a long pause, stall/hot-mic rearm no longer <code>stop()</code>s recognition on the first words of the next phrase (continuous <strong>and</strong> overlap). The stall clock is the <strong>current</strong> mic-hot streak, not wall time since the last ASR result.</li>
+</ul>
 <h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4">0.6.4</a> - 2026-08-08</h2>
 <h3>Added</h3>
 <ul>
@@ -513,7 +527,21 @@
           <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
             
 <p>Файл охватывает desktop-линию: <strong>Kagevi Subtitles</strong> (ранее VoiceSub, с <code>0.5.0</code>).</p>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5">0.6.5</a> - 2026-08-20</h2>
+<h3>Added</h3>
+<ul>
+<li>OBS overlay: субтитры сидят на <strong>верхней</strong> границе Browser Source и растут <strong>вниз</strong>. Каждая линия (исходник + до 4 переводов) остаётся <strong>крупной</strong> и <strong>прокручивается отдельно</strong>, если не влезает. Галочка <strong>«Вписывать субтитры в окно OBS»</strong> на вкладке Субтитры (<code>overlay.fit_to_box</code>, по умолчанию вкл.). После обновления <strong>перезагрузите</strong> Browser Source (cache-bust <code>?v=20260820f</code>).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Провайдер перевода <code>microsoft_edge</code> (Microsoft Edge Translate без ключа). Анонимный Edge-путь Microsoft окончательно мёртв (HTTP 404). Существующие конфиги миграционно переводятся на <code>bing_translator</code> (тоже без ключа) при load/save; <code>public_libretranslate_mirror</code> теперь тоже мапится на Bing.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Local ASR: прогрев на чистой установке больше не падает после скачивания ORT/CUDA в той же сессии. ONNX Runtime теперь инициализируется при warm-load (не сразу после zip ORT), повторно пробует неудачный первый <code>init</code> и регистрирует извлечённые папки CUDA/ORT в DLL search path до загрузки.</li>
+<li>Browser Web Speech: после длинной паузы stall/hot-mic rearm больше не делает <code>stop()</code> на первых словах следующей фразы (и continuous, и overlap). Таймер stall — <strong>текущий</strong> mic-hot streak, а не время с последнего ASR-результата.</li>
+</ul>
 <h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4">0.6.4</a> - 2026-08-08</h2>
 <h3>Added</h3>
 <ul>

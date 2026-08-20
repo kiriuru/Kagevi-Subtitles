@@ -202,18 +202,16 @@ impl LocalAsrModuleService {
         let mut reporter = self.transfer.reporter();
         match download_dependency(self.store.module_dir(), kind, &mut reporter).await {
             Ok(()) => {
-                // ORT unload/init + env_check are blocking; keep them off the Tokio worker.
+                // Unload + PATH/AddDllDirectory are blocking; keep them off the Tokio worker.
                 let inference = Arc::clone(&self.inference);
                 let module_dir = self.store.module_dir().to_path_buf();
-                let kind_for_init = kind;
                 let _ = tokio::task::spawn_blocking(move || {
                     inference.unload();
-                    if matches!(
-                        kind_for_init,
-                        DepDownloadKind::OrtCpu | DepDownloadKind::OrtGpu
-                    ) {
-                        let _ = InferenceEngine::ensure_ort_initialized(&module_dir);
-                    }
+                    // Refresh PATH / AddDllDirectory for newly extracted CUDA/ORT files.
+                    // Do **not** init ONNX Runtime here: GPU ORT loaded before CUDA redist
+                    // (or a failed first init) sticks for the process and blocks warm-load
+                    // until restart.
+                    crate::deps::refresh_ort_dll_search_path(&module_dir);
                 })
                 .await;
                 self.invalidate_status_cache();

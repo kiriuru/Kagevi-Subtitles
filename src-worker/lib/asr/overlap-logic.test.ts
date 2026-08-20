@@ -389,12 +389,29 @@ describe("overlap-logic", () => {
     state.currentPartial = "";
     state.lastStartAtMs = 10_000;
     state.lastResultAtMs = 0;
+    state.micHotSinceMs = 10_000;
+    state.lastMicActivityAt = 13_000;
     state.recognitionOverlapSlotListening = [true, false];
     expect(
       evaluateOverlapSilenceRearm(state, 10_000 + DEFAULT_OVERLAP_HOT_MIC_SILENCE_REARM_MS, {
         micHot: true,
       }),
     ).toBe(true);
+  });
+
+  it("does not hot-mic silence-rearm on the first words after a pause", () => {
+    const state = overlapState(0, 10_000);
+    state.currentPartial = "";
+    state.lastStartAtMs = 10_000;
+    state.lastResultAtMs = 0;
+    state.recognitionOverlapSlotListening = [true, false];
+    state.micHotSinceMs = 14_000;
+    state.lastMicActivityAt = 14_200;
+    expect(
+      evaluateOverlapSilenceRearm(state, 14_200, {
+        micHot: true,
+      }),
+    ).toBe(false);
   });
 
   it("silence-rearms despite stale soft-join partial from previous slot", () => {

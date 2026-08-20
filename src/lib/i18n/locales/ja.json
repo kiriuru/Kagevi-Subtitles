@@ -351,8 +351,6 @@
   "provider.libretranslate.status": "クラシックプロバイダー。信頼性は、選択したエンドポイントによって異なります。",
   "provider.lm_studio.hint": "ローカルの OpenAI 互換サーバー。品質はローカルにロードされたモデルに依存します。",
   "provider.lm_studio.status": "ローカルプロバイダー。品質は選択したローカル モデルによって異なります。",
-  "provider.microsoft_edge.hint": "API キーは不要です。Edge 自身が取得する匿名の Microsoft Translator アクセスを使用します。Microsoft がパスを遮断すると HTTP 404 になることがあります。",
-  "provider.microsoft_edge.status": "キー不要の実験的プロバイダー。認証や翻訳が予告なく HTTP 404 になることがあります。失敗時は Bing Translator または Google Web を試してください。",
   "provider.ollama.hint": "ローカルの OpenAI 互換エンドポイント。品質は現地のモデルに依存します。",
   "provider.ollama.status": "ローカルプロバイダー。品質は選択したローカル モデルによって異なります。",
   "provider.openai.hint": "柔軟な LLM 字幕翻訳。 API キーとモデルが必要で、オーバーライドしない限り組み込みの字幕プロンプトを使用します。",
@@ -1075,5 +1073,8 @@
   "credits.support": "支援する",
   "credits.website": "ウェブサイトを開く",
   "provider.bing_translator.hint": "API キーは不要です。Bing Translator の Web セッション（ページのトークン → ttranslatev3）を使用します。",
-  "provider.bing_translator.status": "キー不要の実験的プロバイダー。可用性は予告なく変更される場合があります。"
+  "provider.bing_translator.status": "キー不要の実験的プロバイダー。可用性は予告なく変更される場合があります。",
+  "obs.overlay.fit_note": "オーバーレイは Browser Source 内で字幕を実寸のまま保ち、各行（原文と翻訳）がはみ出すときだけその行をスクロールします。「字幕」タブのチェックでオフにできます。アプリ更新後はソースを再読み込みしてください。",
+  "subtitles.fit_to_box": "字幕を OBS 枠内に収める",
+  "subtitles.fit_to_box.help": "Browser Source が小さいときは、設定したフォントサイズのまま各行をゆっくりスクロールします。端で切る旧動作にするにはチェックを外してください。"
 }

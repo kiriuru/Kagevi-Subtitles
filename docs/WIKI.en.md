@@ -1,6 +1,6 @@
 # Kagevi Subtitles Wiki
 
-User guide for **Kagevi Subtitles `0.6.4`** — how to get live subtitles on stream, what each screen does, and how to fix common problems.
+User guide for **Kagevi Subtitles `0.6.5`** — how to get live subtitles on stream, what each screen does, and how to fix common problems.
 
 <p align="center">
   <a href="../README.md">README</a> ·
@@ -73,7 +73,7 @@ Everything runs on **your PC**. There is no account and no Kagevi cloud. The app
 | Optional cloud / free translation | **Translation** tab (up to 4 lines) |
 | Read subtitles or chat aloud | **TTS** module |
 
-Current version line: **`0.6.4`** (first Kagevi release was `0.5.0`).
+Current version line: **`0.6.5`** (first Kagevi release was `0.5.0`).
 
 > [!IMPORTANT]
 > In OBS, use exactly: `http://127.0.0.1:8765/overlay`  
@@ -93,7 +93,7 @@ No Python or Node.js is required to run the installed app.
 
 ### Install and update
 
-1. Run `Kagevi Subtitles_0.6.4_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
+1. Run `Kagevi Subtitles_0.6.5_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
 2. Open **Kagevi Subtitles.exe**.
 3. Later updates: the dashboard can show an **update banner**. **Install update** downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in `user-data/` stay put.
 
@@ -129,7 +129,7 @@ Manual **Download** / release-page links remain available if you prefer not to i
 3. On the **Live** tab, pick recognition:
    - **Web Speech** (default) — Chrome will open when you Start.
    - **Local ASR** — only appears after setup is finished (see [Local ASR](#local-asr)).
-4. Optional: open **Translation**, turn translation on, enable at least one line, pick a provider (four work with **no API key** — see below).
+4. Optional: open **Translation**, turn translation on, enable at least one line, pick a provider (three work with **no API key** — see below).
 5. Optional: open **Subtitles** / **Style** to set preset, TTL, fonts, and colors.
 6. Press **Start**.
 7. Speak — check the Live preview, then check OBS.
@@ -190,7 +190,7 @@ You only need **one** path at a time.
 
 - [ ] **Translation** tab → translation is enabled.
 - [ ] At least one translation line is enabled.
-- [ ] Provider needs a key? Add it under provider settings. Or switch to a **keyless** provider (Google Web, Free Web Translate, Bing Translator; Microsoft Edge may return **HTTP 404**).
+- [ ] Provider needs a key? Add it under provider settings. Or switch to a **keyless** provider (Google Web, Free Web Translate, Bing Translator).
 - [ ] Look at translation results / errors on the same tab — delays can also mean a newer phrase cancelled an older request (normal).
 
 ### OBS is empty
@@ -200,6 +200,10 @@ You only need **one** path at a time.
 - [ ] TTL is not extremely short (text can vanish before you notice).
 - [ ] After an app update: right‑click the source → **Refresh**.
 - [ ] Brief disconnects: overlay often keeps the last frame while reconnecting — that is expected.
+
+### Text is cut off at the edge of the OBS source
+
+Reload the Browser Source after updating. With **Keep captions inside the OBS box** (Subtitles tab, on by default) the overlay keeps the designed font size; each line (source and translations) slowly scrolls inside its own slot. Uncheck that option to clip at the edges.
 
 ### Local ASR mode missing on Live
 
@@ -312,7 +316,8 @@ The microphone list in the main dashboard stays empty on purpose — the mic is 
 
 ### Worker window rules (important)
 
-- It is a **normal Chrome window** with an address bar (not a hidden tab, not app mode).
+- **Full worker** (default): a **normal Chrome window** with an address bar (not a hidden tab).
+- **Compact worker** (optional): Live-tab checkbox opens `/google-asr-compact` in a smaller Chrome `--app=` window (no omnibox). Same isolated profile and recognition path.
 - It uses its own Chrome profile under `user-data/` so it does not mess with your daily browser.
 - Windows is tuned so Chrome is less likely to “sleep” the tab while you stream.
 
@@ -371,6 +376,8 @@ Offline speech recognition on your machine (Parakeet + ONNX). No Chrome worker w
 
 CPU is enough for Live. CUDA is optional (faster on supported NVIDIA GPUs after extra downloads). For CUDA pick **fp16** or **fp32** models — **int8** stays on CPU.
 
+On a clean install, warm-load can run in the **same session** right after ORT/CUDA finish downloading (no app restart required for the usual first-setup path).
+
 ### After changing VAD / realtime options
 
 **Stop → Start** on Live so the new mic/pipeline settings apply.
@@ -411,10 +418,9 @@ Good starting points if you do not want cloud accounts:
 | --- | --- |
 | **Google Web** | Free browser-style Google path |
 | **Free Web Translate** | Separate free Google path (own rate limits) |
-| **Microsoft Edge Translate** | Anonymous Edge / Azure-quality path when it works. May fail with **HTTP 404** if Microsoft blocks the endpoint — switch to Bing / Google Web. |
 | **Bing Translator** | Keyless Bing web session (`ttranslatev3`) |
 
-There are **18** providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local `config.toml`.
+There are **17** providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local `config.toml`. Older configs that still name `microsoft_edge` or `public_libretranslate_mirror` migrate to **Bing Translator** on load/save.
 
 ### Cache
 
@@ -442,6 +448,7 @@ A finished subtitle **stays** until the **next** phrase finishes. Late translati
 | Setting | In plain words |
 | --- | --- |
 | Overlay preset | How rows are stacked: **single**, **dual-line**, or **stacked**. Compact spacing is a separate toggle. OBS URL can override with `?preset=…&compact=1`. |
+| Keep captions inside the OBS box | On by default (`overlay.fit_to_box`). Full-size font; each line scrolls inside the Browser Source when it is too tall. `?fit=0` turns this off for one source. |
 | Visibility | Show source and translations. How many translation lines appear follows the **enabled** Translation lines (no separate max-lines control). |
 | TTL / lifetime | How long a finished line stays after speech stops. |
 | Line order | Order for preview, OBS overlay, and “first visible line” Closed Captions. |
@@ -465,6 +472,7 @@ A finished subtitle **stays** until the **next** phrase finishes. Late translati
 - Effects include fade, slide, zoom, glow, and similar.
 - Style **source** and each **enabled** `translation_1…4` separately if you want (tabs only for active lines).
 - Live preview and OBS share the same look — Save (or Start) after edits.
+- In OBS each line **scrolls inside the Browser Source** at full size (Subtitles: Keep captions inside the OBS box).
 
 <p align="right"><a href="#quick-links">↑ Quick links</a> · <a href="#table-of-contents">↑ Contents</a></p>
 
@@ -498,7 +506,9 @@ Theme, language, and UI font can sync live across windows without a full Save wh
 2. Paste into an OBS **Browser Source**.
 3. Leave Kagevi running while you stream.
 
-Optional URL tweaks: `?preset=stacked&compact=1` (and similar). Prefer changing presets in the app unless you need a one-off OBS override.
+The overlay **keeps captions at full size** inside the Browser Source (for example 800×600). Captions sit on the **top** and grow **downward**. If a line (source or a translation) is taller than its share of the box, **that line scrolls** on its own. Toggle this on the **Subtitles** tab: *Keep captions inside the OBS box*.
+
+Optional URL tweaks: `?preset=stacked&compact=1` (and similar). `?fit=0` turns off auto-fit for that source only. Prefer changing presets in the app unless you need a one-off OBS override.
 
 ### Closed Captions (optional)
 

@@ -125,6 +125,11 @@ fn overlay_disposes_renderer_when_payload_is_empty() {
         "empty payload cleanup",
     );
     assert_contains(&source, "result?.empty", "empty result gate");
+    assert_contains(
+        &source,
+        "stopOverlayOverflowScroll",
+        "empty payload must stop overflow scroll",
+    );
 }
 
 #[test]

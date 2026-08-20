@@ -81,7 +81,8 @@ pub fn default_config_payload() -> Value {
         },
         "overlay": {
             "preset": "single",
-            "compact": false
+            "compact": false,
+            "fit_to_box": true
         },
         "obs_closed_captions": {
             "enabled": false,

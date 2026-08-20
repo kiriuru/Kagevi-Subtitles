@@ -31,6 +31,7 @@ describe("health-signals-logic", () => {
       lastResultAtMs: 1000,
       lastEventAtMs: 9000,
       lastMicActivityAt: 10_200,
+      micHotSinceMs: 1000,
       micRms: 0.05,
     });
     const reason = computeHealthDegradedReason({
@@ -51,6 +52,7 @@ describe("health-signals-logic", () => {
       lastResultAtMs: 1000,
       lastEventAtMs: 10_300,
       lastMicActivityAt: 10_300,
+      micHotSinceMs: 1000,
       micRms: 0.04,
     });
     const reason = computeHealthDegradedReason({
@@ -60,5 +62,26 @@ describe("health-signals-logic", () => {
       limits,
     });
     expect(reason).toBe("web_speech_stalled");
+  });
+
+  it("does not report web_speech_stalled on the first words after a pause", () => {
+    const state = createBrowserAsrStateSeed({
+      desiredRunning: true,
+      browserSupervisorState: "running",
+      micTrackReadyState: "live",
+      lastStartAtMs: 1000,
+      lastResultAtMs: 1000,
+      lastEventAtMs: 2000,
+      lastMicActivityAt: 10_400,
+      micHotSinceMs: 10_200,
+      micRms: 0.05,
+    });
+    const reason = computeHealthDegradedReason({
+      state,
+      nowMs: 10_500,
+      documentHidden: false,
+      limits,
+    });
+    expect(reason).not.toBe("web_speech_stalled");
   });
 });

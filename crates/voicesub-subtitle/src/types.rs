@@ -67,6 +67,10 @@ fn default_true() -> bool {
     true
 }
 
+fn skip_if_true(value: &bool) -> bool {
+    *value
+}
+
 impl Default for TranslationItem {
     fn default() -> Self {
         Self {
@@ -178,6 +182,10 @@ pub struct SubtitlePayloadEvent {
     pub provider: Option<String>,
     pub preset: String,
     pub compact: bool,
+    /// When true (default), OBS overlay keeps designed font sizes and scrolls
+    /// overflow inside the Browser Source instead of clipping or shrinking.
+    #[serde(default = "default_true", skip_serializing_if = "skip_if_true")]
+    pub fit_to_box: bool,
     pub display_order: Vec<String>,
     pub show_source: bool,
     pub show_translations: bool,
@@ -211,6 +219,7 @@ impl Default for SubtitlePayloadEvent {
             provider: None,
             preset: "single".into(),
             compact: false,
+            fit_to_box: true,
             display_order: vec!["source".into()],
             show_source: true,
             show_translations: true,

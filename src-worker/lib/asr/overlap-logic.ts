@@ -8,6 +8,7 @@ import type { WorkerSpeechRecognition } from "./speech-types";
 
 import { webSpeechRecognitionPolicy } from "./web-speech-policy";
 import { preferStableOverlapPartial } from "./overlap-phrase-logic";
+import { asrQuietWhileMicHotMs } from "./watchdog-logic";
 
 /**
  * Dual-slot overlap for `continuous=false`.
@@ -40,7 +41,7 @@ export const DEFAULT_OVERLAP_PRESTART_AFTER_START_MS = 100;
  */
 export const DEFAULT_OVERLAP_EARLY_WARM_MS = 1500;
 
-/** When mic is still hot, silence-rearm sooner than the quiet budget. */
+/** When the current mic-hot streak has no ASR, silence-rearm sooner than the quiet budget. */
 export const DEFAULT_OVERLAP_HOT_MIC_SILENCE_REARM_MS = 3000;
 
 /** Short settle delay when the next instance was not pre-started (~50–100 ms). */
@@ -983,14 +984,18 @@ export function evaluateOverlapSilenceRearm(
   }
 
   const limits = overlapLifecycleLimits(state);
-  const silenceMs = options.micHot
-    ? Math.min(limits.silenceRearmMs, limits.hotMicSilenceRearmMs)
-    : limits.silenceRearmMs;
-  if (nowMs - startedAt < silenceMs) {
-    return false;
+  const quietWhileHotMs = asrQuietWhileMicHotMs(state, nowMs);
+  // Short budget only after the *current* mic-hot streak has lasted this long
+  // without ASR — not merely "mic is hot now" after a pause (that aborted the
+  // slot that should capture the first words after the gap).
+  if (options.micHot && quietWhileHotMs >= limits.hotMicSilenceRearmMs) {
+    return true;
+  }
+  if (nowMs - startedAt >= limits.silenceRearmMs) {
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 /** Soft-stop the active overlap slot so onend can hand off / restart a zombie idle session. */

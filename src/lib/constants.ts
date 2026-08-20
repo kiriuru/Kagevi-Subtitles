@@ -73,11 +73,6 @@ export const PROVIDERS = {
     fields: ["base_url", "model", "custom_prompt"] as const,
     baseUrlPlaceholder: "http://127.0.0.1:11434/v1",
   },
-  microsoft_edge: {
-    label: "Microsoft Edge Translate (no key)",
-    group: "Experimental / Emergency",
-    fields: [] as const,
-  },
   bing_translator: {
     label: "Bing Translator (no key)",
     group: "Experimental / Emergency",

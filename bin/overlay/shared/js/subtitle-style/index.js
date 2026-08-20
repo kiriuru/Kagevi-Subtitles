@@ -33,6 +33,14 @@ import {
   disposeRenderContainer,
 } from "./render-state.js";
 import { render } from "./render.js";
+import {
+  computeOverflowPx,
+  allocateLineViewports,
+  stepOverflowScroll,
+  applyOverlayOverflow,
+  applyOverlayFitToContainer,
+  stopOverlayOverflowScroll,
+} from "./fit-box.js";
 
 window.SubtitleStyleRenderer = {
   LINE_SLOT_NAMES,
@@ -61,4 +69,10 @@ window.SubtitleStyleRenderer = {
   _finalizeTransientSurfaceInPlace,
   disposeRenderContainer,
   render,
+  computeOverflowPx,
+  allocateLineViewports,
+  stepOverflowScroll,
+  applyOverlayOverflow,
+  applyOverlayFitToContainer,
+  stopOverlayOverflowScroll,
 };

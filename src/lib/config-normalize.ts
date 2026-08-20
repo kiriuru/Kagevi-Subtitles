@@ -18,7 +18,8 @@ const CANONICAL_TRANSLATION_SLOTS = [
  */
 const REMOVED_TRANSLATION_PROVIDERS: Record<string, string | null> = {
   mymemory: null,
-  public_libretranslate_mirror: "microsoft_edge",
+  public_libretranslate_mirror: "bing_translator",
+  microsoft_edge: "bing_translator",
 };
 
 function resolveTranslationProvider(value: unknown, fallback: string): string {
@@ -427,6 +428,7 @@ export function normalizeConfigPayload(raw: ConfigPayload): ConfigPayload {
   }
   overlay.preset = ["single", "dual-line", "stacked"].includes(preset) ? preset : "single";
   overlay.compact = compact;
+  overlay.fit_to_box = overlay.fit_to_box !== false;
 
   if (!config.logging || typeof config.logging !== "object") {
     config.logging = {};

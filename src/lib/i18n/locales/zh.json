@@ -351,8 +351,6 @@
   "provider.libretranslate.status": "经典提供商。可靠性取决于您选择的端点。",
   "provider.lm_studio.hint": "本地 OpenAI 兼容服务器。质量取决于本地加载的模型。",
   "provider.lm_studio.status": "本地提供商。质量取决于所选的本地型号。",
-  "provider.microsoft_edge.hint": "无需 API 密钥。使用 Edge 自身请求的匿名 Microsoft Translator 访问权限。Microsoft 封锁该路径时可能返回 HTTP 404。",
-  "provider.microsoft_edge.status": "无密钥的实验性提供商。认证或翻译可能随时返回 HTTP 404——若 Edge 失败，请改用 Bing Translator 或 Google Web。",
   "provider.ollama.hint": "本地 OpenAI 兼容端点。质量取决于当地型号。",
   "provider.ollama.status": "本地提供商。质量取决于所选的本地型号。",
   "provider.openai.hint": "灵活的LLM字幕翻译。需要 API 密钥和型号，并使用内置字幕提示（除非被覆盖）。",
@@ -1075,5 +1073,8 @@
   "credits.support": "支持开发",
   "credits.website": "打开网站",
   "provider.bing_translator.hint": "无需 API 密钥。使用 Bing Translator 网页会话（页面令牌 → ttranslatev3）。",
-  "provider.bing_translator.status": "无密钥的实验性提供商。可用性可能会发生变化，恕不另行通知。"
+  "provider.bing_translator.status": "无密钥的实验性提供商。可用性可能会发生变化，恕不另行通知。",
+  "obs.overlay.fit_note": "叠加层在 Browser Source 内保持原字号。源文本和各翻译行过长时分别滚动，互不影响。可在「字幕」页关闭。更新应用后请刷新该源。",
+  "subtitles.fit_to_box": "将字幕留在 OBS 框内",
+  "subtitles.fit_to_box.help": "当 Browser Source 太小时，各行字幕保持设定字号并在自己的槽位内缓慢滚动。取消勾选则按边缘裁切（旧行为）。"
 }

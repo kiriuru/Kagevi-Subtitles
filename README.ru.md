@@ -2,7 +2,7 @@
 
 **Живые переводимые субтитры для стримеров — локально, privacy-first, готово для OBS.**
 
-[![Version](https://img.shields.io/badge/version-0.6.4-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
+[![Version](https://img.shields.io/badge/version-0.6.5-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#системные-требования)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
@@ -19,7 +19,7 @@
 
 Kagevi Subtitles — Windows desktop-приложение, которое превращает речь в субтитры в реальном времени с опциональным переводом. Распознавание — через **Google Chrome Web Speech** или опциональный офлайн **Local ASR** (Parakeet / ONNX). Всё работает локально: bind по умолчанию `127.0.0.1:8765`, без cloud backend и аккаунтов.
 
-Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.6.4`**.
+Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.6.5`**.
 
 <p align="center">
   <img src="./Images/kagevi_live.png" alt="Вкладка Live в Kagevi Subtitles" width="860">
@@ -45,7 +45,7 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
 | Область | Что даёт |
 | --- | --- |
 | **Речь** | Google Chrome Web Speech worker или офлайн Local ASR (Parakeet / ONNX, CPU или CUDA) |
-| **Перевод** | 18 провайдеров (в т.ч. Baidu / Youdao / Tencent / Caiyun), до **4** линий перевода (исходник отдельно). Опциональный **realtime**-перевод для классического MT (по умолчанию выкл.). Четыре работают **без API key**: Google Web, Free Web Translate, Microsoft Edge Translate и Bing Translator |
+| **Перевод** | 17 провайдеров (в т.ч. Baidu / Youdao / Tencent / Caiyun), до **4** линий перевода (исходник отдельно). Опциональный **realtime**-перевод для классического MT (по умолчанию выкл.). Три работают **без API key**: Google Web, Free Web Translate и Bing Translator |
 | **OBS** | Browser Source overlay + опциональные Closed Captions через OBS WebSocket (в основном для Twitch) |
 | **Стиль** | Анимированные пресеты, стили по слотам, палитра темы |
 | **TTS** | Native / Sonic playback; озвучка субтитров + Twitch chat TTS (до 5 каналов) |
@@ -152,7 +152,7 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 
 ## Быстрый старт
 
-1. Установите из `Kagevi Subtitles_0.6.4_x64-setup.exe` (или последней сборки в папке релиза).
+1. Установите из `Kagevi Subtitles_0.6.5_x64-setup.exe` (или последней сборки в папке релиза).
 2. Запустите **Kagevi Subtitles.exe** — dashboard откроется на `http://127.0.0.1:8765/`.
 3. В OBS добавьте **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. При необходимости настройте перевод и стиль субтитров, нажмите **Start**.
@@ -172,7 +172,7 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 | `http://127.0.0.1:8765/tts` | TTS-модуль |
 | `http://127.0.0.1:8765/local-asr` | Модуль Local ASR |
 
-Примеры query для overlay: `?preset=single` · `?compact=1` · `?profile=default`
+Примеры query для overlay: `?preset=single` · `?compact=1` · `?profile=default` · `?fit=0` (без автоподгонки)
 
 ## Пути данных
 
@@ -193,6 +193,7 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 | Нет субтитров | Нажат **Start**; Chrome worker не свёрнут (Web Speech) **или** Local ASR ready + выбран mic |
 | Есть исходник, нет перевода | Перевод включён; активна хотя бы одна линия; credentials провайдера |
 | Пустой OBS | Browser Source на `/overlay`; видимость во вкладке «Субтитры»; после обновления — reload source |
+| Текст обрезается в OBS | Вкладка Субтитры: «Вписывать субтитры в окно OBS» (по умолчанию вкл.) прокручивает каждую линию крупным шрифтом; после обновления перезагрузите Browser Source |
 | Текст не исчезает после TTL / Stop | Обновите сборку; перезагрузите Browser Source |
 | Порт занят | Освободите `8765` или смените bind (dev-сборки) |
 | Нет Local ASR на Эфире | Модули → Local ASR: завершите wizard до `ready` |

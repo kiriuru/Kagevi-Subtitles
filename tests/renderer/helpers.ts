@@ -42,6 +42,19 @@ export type SubtitleStyleRenderer = {
   ) => Record<string, unknown>;
   OVERLAY_DENSE_PARTIAL_CHARS?: number;
   OVERLAY_MAX_ANIMATED_DELTA_CHARS?: number;
+  computeOverflowPx?: (input: Record<string, unknown>) => number;
+  allocateLineViewports?: (
+    availableHeight: number,
+    naturalHeights: number[],
+    gapPx?: number,
+  ) => Array<{ height: number; overflowPx: number }>;
+  stepOverflowScroll?: (
+    state: Record<string, unknown>,
+    dtMs: number,
+  ) => { overflowPx: number; scrollY: number; phase: string; phaseAt: number };
+  applyOverlayOverflow?: (options: Record<string, unknown>) => number;
+  applyOverlayFitToContainer?: (container: HTMLElement, options?: Record<string, unknown>) => number;
+  stopOverlayOverflowScroll?: () => void;
 };
 
 declare global {

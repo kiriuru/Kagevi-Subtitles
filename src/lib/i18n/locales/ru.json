@@ -351,8 +351,6 @@
   "provider.libretranslate.status": "Классический провайдер. Надёжность зависит от выбранного endpoint.",
   "provider.lm_studio.hint": "Локальный OpenAI-compatible сервер. Качество зависит от загруженной локальной модели.",
   "provider.lm_studio.status": "Локальный провайдер. Качество зависит от выбранной локальной модели.",
-  "provider.microsoft_edge.hint": "API key не нужен. Используется анонимный доступ к Microsoft Translator, который запрашивает сам Edge. Может отвечать HTTP 404, если Microsoft блокирует путь.",
-  "provider.microsoft_edge.status": "Экспериментальный провайдер без ключа. Auth или translate могут давать HTTP 404 без предупреждения — при сбое попробуйте Bing Translator или Google Web.",
   "provider.ollama.hint": "Локальный OpenAI-compatible endpoint. Качество зависит от локальной модели.",
   "provider.ollama.status": "Локальный провайдер. Качество зависит от выбранной локальной модели.",
   "provider.openai.hint": "Гибкий LLM-перевод субтитров. Требует API key и модель; встроенный subtitle prompt используется, пока вы его не переопределите.",
@@ -1075,5 +1073,8 @@
   "credits.support": "Поддержать",
   "credits.website": "Открыть сайт",
   "provider.bing_translator.hint": "API key не нужен. Используется web-сессия Bing Translator (токен со страницы → ttranslatev3).",
-  "provider.bing_translator.status": "Экспериментальный провайдер без ключа. Доступность может меняться без предупреждения."
+  "provider.bing_translator.status": "Экспериментальный провайдер без ключа. Доступность может меняться без предупреждения.",
+  "obs.overlay.fit_note": "Overlay держит субтитры в размере Browser Source крупным шрифтом. Каждая линия (исходник и переводы) прокручивается сама, если не влезает. Отключается галочкой на вкладке «Субтитры». После обновления приложения перезагрузите источник.",
+  "subtitles.fit_to_box": "Вписывать субтитры в окно OBS",
+  "subtitles.fit_to_box.help": "Если Browser Source слишком маленький, каждая линия остаётся крупной и медленно прокручивается в своём слоте. Снимите галочку, чтобы обрезать по краям (как раньше)."
 }

@@ -13,6 +13,7 @@ describe("config-normalize contracts", () => {
   it("normalizes overlay compact flag and preset", () => {
     const source = readNormalizerSource();
     expect(source).toContain("overlay.compact = compact");
+    expect(source).toContain("overlay.fit_to_box = overlay.fit_to_box !== false");
     expect(source).toContain('"single", "dual-line", "stacked"');
     expect(source).toContain('if (preset === "compact")');
   });

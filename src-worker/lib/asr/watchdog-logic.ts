@@ -17,6 +17,42 @@ export function isMicHearingEnergy(ctx: {
   return Number(state.micRms || 0) >= Number(ctx.voiceRmsThreshold || 0);
 }
 
+/** Track when the current mic-energy streak began so stall/rearm do not fire on the first word after a pause. */
+export function updateMicHotStreak(
+  state: Pick<BrowserAsrState, "lastMicActivityAt" | "micHotSinceMs">,
+  nowMs: number,
+  hearingEnergy: boolean,
+  streakBreakMs: number
+): void {
+  const now = Number(nowMs || 0);
+  if (hearingEnergy) {
+    state.lastMicActivityAt = now;
+    if (!Number(state.micHotSinceMs || 0)) {
+      state.micHotSinceMs = now;
+    }
+    return;
+  }
+  const lastActivity = Number(state.lastMicActivityAt || 0);
+  if (state.micHotSinceMs && lastActivity > 0 && now - lastActivity > Number(streakBreakMs || 0)) {
+    state.micHotSinceMs = 0;
+  }
+}
+
+/**
+ * How long ASR has been quiet during the *current* mic-hot streak.
+ * A pause then new speech resets this clock (micHotSinceMs), so we do not
+ * treat "first utterance after a gap" as a dead Web Speech session.
+ */
+export function asrQuietWhileMicHotMs(state: BrowserAsrState, nowMs: number): number {
+  const hotSince = Number(state.micHotSinceMs || 0);
+  if (hotSince <= 0) {
+    return 0;
+  }
+  const lastAsrAt = Math.max(Number(state.lastStartAtMs || 0), Number(state.lastResultAtMs || 0));
+  const anchor = Math.max(lastAsrAt, hotSince);
+  return Math.max(0, Number(nowMs || 0) - anchor);
+}
+
 export function evaluateWatchdogTick(ctx: {
   state: BrowserAsrState;
   nowMs: number;
@@ -90,8 +126,11 @@ export function evaluateWatchdogTick(ctx: {
   const stallBudgetMs = neverGotResultThisGeneration
     ? Number(limits.coldStartStallMs || limits.activeSpeechStallMs || 4500)
     : Number(limits.activeSpeechStallMs || 9000);
+  const quietWhileHotMs = asrQuietWhileMicHotMs(state, now);
 
   // Speech present, ASR quiet. Overlap/segmented modes have their own silence rearm.
+  // Clock is the current mic-hot streak — not wall time since the last result —
+  // so a long pause then new speech does not immediately stop()/restart.
   const overlapOrSegmented =
     state.effectiveContinuousMode === "segmented_restart" ||
     (Array.isArray(state.recognitionOverlapSlots) && state.recognitionOverlapSlots.length === 2);
@@ -100,7 +139,7 @@ export function evaluateWatchdogTick(ctx: {
     !documentHidden &&
     state.browserSupervisorState === "running" &&
     micHot &&
-    recognitionQuietMs >= stallBudgetMs
+    quietWhileHotMs >= stallBudgetMs
   ) {
     return { type: "active_speech_stall" };
   }

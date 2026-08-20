@@ -1,5 +1,10 @@
 import type { BrowserAsrState, MicrophoneMonitor } from "../asr/types";
-import { MIC_ACTIVE_RMS_THRESHOLD, MIC_MONITOR_INTERVAL_MS, MIC_VOICE_RMS_THRESHOLD } from "./worker-defaults";
+import { updateMicHotStreak } from "../asr/watchdog-logic";
+import {
+  MIC_ACTIVE_RMS_THRESHOLD,
+  MIC_HOT_STREAK_BREAK_MS,
+  MIC_MONITOR_INTERVAL_MS,
+} from "./worker-defaults";
 
 export async function ensureMicrophonePermission(state: BrowserAsrState, appendLog: (msg: string) => void): Promise<MediaStream> {
   const existingStream = state.microphoneMonitor?.stream || null;
@@ -54,6 +59,7 @@ export async function ensureMicrophonePermission(state: BrowserAsrState, appendL
       state.micTrackReadyState = "missing";
       state.micTrackMuted = false;
       state.micRms = 0;
+      state.micHotSinceMs = 0;
       state.micHealthUpdatedAt = Date.now();
       return;
     }
@@ -75,8 +81,9 @@ export async function ensureMicrophonePermission(state: BrowserAsrState, appendL
     }
     state.micRms = Number.isFinite(micRms) ? Number(micRms.toFixed(4)) : 0;
     const nowMs = Date.now();
-    if (state.micRms >= MIC_ACTIVE_RMS_THRESHOLD && !state.micTrackMuted) {
-      state.lastMicActivityAt = nowMs;
+    const hearingEnergy = state.micRms >= MIC_ACTIVE_RMS_THRESHOLD && !state.micTrackMuted;
+    updateMicHotStreak(state, nowMs, hearingEnergy, MIC_HOT_STREAK_BREAK_MS);
+    if (hearingEnergy) {
       state.micActiveRecentMs = 0;
     } else if (state.lastMicActivityAt > 0) {
       state.micActiveRecentMs = Math.max(0, nowMs - state.lastMicActivityAt);

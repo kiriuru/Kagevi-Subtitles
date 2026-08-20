@@ -1,5 +1,5 @@
 import type { BrowserAsrState, TimingLimits } from "./types";
-import { isMicHearingEnergy } from "./watchdog-logic";
+import { asrQuietWhileMicHotMs, isMicHearingEnergy } from "./watchdog-logic";
 
 export function computeHealthDegradedReason(ctx: {
   state: BrowserAsrState;
@@ -13,10 +13,6 @@ export function computeHealthDegradedReason(ctx: {
     .toLowerCase();
   const micActivityAgeMs = state.lastMicActivityAt > 0 ? Math.max(0, nowMs - Number(state.lastMicActivityAt)) : null;
   // Exclude lastEventAtMs (onsoundstart) — it masks dead continuous sessions while mic hears audio.
-  const recognitionQuietMs = Math.max(
-    0,
-    nowMs - Math.max(Number(state.lastResultAtMs || 0), Number(state.lastStartAtMs || 0))
-  );
   const recognitionQuietIncludingSoundMs = Math.max(
     0,
     nowMs - Math.max(Number(state.lastEventAtMs || 0), Number(state.lastResultAtMs || 0), Number(state.lastStartAtMs || 0))
@@ -44,11 +40,12 @@ export function computeHealthDegradedReason(ctx: {
   });
 
   // Stall before mic_silent — otherwise quiet-gate dips masked dead Web Speech for 12–15s.
+  // Clock is the current mic-hot streak so a pause then new speech is not "stalled".
   if (
     !overlapOrSegmented &&
     !ctx.documentHidden &&
     state.browserSupervisorState === "running" &&
-    recognitionQuietMs >= limits.stallDegradedAfterMs &&
+    asrQuietWhileMicHotMs(state, nowMs) >= limits.stallDegradedAfterMs &&
     micHot
   ) {
     return "web_speech_stalled";

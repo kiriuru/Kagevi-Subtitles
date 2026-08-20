@@ -179,7 +179,7 @@ async fn settings_save_accepts_libretranslate_provider() {
 }
 
 #[tokio::test]
-async fn settings_save_accepts_microsoft_edge_provider() {
+async fn settings_save_migrates_microsoft_edge_to_bing_translator() {
     let _guard = integration_lock();
     let runtime = EphemeralRuntime::new();
     let handle = runtime.start().await;
@@ -232,8 +232,12 @@ async fn settings_save_accepts_microsoft_edge_provider() {
     let saved: serde_json::Value = save.json().await.expect("json");
     assert_eq!(saved["ok"], true);
     assert_eq!(
+        saved["payload"]["translation"]["provider"],
+        "bing_translator"
+    );
+    assert_eq!(
         saved["payload"]["translation"]["lines"][0]["provider"],
-        "microsoft_edge"
+        "bing_translator"
     );
     assert_eq!(saved["live_applied"], true);
 
@@ -241,7 +245,7 @@ async fn settings_save_accepts_microsoft_edge_provider() {
 }
 
 #[tokio::test]
-async fn settings_save_migrates_removed_public_mirror_to_microsoft_edge() {
+async fn settings_save_migrates_removed_public_mirror_to_bing_translator() {
     let _guard = integration_lock();
     let runtime = EphemeralRuntime::new();
     let handle = runtime.start().await;
@@ -286,11 +290,11 @@ async fn settings_save_migrates_removed_public_mirror_to_microsoft_edge() {
     let saved: serde_json::Value = save.json().await.expect("json");
     assert_eq!(
         saved["payload"]["translation"]["provider"],
-        "microsoft_edge"
+        "bing_translator"
     );
     assert_eq!(
         saved["payload"]["translation"]["lines"][0]["provider"],
-        "microsoft_edge"
+        "bing_translator"
     );
 
     handle.shutdown().await;

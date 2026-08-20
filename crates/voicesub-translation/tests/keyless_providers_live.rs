@@ -33,15 +33,6 @@ async fn translate_with(provider_name: &str, text: &str, target: &str) -> String
 }
 
 #[tokio::test]
-#[ignore = "hits the live Microsoft Edge translate endpoint"]
-async fn microsoft_edge_translates_without_api_key() {
-    let translated = translate_with("microsoft_edge", "hello world", "ru").await;
-    println!("microsoft_edge -> {translated}");
-    assert!(!translated.is_empty());
-    assert_ne!(translated, "hello world");
-}
-
-#[tokio::test]
 #[ignore = "hits the live Bing Translator endpoint"]
 async fn bing_translator_translates_without_api_key() {
     let translated = translate_with("bing_translator", "hello world", "ru").await;

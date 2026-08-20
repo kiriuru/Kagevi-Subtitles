@@ -6,6 +6,8 @@ export const CLIENT_LOG_THROTTLE_MS = 3000;
 export const MIC_MONITOR_INTERVAL_MS = 250;
 export const MIC_ACTIVE_RMS_THRESHOLD = 0.015;
 export const MIC_VOICE_RMS_THRESHOLD = 0.025;
+/** Quiet this long before the mic-hot streak resets (matches watchdog `recentMicActivityWindowMs`). */
+export const MIC_HOT_STREAK_BREAK_MS = 3000;
 
 export const workerDefaults = Object.freeze({
   recognitionLanguage: "ru-RU",

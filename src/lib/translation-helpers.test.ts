@@ -21,7 +21,8 @@ describe("translation-helpers", () => {
     expect(ids).toContain("openai");
     expect(ids).toContain("free_web_translate");
     expect(ids).toContain("bing_translator");
-    expect(ids.length).toBe(18);
+    expect(ids).not.toContain("microsoft_edge");
+    expect(ids.length).toBe(17);
     expect(ids).toContain("baidu_translate");
     expect(ids).toContain("tencent_tmt");
     for (const group of groups) {

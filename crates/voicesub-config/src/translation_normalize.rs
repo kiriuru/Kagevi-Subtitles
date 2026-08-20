@@ -6,7 +6,7 @@ use crate::secrets::{
     normalize_google_translate_api_key, normalize_provider_secret, normalize_provider_text_value,
 };
 
-pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 18] = [
+pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 17] = [
     "google_translate_v2",
     "google_cloud_translation_v3",
     "google_gas_url",
@@ -18,7 +18,6 @@ pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 18] = [
     "openrouter",
     "lm_studio",
     "ollama",
-    "microsoft_edge",
     "bing_translator",
     "free_web_translate",
     "baidu_translate",
@@ -31,11 +30,13 @@ pub const SUPPORTED_TRANSLATION_PROVIDERS: [&str; 18] = [
 /// a replacement fall back to the caller's default provider.
 ///
 /// `public_libretranslate_mirror` was dropped because every keyless public LibreTranslate
-/// instance went offline or began refusing API traffic; `microsoft_edge` keeps those configs
-/// on a provider that still needs no API key.
-const REMOVED_TRANSLATION_PROVIDERS: [(&str, Option<&str>); 2] = [
+/// instance went offline or began refusing API traffic. `microsoft_edge` was dropped after
+/// Microsoft's anonymous Edge auth/translate path died (HTTP 404). Both keep those configs
+/// on `bing_translator`, which still needs no API key.
+const REMOVED_TRANSLATION_PROVIDERS: [(&str, Option<&str>); 3] = [
     ("mymemory", None),
-    ("public_libretranslate_mirror", Some("microsoft_edge")),
+    ("public_libretranslate_mirror", Some("bing_translator")),
+    ("microsoft_edge", Some("bing_translator")),
 ];
 
 /// Resolves a stored provider name against the supported set, mapping removed providers to
@@ -125,7 +126,6 @@ pub fn default_translation_provider_settings() -> Value {
             "custom_prompt": "",
             "override_prompt": "false"
         },
-        "microsoft_edge": {},
         "bing_translator": {},
         "free_web_translate": {},
         "baidu_translate": {
@@ -211,7 +211,7 @@ fn normalize_provider_block(
             )
         }),
         "google_cloud_translation_v3" => normalize_google_v3(current, defaults),
-        "google_web" | "free_web_translate" | "microsoft_edge" | "bing_translator" => json!({}),
+        "google_web" | "free_web_translate" | "bing_translator" => json!({}),
         "azure_translator" => {
             let endpoint = str_value(normalized.get("endpoint"));
             let endpoint = if endpoint.is_empty() {
@@ -751,10 +751,18 @@ mod tests {
     }
 
     #[test]
-    fn removed_public_mirror_migrates_to_keyless_microsoft_edge() {
+    fn removed_public_mirror_migrates_to_keyless_bing_translator() {
         assert_eq!(
             resolve_translation_provider("public_libretranslate_mirror", "google_translate_v2"),
-            "microsoft_edge"
+            "bing_translator"
+        );
+    }
+
+    #[test]
+    fn removed_microsoft_edge_migrates_to_keyless_bing_translator() {
+        assert_eq!(
+            resolve_translation_provider("microsoft_edge", "google_translate_v2"),
+            "bing_translator"
         );
     }
 
@@ -777,20 +785,21 @@ mod tests {
             "google_translate_v2"
         );
         assert_eq!(
-            resolve_translation_provider("microsoft_edge", "google_translate_v2"),
-            "microsoft_edge"
+            resolve_translation_provider("bing_translator", "google_translate_v2"),
+            "bing_translator"
         );
     }
 
     #[test]
     fn keyless_providers_normalize_to_empty_settings_blocks() {
         let out = normalize_translation_provider_settings(&json!({
-            "microsoft_edge": { "api_url": "https://example.invalid" },
-            "bing_translator": { "api_key": "should-drop" }
+            "bing_translator": { "api_key": "should-drop" },
+            "google_web": { "api_url": "https://example.invalid" }
         }));
-        assert_eq!(out["microsoft_edge"], json!({}));
+        assert!(out.get("microsoft_edge").is_none());
         assert_eq!(out["bing_translator"], json!({}));
         assert_eq!(out["free_web_translate"], json!({}));
+        assert_eq!(out["google_web"], json!({}));
         assert!(out.get("public_libretranslate_mirror").is_none());
     }
 
@@ -814,8 +823,33 @@ mod tests {
             &defaults,
             &json!(["en"]),
         );
-        assert_eq!(out["provider"], "microsoft_edge");
-        assert_eq!(out["lines"][0]["provider"], "microsoft_edge");
+        assert_eq!(out["provider"], "bing_translator");
+        assert_eq!(out["lines"][0]["provider"], "bing_translator");
+    }
+
+    #[test]
+    fn translation_lines_migrate_removed_microsoft_edge_provider() {
+        let defaults = json!({
+            "provider": "google_translate_v2",
+            "provider_settings": default_translation_provider_settings(),
+        });
+        let out = normalize_translation_config(
+            &json!({
+                "enabled": true,
+                "provider": "microsoft_edge",
+                "lines": [{
+                    "slot_id": "translation_1",
+                    "enabled": true,
+                    "target_lang": "ru",
+                    "provider": "microsoft_edge"
+                }]
+            }),
+            &defaults,
+            &json!(["en"]),
+        );
+        assert_eq!(out["provider"], "bing_translator");
+        assert_eq!(out["lines"][0]["provider"], "bing_translator");
+        assert!(out["provider_settings"].get("microsoft_edge").is_none());
     }
 
     #[test]

@@ -351,8 +351,6 @@
   "provider.libretranslate.status": "Classic provider. Reliability depends on the endpoint you choose.",
   "provider.lm_studio.hint": "Local OpenAI-compatible server. Quality depends on the locally loaded model.",
   "provider.lm_studio.status": "Local provider. Quality depends on the selected local model.",
-  "provider.microsoft_edge.hint": "No API key required. Uses the anonymous Microsoft Translator access that Edge itself requests. May return HTTP 404 when Microsoft blocks the path.",
-  "provider.microsoft_edge.status": "Experimental keyless provider. Auth or translate can fail with HTTP 404 without notice — try Bing Translator or Google Web if Edge breaks.",
   "provider.ollama.hint": "Local OpenAI-compatible endpoint. Quality depends on the local model.",
   "provider.ollama.status": "Local provider. Quality depends on the selected local model.",
   "provider.openai.hint": "Flexible LLM subtitle translation. Requires API key and model, and uses the built-in subtitle prompt unless overridden.",
@@ -1075,5 +1073,8 @@
   "credits.support": "Support",
   "credits.website": "Open website",
   "provider.bing_translator.hint": "No API key required. Uses the Bing Translator web session (page token → ttranslatev3).",
-  "provider.bing_translator.status": "Experimental keyless provider. Availability can change without notice."
+  "provider.bing_translator.status": "Experimental keyless provider. Availability can change without notice.",
+  "obs.overlay.fit_note": "The overlay keeps captions inside the Browser Source at full size. Each line (source and translations) scrolls on its own when it is too tall. Turn this off on the Subtitles tab if you want edges to clip instead. Reload the source after updating the app.",
+  "subtitles.fit_to_box": "Keep captions inside the OBS box",
+  "subtitles.fit_to_box.help": "When the Browser Source is too small, each subtitle line stays at the designed font size and slowly scrolls inside its own slot. Uncheck to clip at the edges (old behaviour)."
 }

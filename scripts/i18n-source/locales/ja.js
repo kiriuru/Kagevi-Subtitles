@@ -220,8 +220,6 @@
   "provider.libretranslate.status": "クラシックプロバイダー。信頼性は、選択したエンドポイントによって異なります。",
   "provider.lm_studio.hint": "ローカルの OpenAI 互換サーバー。品質はローカルにロードされたモデルに依存します。",
   "provider.lm_studio.status": "ローカルプロバイダー。品質は選択したローカル モデルによって異なります。",
-  "provider.microsoft_edge.hint": "API キーは不要です。Edge 自身が取得する匿名の Microsoft Translator アクセスを使用します。Microsoft がパスを遮断すると HTTP 404 になることがあります。",
-  "provider.microsoft_edge.status": "キー不要の実験的プロバイダー。認証や翻訳が予告なく HTTP 404 になることがあります。失敗時は Bing Translator または Google Web を試してください。",
   "provider.ollama.hint": "ローカルの OpenAI 互換エンドポイント。品質は現地のモデルに依存します。",
   "provider.ollama.status": "ローカルプロバイダー。品質は選択したローカル モデルによって異なります。",
   "provider.openai.hint": "柔軟な LLM 字幕翻訳。 API キーとモデルが必要で、オーバーライドしない限り組み込みの字幕プロンプトを使用します。",

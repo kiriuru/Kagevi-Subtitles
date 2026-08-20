@@ -120,6 +120,7 @@
       </div>
     </div>
     <p class="muted">{tr("obs.overlay.instructions")}</p>
+    <p class="muted">{tr("obs.overlay.fit_note")}</p>
     <div class="url-row">
       <input class="control" readonly value={overlayUrl || tr("common.loading")} />
       <button type="button" class="btn btn-sm" class:copy-flash={copied} on:click={copyUrl}>

@@ -14,6 +14,21 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-08-20
+
+### Added
+
+- OBS overlay: captions sit on the **top** of the Browser Source and grow **downward**. Each line (source + up to 4 translations) stays at the **designed font size** and **scrolls on its own** when it is too tall. Toggle **Keep captions inside the OBS box** on the Subtitles tab (`overlay.fit_to_box`, on by default). After updating, **reload** the Browser Source (cache-bust `?v=20260820f`).
+
+### Removed
+
+- Translation provider `microsoft_edge` (keyless Microsoft Edge Translate). Microsoft’s anonymous Edge path is dead (HTTP 404). Existing configs migrate to `bing_translator` (also keyless) on load/save; `public_libretranslate_mirror` now maps to Bing as well.
+
+### Fixed
+
+- Local ASR: first-install warm-load no longer fails after downloading ORT/CUDA in the same session. ONNX Runtime now initializes on warm-load (not immediately after the ORT zip), retries a failed first `init`, and registers extracted CUDA/ORT folders on the DLL search path before loading.
+- Browser Web Speech: after a long pause, stall/hot-mic rearm no longer `stop()`s recognition on the first words of the next phrase (continuous **and** overlap). The stall clock is the **current** mic-hot streak, not wall time since the last ASR result.
+
 ## [0.6.4] - 2026-08-08
 
 ### Added
@@ -464,7 +479,8 @@ First VoiceSub release (successor to SST Desktop `0.4.4`). Stack and delivery ar
 
 Earlier `0.2.9.*` SST Desktop history lives in archived GitHub release notes and is not expanded here.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2

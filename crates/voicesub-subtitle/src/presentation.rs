@@ -7,6 +7,13 @@ use crate::style::resolve_effective_subtitle_style;
 use crate::trace::SubtitleLog;
 use crate::types::{LifecycleState, SubtitleLineItem, SubtitlePayloadEvent};
 
+fn overlay_fit_to_box(overlay: &Value) -> bool {
+    overlay
+        .get("fit_to_box")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true)
+}
+
 pub(crate) struct SubtitlePresentation {
     config_getter: Box<dyn Fn() -> Value + Send + Sync>,
     stale_translation_suppressed: Box<dyn Fn(u64) + Send + Sync>,
@@ -334,6 +341,7 @@ impl SubtitlePresentation {
                 .get("compact")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false),
+            fit_to_box: overlay_fit_to_box(&overlay),
             display_order,
             show_source,
             show_translations,
@@ -583,6 +591,7 @@ impl SubtitlePresentation {
                     .get("compact")
                     .and_then(|v| v.as_bool())
                     .unwrap_or(false),
+                fit_to_box: overlay_fit_to_box(&overlay),
                 display_order,
                 show_source,
                 show_translations: subtitle_output
@@ -625,6 +634,7 @@ impl SubtitlePresentation {
                 .get("compact")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false),
+            fit_to_box: overlay_fit_to_box(&overlay),
             display_order: display_order.clone(),
             show_source: subtitle_output
                 .get("show_source")
@@ -845,6 +855,19 @@ impl SubtitlePresentation {
         payload.active_partial_text = visible_partial_text;
         payload.active_partial_sequence = active_partial_sequence;
         payload.active_partial_source_lang = active_partial_source_lang;
+        // Overlay layout is live config, not part of the completed phrase.
+        // Reused completed payloads must pick up checkbox/preset changes
+        // without waiting for the next final.
+        payload.preset = overlay
+            .get("preset")
+            .and_then(|v| v.as_str())
+            .unwrap_or("single")
+            .into();
+        payload.compact = overlay
+            .get("compact")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        payload.fit_to_box = overlay_fit_to_box(&overlay);
         self.log.presentation_built(
             payload.lifecycle_state,
             !active_partial_text.is_empty(),
@@ -859,6 +882,14 @@ impl SubtitlePresentation {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn overlay_fit_to_box_defaults_true() {
+        assert!(overlay_fit_to_box(&Value::Null));
+        assert!(overlay_fit_to_box(&json!({})));
+        assert!(overlay_fit_to_box(&json!({"fit_to_box": true})));
+        assert!(!overlay_fit_to_box(&json!({"fit_to_box": false})));
+    }
 
     #[test]
     fn enabled_slot_ids_follow_lines_array_order() {

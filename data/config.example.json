@@ -44,7 +44,8 @@
   },
   "overlay": {
     "preset": "single",
-    "compact": false
+    "compact": false,
+    "fit_to_box": true
   },
   "obs_closed_captions": {
     "enabled": false,

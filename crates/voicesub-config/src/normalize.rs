@@ -126,6 +126,11 @@ fn normalize_overlay_config(root: &mut Map<String, Value>) {
 
     overlay.insert("preset".into(), json!(preset));
     overlay.insert("compact".into(), json!(compact));
+    let fit_to_box = overlay
+        .get("fit_to_box")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(true);
+    overlay.insert("fit_to_box".into(), json!(fit_to_box));
 }
 
 fn normalize_asr_browser_config(root: &mut Map<String, Value>) {
@@ -813,6 +818,20 @@ mod tests {
         }));
         assert_eq!(out["overlay"]["preset"], "stacked");
         assert_eq!(out["overlay"]["compact"], true);
+    }
+
+    #[test]
+    fn overlay_fit_to_box_defaults_true_and_keeps_explicit_false() {
+        let missing = normalize_config_payload(json!({
+            "config_version": 7,
+            "overlay": { "preset": "stacked" }
+        }));
+        assert_eq!(missing["overlay"]["fit_to_box"], true);
+        let off = normalize_config_payload(json!({
+            "config_version": 7,
+            "overlay": { "preset": "stacked", "fit_to_box": false }
+        }));
+        assert_eq!(off["overlay"]["fit_to_box"], false);
     }
 
     #[test]

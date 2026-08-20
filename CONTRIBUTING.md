@@ -28,14 +28,13 @@ By participating, you agree to follow the [Code of Conduct](./CODE_OF_CONDUCT.md
 
 ## Adding a translation provider
 
-VoiceSub ships **18** built-in providers. Each provider is a Rust adapter behind the shared `TranslationProvider` trait, plus dashboard metadata and i18n.
+VoiceSub ships **17** built-in providers. Each provider is a Rust adapter behind the shared `TranslationProvider` trait, plus dashboard metadata and i18n.
 
 Good reference implementations:
 
 | Kind | Example file | Notes |
 | --- | --- | --- |
 | Keyless / web session | [`bing_translator.rs`](./crates/voicesub-translation/src/providers/bing_translator.rs) | Session bootstrap, retryable errors |
-| Keyless / token scrape | [`microsoft_edge.rs`](./crates/voicesub-translation/src/providers/microsoft_edge.rs) | Cached token, experimental flag |
 | API key + REST | [`caiyun.rs`](./crates/voicesub-translation/src/providers/caiyun.rs) | Settings map, diagnostics |
 | LLM chat | [`openai_compatible.rs`](./crates/voicesub-translation/src/providers/openai_compatible.rs) | Reused for OpenAI / Ollama / LM Studio |
 
@@ -96,7 +95,7 @@ impl TranslationProvider for MyServiceProvider {
 | Rust group | Typical `supports_live_partial` | Example providers |
 | --- | --- | --- |
 | `stable` | `true` | Google v2, DeepL, Azure, LibreTranslate |
-| `experimental` | `true` | Google Web, Bing, Microsoft Edge, GAS URL |
+| `experimental` | `true` | Google Web, Bing, GAS URL |
 | `china` | `true` | Baidu, Youdao, Tencent, Caiyun |
 | `llm` | **`false`** | OpenAI, OpenRouter |
 | `local_llm` | **`false`** | LM Studio, Ollama |
@@ -121,7 +120,7 @@ Update these files so the Translation panel shows your provider:
 | [`src/lib/translation-provider-settings.ts`](./src/lib/translation-provider-settings.ts) | Default settings object + normalization branch if non-standard |
 | [`src/lib/translation-helpers.ts`](./src/lib/translation-helpers.ts) | `REQUIRED_PROVIDER_FIELDS` entry when credentials are mandatory |
 
-Keyless providers (`fields: []`) should normalize to `{}` like `bing_translator` / `microsoft_edge`.
+Keyless providers (`fields: []`) should normalize to `{}` like `bing_translator`.
 
 ### 4. Add i18n strings
 

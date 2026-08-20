@@ -23,6 +23,14 @@ describe("normalizeConfigPayload SST parity", () => {
     } as ConfigPayload);
     expect(out.overlay?.preset).toBe("stacked");
     expect(out.overlay?.compact).toBe(true);
+    expect(out.overlay?.fit_to_box).toBe(true);
+  });
+
+  it("keeps overlay.fit_to_box false when unchecked", () => {
+    const out = normalizeConfigPayload({
+      overlay: { preset: "stacked", fit_to_box: false },
+    } as ConfigPayload);
+    expect(out.overlay?.fit_to_box).toBe(false);
   });
 
   it("maps invalid worker_launch_browser to auto", () => {
@@ -48,6 +56,29 @@ describe("normalizeConfigPayload SST parity", () => {
     } as ConfigPayload);
     expect(out.translation?.provider).toBe("google_translate_v2");
     expect(out.translation?.lines?.[0]?.provider).toBe("google_translate_v2");
+  });
+
+  it("migrates microsoft_edge and public_libretranslate_mirror to bing_translator", () => {
+    const edge = normalizeConfigPayload({
+      translation: {
+        provider: "microsoft_edge",
+        lines: [{ provider: "microsoft_edge", target_lang: "ja", slot_id: "translation_1" }],
+      },
+    } as ConfigPayload);
+    expect(edge.translation?.provider).toBe("bing_translator");
+    expect(edge.translation?.lines?.[0]?.provider).toBe("bing_translator");
+    expect(edge.translation?.provider_settings?.microsoft_edge).toBeUndefined();
+
+    const mirror = normalizeConfigPayload({
+      translation: {
+        provider: "public_libretranslate_mirror",
+        lines: [
+          { provider: "public_libretranslate_mirror", target_lang: "ru", slot_id: "translation_1" },
+        ],
+      },
+    } as ConfigPayload);
+    expect(mirror.translation?.provider).toBe("bing_translator");
+    expect(mirror.translation?.lines?.[0]?.provider).toBe("bing_translator");
   });
 
   it("fills translation provider_settings with SST defaults", () => {

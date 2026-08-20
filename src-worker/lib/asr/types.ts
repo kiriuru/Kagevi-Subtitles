@@ -157,6 +157,8 @@ export interface BrowserAsrState {
   micRms: number;
   micActiveRecentMs: number | null;
   lastMicActivityAt: number;
+  /** Rising edge of the current mic-energy streak; 0 when the mic has been quiet past the break window. */
+  micHotSinceMs: number;
   getUserMediaCount: number;
   getUserMediaLastError: string | null;
   micStreamActive: boolean;

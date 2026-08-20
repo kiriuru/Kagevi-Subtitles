@@ -94,7 +94,6 @@ fn provider_endpoint_summary(
             .get("api_url")
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty()),
-        "microsoft_edge" => Some("https://api-edge.cognitive.microsofttranslator.com".into()),
         "bing_translator" => Some("https://www.bing.com/translator".into()),
         "baidu_translate" => Some("https://fanyi-api.baidu.com/api/trans/vip/translate".into()),
         "youdao_translate" => Some("https://openapi.youdao.com/api".into()),

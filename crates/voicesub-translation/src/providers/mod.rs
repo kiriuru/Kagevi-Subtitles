@@ -11,7 +11,6 @@ mod google_v3;
 mod http;
 mod lang_codes;
 mod libretranslate;
-mod microsoft_edge;
 mod openai_compatible;
 mod stub;
 mod tencent_tmt;
@@ -38,7 +37,6 @@ pub use http::{
     effective_request_timeout,
 };
 pub use libretranslate::LibreTranslateProvider;
-pub use microsoft_edge::MicrosoftEdgeProvider;
 pub use openai_compatible::OpenAICompatibleChatProvider;
 pub use stub::StubTranslationProvider;
 pub use tencent_tmt::TencentTmtProvider;
@@ -56,7 +54,6 @@ pub const SUPPORTED_PROVIDERS: &[&str] = &[
     "openrouter",
     "lm_studio",
     "ollama",
-    "microsoft_edge",
     "bing_translator",
     "free_web_translate",
     "baidu_translate",
@@ -208,10 +205,6 @@ pub fn build_default_registry(
             false,
             true,
         )),
-    );
-    registry.insert(
-        "microsoft_edge".into(),
-        Arc::new(MicrosoftEdgeProvider::new(transport.clone())),
     );
     registry.insert(
         "bing_translator".into(),

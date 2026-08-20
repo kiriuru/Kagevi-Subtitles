@@ -19,6 +19,7 @@
   const params = new URLSearchParams(location.search);
   const compact = params.get("compact") === "1";
   const debugMode = params.get("debug") === "1";
+  const fitParam = params.get("fit");
   // Independent toggle for subtitle-effect tracing so the OBS overlay can run
   // in clean debug=1 mode without the per-frame partial chatter, and vice
   // versa. Enable by adding ?debug-subtitles=1 to the overlay URL, or by
@@ -49,6 +50,7 @@
     lifecycleState: "idle",
     lastRenderSignature: "",
     lastPayloadStyle: null,
+    fitToBox: true,
   };
 
   const runtimeGoneClearDelayMs = 900;
@@ -137,6 +139,16 @@
     return 0;
   }
 
+  function resolveFitToBox(payloadValue) {
+    if (fitParam === "0") {
+      return false;
+    }
+    if (fitParam === "1") {
+      return true;
+    }
+    return payloadValue !== false;
+  }
+
   function normalizeOverlayPayload(raw) {
     const current = raw && typeof raw === "object" ? raw : {};
     const rawLifecycle = String(current.lifecycle_state || "idle");
@@ -145,6 +157,7 @@
     return {
       preset: OVERLAY_PRESETS.has(rawPreset) ? rawPreset : "stacked",
       compact: current.compact === true,
+      fit_to_box: current.fit_to_box !== false,
       completed_block_visible: current.completed_block_visible === true,
       lifecycle_state,
       show_source: current.show_source !== false,
@@ -176,6 +189,7 @@
     return JSON.stringify({
       preset: overlayState.preset,
       compact: overlayState.compact,
+      fitToBox: overlayState.fitToBox,
       completedItems: [],
       activePartialText: "",
       style: overlayState.lastPayloadStyle,
@@ -285,7 +299,7 @@
     if (!root) {
       return;
     }
-    root.className = `overlay ${overlayState.preset}${overlayState.compact ? " compact" : ""}`;
+    root.className = `overlay ${overlayState.preset}${overlayState.compact ? " compact" : ""}${overlayState.fitToBox ? " is-fit" : ""}`;
   }
 
   function hasRenderableOverlayContent(payload) {
@@ -408,6 +422,7 @@
     const signature = JSON.stringify({
       preset: overlayState.preset,
       compact: overlayState.compact,
+      fitToBox: overlayState.fitToBox,
       completedItems: signatureCompletedItems(overlayState.completedItems),
       activePartialText: overlayState.activePartialText,
       style: overlayState.lastPayloadStyle,
@@ -434,6 +449,7 @@
     if (window.SubtitleStyleRenderer && linesContainer) {
       const result = window.SubtitleStyleRenderer.render(linesContainer, payload, {
         overlay: true,
+        fitToBox: overlayState.fitToBox,
         onRenderTrace: subtitleDebugMode ? handleSubtitleRenderTrace : null,
       });
       // Match dashboard preview (`overlay-panel.js`): when TTL expiry, Stop, or
@@ -442,6 +458,7 @@
       // visible in OBS even after the backend sent an empty overlay_update.
       if (result?.empty) {
         window.SubtitleStyleRenderer.disposeRenderContainer(linesContainer);
+        window.SubtitleStyleRenderer.stopOverlayOverflowScroll?.();
       }
     } else if (linesContainer) {
       linesContainer.textContent = renderedTexts.join("\n");
@@ -455,6 +472,7 @@
       overlayState.preset = payload.preset;
     }
     overlayState.compact = payload.compact;
+    overlayState.fitToBox = resolveFitToBox(payload.fit_to_box);
     const visibleItems = payload.visible_items;
     const itemTexts = visibleItems.map((item) => item.text).filter(Boolean);
     overlayState.showSource = payload.show_source;
@@ -592,9 +610,31 @@
     });
   }
 
+  function refitOverlayToBox() {
+    if (!overlayState.fitToBox || !linesContainer || !window.SubtitleStyleRenderer?.applyOverlayFitToContainer) {
+      return;
+    }
+    window.SubtitleStyleRenderer.applyOverlayFitToContainer(linesContainer);
+  }
+
+  if (typeof ResizeObserver === "function" && root) {
+    const overlayFitObserver = new ResizeObserver(() => {
+      refitOverlayToBox();
+    });
+    overlayFitObserver.observe(root);
+  }
+  if (document.fonts && typeof document.fonts.ready?.then === "function") {
+    document.fonts.ready.then(() => {
+      refitOverlayToBox();
+    }).catch(() => {
+      // Font load errors must not break the overlay.
+    });
+  }
+
+  overlayState.fitToBox = resolveFitToBox(true);
   writeDebug(
     "overlay boot",
-    `preset=${preset}, compact=${overlayState.compact ? "on" : "off"}`
+    `preset=${preset}, compact=${overlayState.compact ? "on" : "off"}, fit=${overlayState.fitToBox ? "on" : "off"}`
       + (subtitleDebugMode ? `, subtitle_debug=on (source=${subtitleDebugFromUrl ? "url" : "localStorage"})` : "")
   );
   applyClasses();

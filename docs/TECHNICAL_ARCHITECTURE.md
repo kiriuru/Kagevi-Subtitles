@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.6.4 — Технический документ
+# Kagevi Subtitles 0.6.5 — Технический документ
 
-Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.4"`.
+Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.6.5"`.
 
 Этот документ описывает layout проекта Kagevi Subtitles, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
 
@@ -275,7 +275,7 @@ src-tauri (Layer 4: IPC, window, bundle only)
 | `voicesub-types` | `PROJECT_VERSION`, WS envelope types, ASR event DTO |
 | `voicesub-config` | TOML store, defaults, normalize/migrate, paths, bind policy |
 | `voicesub-subtitle` | `SubtitleLifecycleCore`, `SubtitleRouter`, presentation, overlay contract |
-| `voicesub-translation` | `TranslationDispatcher`, `TranslationEngine`, 18 providers |
+| `voicesub-translation` | `TranslationDispatcher`, `TranslationEngine`, 17 providers |
 | `voicesub-browser` | Chrome supervisor, worker launch flags, operational FSM |
 | `voicesub-ws` | `/ws/events` hub, `/ws/asr_worker` hub, event sequence |
 | `voicesub-http` | Re-export `voicesub-runtime::http` (thin) |
@@ -362,7 +362,8 @@ Ready для `local_parakeet` — runtime gate (`asr.local_module.ready`), не 
 | Удалён | Мапится в | Причина |
 | --- | --- | --- |
 | `mymemory` | `google_translate_v2` (fallback вызывающего) | Анонимная квота 5 000 символов/день непригодна для live-субтитров |
-| `public_libretranslate_mirror` | `microsoft_edge` | Все публичные инстансы LibreTranslate без ключа офлайн или отклоняют API-трафик; замена тоже без ключа, поэтому API key внезапно не требуется |
+| `public_libretranslate_mirror` | `bing_translator` | Все публичные инстансы LibreTranslate без ключа офлайн или отклоняют API-трафик; замена тоже без ключа, поэтому API key внезапно не требуется |
+| `microsoft_edge` | `bing_translator` | Анонимный Edge auth/translate путь Microsoft мёртв (HTTP 404); Bing остаётся безключевым |
 
 Любое другое нераспознанное имя провайдера падает в fallback вызывающего.
 
@@ -711,11 +712,11 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 
 **Defaults UI worker:** lang `ru-RU`, interim/continuous включены, force-finalization idle **1600 ms** (панель worker), max возраст сессии **180 s**.
 
-**Silence rearm (только native continuous):** при `continuous=true` Chrome часто ждёт ~8 с тишины до `no-speech`. Watchdog циклит распознавание после **9000 ms** без start/result, пока mic ещё слышит энергию (`activeSpeechStallMs` / `web_speech_stalled`). В overlap / `continuous=false` этот путь **не** используется (свой silence rearm). Задержка `no_speech` фиксированная (`no_speech_restart_delay_ms`, по умолчанию 150) без накопительного +800 ms backoff. Задержка `network` / `audio_capture` тоже фиксированная (`network_reconnect_initial_ms`, по умолчанию 500) — без экспоненциального роста.
+**Silence rearm (только native continuous):** при `continuous=true` Chrome часто ждёт ~8 с тишины до `no-speech`. Watchdog циклит распознавание после **9000 ms** без start/result в рамках **текущего** mic-hot streak (`activeSpeechStallMs` / `web_speech_stalled`; cold-start **4.5 с**). Длинная пауза и новая речь **не** вызывают немедленный rearm — таймер stall стартует, когда mic снова становится горячим. В overlap / `continuous=false` этот путь **не** используется (свой silence rearm). Задержка `no_speech` фиксированная (`no_speech_restart_delay_ms`, по умолчанию 150) без накопительного +800 ms backoff. Задержка `network` / `audio_capture` тоже фиксированная (`network_reconnect_initial_ms`, по умолчанию 500) — без экспоненциального роста.
 
 **Visible idle rearm (все режимы):** если окно worker видимо, mic тихий и нет transcript activity (`lastStartAtMs` / `lastResultAtMs`) **30 с** (`visibleIdleRestartMs`; скрытое окно — **60 с**), watchdog force-rearm (`watchdog forced rearm`). Отдельно от active-speech stall (**9 с** при энергии на mic).
 
-**Overlap (dual-buffer):** при `continuous=false` чередуются два слота `SpeechRecognition`: **`preStartNextInstance`** на natural/forced final; **`switchToNextInstance`** на active `onend`; **`safeRestartRecognition`** (~50 мс), если buddy нет. Idle-слоты пересоздаются перед `start()`. **Не** early-warm buddy на active `onstart` — второй одновременный `SpeechRecognition` заставляет Chrome рвать active (thrash ~1–2 с, поток `duplicate-partial`). Гипотезы buddy **shadow** до handoff. Hard errors — global restart. **Склейка:** soft-join (~1.8 с тишины **и** тихий mic, или ≥450 символов). **Silence rearm:** без ASR с старта слота — **8 с** / **3 с** при горячем mic; stale soft-join partial не блокирует. **Buddy shadow:** flush на handoff.
+**Overlap (dual-buffer):** при `continuous=false` чередуются два слота `SpeechRecognition`: **`preStartNextInstance`** на natural/forced final; **`switchToNextInstance`** на active `onend`; **`safeRestartRecognition`** (~50 мс), если buddy нет. Idle-слоты пересоздаются перед `start()`. **Не** early-warm buddy на active `onstart` — второй одновременный `SpeechRecognition` заставляет Chrome рвать active (thrash ~1–2 с, поток `duplicate-partial`). Гипотезы buddy **shadow** до handoff. Hard errors — global restart. **Склейка:** soft-join (~1.8 с тишины **и** тихий mic, или ≥450 символов). **Silence rearm:** без ASR с старта слота — **8 с** тишины / **3 с** только если **текущий** mic-hot streak уже 3 с без ASR (не просто «mic горячий сейчас» после паузы); stale soft-join partial не блокирует. **Buddy shadow:** flush на handoff.
 
 ### Long-segment flush (буфер Web Speech)
 
@@ -726,7 +727,7 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 | `native_continuous` (`continuous=true`, по умолчанию) | `requestRecognitionFlush` → `recognition.stop()` → restart с reason `long_segment_flush` (~100 ms) |
 | Overlap (`continuous=false`) | сначала `preStartNextOverlapInstance`, затем `stop()` только **активного** слота → handoff на warming buddy |
 
-**Не настраивается** (порог `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` в `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, счётчик `longSegmentFlushCount`. **Не заменяет** ротацию по возрасту сессии (`max_browser_session_age_ms`) и idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` / `active_speech_stall` после **9 с** без ASR-результатов при энергии на mic; если есть partial — watchdog **коммитит** без restart (чтобы не было многосекундных дыр); пустой stall rearms через `abort()` (`watchdog_stall`, ~100 ms).
+**Не настраивается** (порог `DEFAULT_LONG_SEGMENT_FLUSH_MIN_CHARS = 450` в `long-segment-flush-logic.ts`). State: `currentSegmentPeakPartialChars`, счётчик `longSegmentFlushCount`. **Не заменяет** ротацию по возрасту сессии (`max_browser_session_age_ms`) и idle forced-final (`force_finalization_timeout_ms`). Native continuous stall: `web_speech_stalled` / `active_speech_stall` после **9 с** без ASR-результатов в текущем mic-hot streak; если есть partial — watchdog **коммитит** без restart (чтобы не было многосекундных дыр); пустой stall rearms через `stop()` (`watchdog_stall`, ~100 ms).
 
 ### Расширенные настройки Web Speech (dashboard)
 
@@ -766,7 +767,7 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 **Crate:** `voicesub-translation`  
 **Entry:** `TranslationDispatcher` (`dispatcher.rs`)
 
-### Providers (18)
+### Providers (17)
 
 `SUPPORTED_PROVIDERS` in `providers/mod.rs`:
 
@@ -787,22 +788,20 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 | `caiyun_translator` | china (zh/en/ja) |
 | `google_gas_url` | experimental |
 | `google_web` | experimental |
-| `microsoft_edge` | experimental (без ключа) |
 | `bing_translator` | experimental (без ключа) |
 | `free_web_translate` | experimental (без ключа) |
 
 Заметки: DeepL мапит UI-коды (`en`/`zh-cn`/`pt`) в API targets и выбирает Free vs Pro URL по ключу (`:fx` → free), если не задан custom `api_url`. Google v3 short model id раскрываются в full resource names. Azure предпочитает `zh-Hans`/`zh-Hant`; LibreTranslate — `zh`/`zt`. Китайские провайдеры: Baidu / Youdao / Tencent — бесплатные месячные квоты после регистрации; Caiyun — только zh/en/ja.
 
-**Провайдеры без ключа.** Четыре провайдера не требуют API key и являются бесплатным путём для пользователей без аккаунтов. Они намеренно размещены на **независимых хостах**, чтобы throttle или блокировка одного не выводила из строя остальные:
+**Провайдеры без ключа.** Три провайдера не требуют API key и являются бесплатным путём для пользователей без аккаунтов. Они намеренно размещены на **независимых хостах**, чтобы throttle или блокировка одного не выводила из строя остальные:
 
 | ID | Endpoint | Заметки |
 | --- | --- | --- |
 | `google_web` | `translate.googleapis.com/translate_a/single?client=gtx` | Путь веб-виджета Google |
 | `free_web_translate` | `clients5.google.com/translate_a/t?client=dict-chrome-ex` | Путь словаря Chrome-расширения; отдельный throttle bucket от `google_web`. При `sl=auto` ответ `[[text, lang]]`, при явном `sl` — `[text]`; парсятся обе формы |
-| `microsoft_edge` | `edge.microsoft.com/translate/auth` → `api-edge.cognitive.microsofttranslator.com/translate` | Качество Azure Translator через анонимный Edge JWT, когда путь жив. JWT кэш 7 мин; `401`/`403` сбрасывает и повторяет один раз. Коды target из `azure_lang` (`zh-Hans`/`zh-Hant`); `from` опускается для auto-detect. **Ненадёжен:** Microsoft может отвечать **HTTP 404** (или иначе ломать auth/translate) без предупреждения — fallback на `bing_translator` / `google_web` / `free_web_translate` |
 | `bing_translator` | `bing.com/translator` → `ttranslatev3` | Keyless Bing Translator web session. Scrapes IG/IID + AbusePreventionHelper token (TTL со страницы минус skew); параллельные partials делят один bootstrap mutex. Коды target из `azure_lang`; `fromLang=auto-detect` для auto |
 
-`public_libretranslate_mirror` **удалён**: все публичные инстансы LibreTranslate без ключа сейчас офлайн или отклоняют API-трафик (`translate.fedilab.app` отвечает `403 Request forbidden by administrative rules` на уровне edge). Существующие конфиги миграционно переводятся на `microsoft_edge` — см. *Удалённые providers* ниже.
+`microsoft_edge` **удалён**: анонимный Edge auth/translate путь Microsoft (`edge.microsoft.com/translate/auth` → `api-edge.cognitive.microsofttranslator.com`) мёртв (HTTP 404). Существующие конфиги миграционно переводятся на `bing_translator` — см. *Удалённые providers* выше. `public_libretranslate_mirror` уже был удалён (все публичные инстансы LibreTranslate без ключа офлайн или отклоняют API-трафик); эти конфиги тоже мапятся на `bing_translator`.
 
 До **4 линий перевода** (`translation_1`…`translation_4`). Test stub `stub` — не в production registry.
 
@@ -873,7 +872,8 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 ### Пресеты overlay
 
 `overlay.preset`: `single` | `dual-line` | `stacked`  
-`overlay.compact`: `bool` — более плотные отступы / чуть меньший масштаб (независимо от пресета).
+`overlay.compact`: `bool` — более плотные отступы / чуть меньший масштаб (независимо от пресета).  
+`overlay.fit_to_box`: `bool` (по умолчанию **true**) — крупный шрифт и прокрутка overflow внутри OBS Browser Source.
 
 | Пресет | Группировка рядов |
 | --- | --- |
@@ -882,7 +882,11 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 | `stacked` | Каждый видимый элемент — отдельный ряд |
 
 Устаревший `preset=compact` (конфиг или `?preset=compact`) нормализуется в `preset=stacked` + `compact=true`.  
-Переопределение query-параметрами: `?preset=…&compact=1&profile=…&debug=…`
+Переопределение query-параметрами: `?preset=…&compact=1&profile=…&debug=…&fit=0`
+
+### Fit-to-box (OBS Browser Source)
+
+`overlay.fit_to_box` (по умолчанию **true**; галочка на вкладке Субтитры). Субтитры сидят на **верхней** границе Browser Source и растут **вниз**. Текст переносится на заданных размерах шрифта. Каждая физическая линия (исходник + до 4 переводов, `single` / `dual-line` / `stacked`), которая выше своей доли окна, **прокручивается отдельно** (`translateY(--overlay-scroll-y)` на `.subtitle-line__content`): пауза на свежем тексте, вверх к началу, пауза, обратно. Короткие линии остаются натуральной высоты; остаток места отдаётся переполненным. Dashboard preview **не** скроллится (`overlay: false`). `ResizeObserver` + `document.fonts.ready` пересчитывают overflow без нового payload. `?fit=0` / `?fit=1` переопределяют галочку для одного Browser Source. Снятая галочка — якорь сверху и обрезка снизу (без построчного скролла).
 
 ### Общий renderer
 
@@ -1043,6 +1047,8 @@ Config: `user-data/modules/tts/config.toml` → секция `[twitch]`.
 | `user-data/config.toml` → `asr.mode` | `browser_google` \| `local_parakeet` | Вкладка Эфир (когда ready) |
 
 Lazy-download в `user-data/modules/local-asr/` (модели, ORT CPU/GPU DLL, CUDA redist). В core NSIS-установщик **не** входят. В каталоге моделей есть **fp16** (`grikdotnet/parakeet-tdt-0.6b-fp16`) — лёгкий floating-point вариант для CUDA; при **`int8` / `int8_smoothquant` decode остаётся на CPU** (нет CUDA-ядер для integer-quant ops) — для GPU берите **fp16** или **fp32**.
+
+ONNX Runtime инициализируется **лениво при первом warm-load / probe / Live Start**, а не в момент окончания скачивания ORT DLL. После download обновляются только PATH / `AddDllDirectory`, чтобы CUDA redist, извлечённый позже в том же процессе, был виден. Неудачный первый `ort::init` повторяется на следующем прогреве (не кэшируется на жизнь процесса). Переключение **execution provider** (`cpu` ↔ `cuda`) **не** требует рестарта — GPU-пакет ORT содержит оба EP. Перезапуск нужен только если процесс уже загрузил `runtime/cpu/onnxruntime.dll`, а позже скачали пакет, из‑за которого preferred становится `runtime/gpu/onnxruntime.dll` (Windows не выгружает ORT).
 
 ### Gate готовности
 
@@ -1243,8 +1249,8 @@ Standard layout использует те же destinations через `NavRail`
 | --- | --- |
 | `overlay.html` | Shell |
 | `overlay.js` | WS consumer, цикл render; `disposeRenderContainer` при empty |
-| `overlay.css` | Стили |
-| `shared/js/subtitle-style/` | Renderer ESM (`index.js`; `source` + `translation_1`…`translation_4`) |
+| `overlay.css` | Заполнение viewport + clip; compact padding |
+| `shared/js/subtitle-style/` | Renderer ESM (`index.js`, `fit-box.js`, …; `source` + `translation_1`…`translation_4`; fit-to-box) |
 | `shared/js/core/ws-stale-guard-logic.js` | Stale-фильтр |
 | `shared/js/i18n/` | Минимальный locale bundle (`document.title.overlay`) |
 
@@ -1252,7 +1258,7 @@ Standard layout использует те же destinations через `NavRail`
 **Reconnect:** exponential backoff 1s → 10s max; последний кадр сохраняется при disconnect (OBS UX).  
 **Debug:** `?debug=1` включает `writeDebug` → `console.debug`; `?debug-subtitles=1` — ring trace эффектов. В production hot path нет `console.log`.  
 **Paint coalesce:** длинные partials (≥200 символов) → ~66 ms; видимые live drafts → ~40 ms; первый кадр `completed_only` без лимита.  
-**Пустой payload:** `disposeRenderContainer(linesContainer)`, когда `render()` возвращает `empty: true` (TTL / Stop / idle). Idle TTL также требует `hasVisibleRenderedFrame()` — иначе очистка state без `render()` оставляет последний кадр в OBS. Pending RAF отменяется при явной очистке. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260805d`. Dashboard preview передаёт `obsPaintPolicy: true` (тот же paint-budget, что у OBS: mid-phrase крупные delta без fragment-анимации; phrase-start/`jump` всегда с выбранным эффектом). Entrance `fade`/`blur_in`/`glow` стартуют с opacity 0; glow дополнительно через `text-shadow` для старого CEF. Remount/finalize оставляют `effect-none`. Translation draft→final (в т.ч. с другим текстом) и дубли final не переигрывают entrance.
+**Пустой payload:** `disposeRenderContainer(linesContainer)`, когда `render()` возвращает `empty: true` (TTL / Stop / idle). Idle TTL также требует `hasVisibleRenderedFrame()` — иначе очистка state без `render()` оставляет последний кадр в OBS. Pending RAF отменяется при явной очистке. Cache-bust: `overlay.html` → `subtitle-style/index.js?v=20260820f`. Dashboard preview передаёт `obsPaintPolicy: true` (тот же paint-budget, что у OBS: mid-phrase крупные delta без fragment-анимации; phrase-start/`jump` всегда с выбранным эффектом). Entrance `fade`/`blur_in`/`glow` стартуют с opacity 0; glow дополнительно через `text-shadow` для старого CEF. Remount/finalize оставляют `effect-none`. Translation draft→final (в т.ч. с другим текстом) и дубли final не переигрывают entrance. OBS overlay после render применяет overflow-scroll (`applyOverlayOverflow`; галочка `overlay.fit_to_box`, `?fit=0` отключает).
 
 ## 23. Frontend: browser worker (Svelte)
 
@@ -1281,7 +1287,7 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (м�
 ## 25. Версионирование и проверка обновлений
 
 - **Единый источник правды:** `voicesub-types::PROJECT_VERSION` и `DEFAULT_GITHUB_REPO` (`kiriuru/Kagevi-Subtitles`) в `crates/voicesub-types/src/version.rs`
-- Bump: `npm run version:bump -- --patch` (или `-- 0.6.4`) → правит `PROJECT_VERSION` + `npm run version:sync` (Cargo / package.json / tauri.conf.json / `project-version.ts` / brand / **updater endpoint**)
+- Bump: `npm run version:bump -- --patch` (или `-- 0.6.5`) → правит `PROJECT_VERSION` + `npm run version:sync` (Cargo / package.json / tauri.conf.json / `project-version.ts` / brand / **updater endpoint**)
 - Контроль drift: `npm run version:check`; Rust-тест `project_version_matches_cargo_pkg`
 - `GET /api/version`, `POST /api/updates/check` — опрос GitHub Releases для метаданных dashboard; runtime force-check на старте HTTP; dashboard переиспользует через `refreshVersionAfterStartupCheck`
 - **Установка из приложения:** `tauri-plugin-updater` + `tauri-plugin-process`; endpoint синхронизируется в `https://github.com/{DEFAULT_GITHUB_REPO}/releases/latest/download/latest.json`; minisign-ключи в `secrets/` (gitignored). Перед скачиванием shell IPC `prepare_updater_staging` перенаправляет `TEMP`/`TMP` процесса в корень install/project (`discover_project_root`), чтобы NSIS exe оказался там (не в `%TEMP%`). При ошибке `abort_updater_staging` восстанавливает env и чистит частичный staging. После успешного запуска установщика процесс завершается раньше, чем NSIS закончит работу, поэтому хвосты (`{product}-{ver}-updater-*`) удаляются при **следующем** старте приложения (`cleanup_updater_staging`).
@@ -1327,7 +1333,7 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (м�
 1. **Local-first:** bind на localhost по умолчанию; без облачных допущений.
 2. **Видимость browser worker:** полный worker — видимая адресная строка; компактный — Chrome `--app=` (отдельное окно, не скрытый / «задушенный» throttling-режим).
 3. **Subtitle lifecycle:** completed-блок остаётся до финализации новой фразы; поздние переводы на browser path разрешены.
-4. **Перевод:** 18 провайдеров, полная семантика dispatcher (очередь, stale drop, supersession).
+4. **Перевод:** 17 провайдеров, полная семантика dispatcher (очередь, stale drop, supersession).
 5. **Отделение overlay:** vanilla HTML для OBS; не входит в Vite chunk dashboard.
 6. **Без Node в runtime:** только compile-time toolchain frontend.
 
@@ -1336,7 +1342,6 @@ Bundle overlay: `npm run i18n:bundle` → `scripts/build-locale-bundle.mjs` (м�
 ### 28.1 Текущие ограничения
 
 - In-app updates используют только бесплатную minisign-подпись Tauri (без Authenticode). SmartScreen Windows всё ещё может предупреждать при первом/редком запуске exe без издателя.
-- Keyless MT `microsoft_edge`: анонимный Edge auth/translate путь Microsoft может в любой момент отвечать **HTTP 404** (или аналогично); при сбое берите другие безключевые провайдеры.
 - `POST /api/openai/models` — live-список OpenAI-compatible моделей; официальный хост OpenAI фильтрует до chat-моделей
 - Browser ASR: перечисление audio input в core devices API пустое (mic в Chrome). Local ASR: `GET /api/asr/local/mics/list` (cpal).
 

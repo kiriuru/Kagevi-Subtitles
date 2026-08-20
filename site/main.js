@@ -22,7 +22,7 @@
         "Speech to on-screen captions with optional translation — local-first, privacy-first, ready for OBS.",
       ctaDownload: "Download for Windows",
       ctaGuide: "Feature guide",
-      heroMeta: "Windows 10/11 · MIT · v0.6.4",
+      heroMeta: "Windows 10/11 · MIT · v0.6.5",
       heroScroll: "Explore",
       guideTitle: "How the product works",
       guideLede:
@@ -44,7 +44,7 @@
       gLive4: "Compact layout fits a secondary monitor or phone-style window.",
       gSpeechTitle: "Web Speech — Chrome worker",
       gSpeechIntro:
-        "Production mode browser_google runs Google Chrome Web Speech in a separate visible window with an address bar — not a hidden tab.",
+        "Production mode browser_google runs Google Chrome Web Speech in a separate window — full UI with address bar by default, or optional compact --app= from the Live tab.",
       gSpeech1: "Microphone permission is granted inside Chrome (getUserMedia).",
       gSpeech2: "Isolated worker profile under user-data; anti-throttling flags on Windows.",
       gSpeech3: "Recognition language and advanced restart / force-final options in Settings.",
@@ -60,7 +60,7 @@
       gTranslateIntro:
         "Seventeen providers with queueing, cache, and stale-drop protection. ASR still works with translation turned off (source-only).",
       gTranslate1: "Up to four translation lines (source text is separate).",
-      gTranslate2: "Keyless options: Google Web, Free Web Translate, Microsoft Edge Translate.",
+      gTranslate2: "Keyless options: Google Web, Free Web Translate, Bing Translator.",
       gTranslate3:
         "Optional realtime translation — captions update while you speak, without waiting for the phrase to finish (off by default).",
       gTranslate4:
@@ -68,8 +68,8 @@
       gSubsTitle: "Subtitles — overlay layout",
       gSubsIntro:
         "Control which lines appear on the OBS overlay, their order, preset, and how long completed text remains visible.",
-      gSubs1: "Presets: single, dual-line, stacked, compact (URL query overrides available).",
-      gSubs2: "Toggle source and translation visibility independently.",
+      gSubs1: "Presets: single, dual-line, stacked + compact spacing (URL query overrides available).",
+      gSubs2: "Keep captions inside the OBS box (default): full-size font; each line scrolls when too tall (?fit=0 to clip).",
       gSubs3: "TTL / lifecycle settings keep completed text stable during the next partial.",
       gSubs4: "Reorder lines to control what appears first on the overlay.",
       gObsTitle: "OBS — Browser Source & CC",
@@ -78,7 +78,7 @@
       gObs1: "Add Browser Source → http://127.0.0.1:8765/overlay",
       gObs2: "Copy URL / open overlay helpers live on the OBS tab.",
       gObs3: "Closed Captions: meant for Twitch stream captions (other uses are uncommon).",
-      gObs4: "After app updates, reload the Browser Source if the overlay looks stale.",
+      gObs4: "After app updates, reload the Browser Source so fit-to-box / style assets refresh.",
       gTtsTitle: "TTS — speech & Twitch chat",
       gTtsIntro:
         "Sidecar module for subtitle speech and Twitch chat TTS with native or Sonic pitch-preserving playback.",
@@ -156,7 +156,7 @@
         "Речь → субтитры на экране с опциональным переводом. Локально, privacy-first, готово для OBS.",
       ctaDownload: "Скачать для Windows",
       ctaGuide: "Обзор функций",
-      heroMeta: "Windows 10/11 · MIT · v0.6.4",
+      heroMeta: "Windows 10/11 · MIT · v0.6.5",
       heroScroll: "Смотреть",
       guideTitle: "Как устроен продукт",
       guideLede:
@@ -178,7 +178,7 @@
       gLive4: "Компактный макет удобен для второго монитора или узкого окна.",
       gSpeechTitle: "Web Speech — Chrome worker",
       gSpeechIntro:
-        "Режим browser_google запускает Google Chrome Web Speech в отдельном видимом окне с адресной строкой — не во вкладке и не скрыто.",
+        "Режим browser_google запускает Google Chrome Web Speech в отдельном окне — полный UI с адресной строкой по умолчанию или опциональный компактный --app= с вкладки Эфир.",
       gSpeech1: "Разрешение микрофона выдаётся в Chrome (getUserMedia).",
       gSpeech2: "Изолированный профиль worker в user-data; anti-throttling флаги на Windows.",
       gSpeech3: "Язык распознавания и advanced restart / force-final — в Settings.",
@@ -194,7 +194,7 @@
       gTranslateIntro:
         "Семнадцать провайдеров с очередью, кэшем и защитой от stale. ASR работает и с выключенным переводом (только source).",
       gTranslate1: "До четырёх линий перевода (исходный текст отдельно).",
-      gTranslate2: "Без API key: Google Web, Free Web Translate, Microsoft Edge Translate.",
+      gTranslate2: "Без API key: Google Web, Free Web Translate, Bing Translator.",
       gTranslate3:
         "Опциональный realtime-перевод — субтитры обновляются уже во время речи, не дожидаясь конца фразы (по умолчанию выкл.).",
       gTranslate4:
@@ -202,8 +202,8 @@
       gSubsTitle: "Субтитры — раскладка overlay",
       gSubsIntro:
         "Какие линии видны в OBS, их порядок, пресет и как долго остаётся completed-текст.",
-      gSubs1: "Пресеты: single, dual-line, stacked, compact (есть query-override в URL).",
-      gSubs2: "Видимость source и перевода переключается независимо.",
+      gSubs1: "Пресеты: single, dual-line, stacked + компактные отступы (есть query-override в URL).",
+      gSubs2: "«Вписывать субтитры в окно OBS» (по умолчанию): крупный шрифт; линия прокручивается, если не влезает (?fit=0 — обрезать).",
       gSubs3: "TTL / lifecycle удерживают completed-текст, пока идёт следующий partial.",
       gSubs4: "Порядок линий задаёт, что сверху на overlay.",
       gObsTitle: "OBS — Browser Source и CC",
@@ -212,7 +212,7 @@
       gObs1: "Добавьте Browser Source → http://127.0.0.1:8765/overlay",
       gObs2: "Copy URL / Open overlay — на вкладке OBS.",
       gObs3: "Closed Captions: рассчитаны на субтитры стрима Twitch (другие сценарии почти не встречаются).",
-      gObs4: "После обновления приложения перезагрузите Browser Source, если overlay «залип».",
+      gObs4: "После обновления приложения перезагрузите Browser Source, чтобы подтянуть fit-to-box / стили.",
       gTtsTitle: "TTS — озвучка и Twitch chat",
       gTtsIntro:
         "Sidecar-модуль озвучки субтитров и Twitch chat TTS с native или Sonic (сохранение высоты тона).",
@@ -289,7 +289,7 @@
         "音声から画面上の字幕へ。翻訳は任意。ローカル優先・プライバシー優先で OBS にすぐ使えます。",
       ctaDownload: "Windows 用をダウンロード",
       ctaGuide: "機能ガイド",
-      heroMeta: "Windows 10/11 · MIT · v0.6.4",
+      heroMeta: "Windows 10/11 · MIT · v0.6.5",
       heroScroll: "Explore",
       guideTitle: "製品の仕組み",
       guideLede:
@@ -311,7 +311,7 @@
       gLive4: "コンパクトレイアウトはサブモニターや細いウィンドウ向きです。",
       gSpeechTitle: "Web Speech — Chrome worker",
       gSpeechIntro:
-        "browser_google モードは、アドレスバー付きの別 Chrome ウィンドウで Web Speech を動かします（非表示タブではありません）。",
+        "browser_google モードは別 Chrome ウィンドウで Web Speech を動かします — 既定はアドレスバー付きフル UI、Live タブから任意のコンパクト --app= も可。",
       gSpeech1: "マイク許可は Chrome 内（getUserMedia）で行います。",
       gSpeech2: "user-data 下の分離プロファイル。Windows ではアンチスロットリング対応。",
       gSpeech3: "認識言語と advanced の restart / force-final は Settings にあります。",
@@ -327,7 +327,7 @@
       gTranslateIntro:
         "17 プロバイダー、キュー、キャッシュ、stale 保護。翻訳オフでも ASR（原文のみ）は動作します。",
       gTranslate1: "翻訳行は最大 4（原文は別）。",
-      gTranslate2: "キー不要：Google Web、Free Web Translate、Microsoft Edge Translate。",
+      gTranslate2: "キー不要：Google Web、Free Web Translate、Bing Translator。",
       gTranslate3:
         "任意のリアルタイム翻訳 — 発話中に字幕が更新され、文の完了を待ちません（既定オフ）。",
       gTranslate4:
@@ -335,8 +335,8 @@
       gSubsTitle: "字幕 — オーバーレイ配置",
       gSubsIntro:
         "OBS オーバーレイに出す行、順序、プリセット、完了テキストの表示時間を制御します。",
-      gSubs1: "プリセット：single、dual-line、stacked、compact（URL クエリ上書き可）。",
-      gSubs2: "原文と翻訳の表示は個別に切り替え。",
+      gSubs1: "プリセット：single、dual-line、stacked + コンパクト余白（URL クエリ上書き可）。",
+      gSubs2: "OBS 枠内に収める（既定）：設計フォントのまま；はみ出す行は個別スクロール（?fit=0 でクリップ）。",
       gSubs3: "TTL / lifecycle で次の partial 中も完了テキストを安定表示。",
       gSubs4: "行の並び替えでオーバーレイの先頭を決めます。",
       gObsTitle: "OBS — Browser Source と CC",
@@ -345,7 +345,7 @@
       gObs1: "Browser Source → http://127.0.0.1:8765/overlay",
       gObs2: "Copy URL / Open overlay は OBS タブにあります。",
       gObs3: "Closed Captions は Twitch 配信字幕向け（他用途はほぼありません）。",
-      gObs4: "アプリ更新後、オーバーレイが古い場合は Browser Source を再読み込み。",
+      gObs4: "アプリ更新後は Browser Source を再読み込みし、fit-to-box / スタイルを反映。",
       gTtsTitle: "TTS — 読み上げと Twitch chat",
       gTtsIntro:
         "字幕読み上げと Twitch chat TTS のサイドカー。native または Sonic（ピッチ維持）再生。",
@@ -423,7 +423,7 @@
         "语音到屏幕字幕，可选翻译。本地优先、隐私优先，即刻对接 OBS。",
       ctaDownload: "下载 Windows 版",
       ctaGuide: "功能指南",
-      heroMeta: "Windows 10/11 · MIT · v0.6.4",
+      heroMeta: "Windows 10/11 · MIT · v0.6.5",
       heroScroll: "探索",
       guideTitle: "产品如何工作",
       guideLede:
@@ -445,7 +445,7 @@
       gLive4: "紧凑布局适合副屏或窄窗口。",
       gSpeechTitle: "Web Speech — Chrome worker",
       gSpeechIntro:
-        "browser_google 模式在带地址栏的独立 Chrome 窗口中运行 Web Speech——不是隐藏标签页。",
+        "browser_google 模式在独立 Chrome 窗口中运行 Web Speech——默认带地址栏的完整 UI，也可在 Live 页启用紧凑 --app=。",
       gSpeech1: "麦克风权限在 Chrome 内授予（getUserMedia）。",
       gSpeech2: "user-data 下的隔离配置文件；Windows 有防节流处理。",
       gSpeech3: "识别语言与 advanced restart / force-final 在 Settings。",
@@ -461,7 +461,7 @@
       gTranslateIntro:
         "十七种提供商，含队列、缓存与过期保护。关闭翻译时 ASR（仅原文）仍可用。",
       gTranslate1: "最多四条翻译行（原文单独计算）。",
-      gTranslate2: "免密钥：Google Web、Free Web Translate、Microsoft Edge Translate。",
+      gTranslate2: "免密钥：Google Web、Free Web Translate、Bing Translator。",
       gTranslate3:
         "可选实时翻译 — 说话过程中字幕即更新，不必等句子结束（默认关闭）。",
       gTranslate4:
@@ -469,8 +469,8 @@
       gSubsTitle: "字幕 — 叠加布局",
       gSubsIntro:
         "控制 OBS 叠加层显示哪些行、顺序、预设，以及完成文本停留多久。",
-      gSubs1: "预设：single、dual-line、stacked、compact（可用 URL 查询覆盖）。",
-      gSubs2: "原文与翻译可见性可分别开关。",
+      gSubs1: "预设：single、dual-line、stacked + 紧凑间距（可用 URL 查询覆盖）。",
+      gSubs2: "字幕适配 OBS 框（默认）：保持设计字号；过长行单独滚动（?fit=0 裁切）。",
       gSubs3: "TTL / lifecycle 在下一段 partial 期间保持完成文本稳定。",
       gSubs4: "调整行顺序以控制叠加层顶部内容。",
       gObsTitle: "OBS — Browser Source 与 CC",
@@ -479,7 +479,7 @@
       gObs1: "添加 Browser Source → http://127.0.0.1:8765/overlay",
       gObs2: "Copy URL / Open overlay 在 OBS 标签页。",
       gObs3: "Closed Captions 面向 Twitch 直播字幕（其他场景很少见）。",
-      gObs4: "应用更新后若叠加层过旧，请重新加载 Browser Source。",
+      gObs4: "应用更新后请重新加载 Browser Source，以刷新 fit-to-box / 样式资源。",
       gTtsTitle: "TTS — 朗读与 Twitch 聊天",
       gTtsIntro:
         "字幕朗读与 Twitch 聊天 TTS 侧车，支持 native 或 Sonic（保音调）播放。",
@@ -556,7 +556,7 @@
         "음성을 화면 자막으로. 번역은 선택. 로컬·프라이버시 우선, OBS에 바로 연결.",
       ctaDownload: "Windows용 다운로드",
       ctaGuide: "기능 가이드",
-      heroMeta: "Windows 10/11 · MIT · v0.6.4",
+      heroMeta: "Windows 10/11 · MIT · v0.6.5",
       heroScroll: "둘러보기",
       guideTitle: "제품 동작 방식",
       guideLede:
@@ -578,7 +578,7 @@
       gLive4: "컴팩트 레이아웃은 보조 모니터나 좁은 창에 적합합니다.",
       gSpeechTitle: "Web Speech — Chrome worker",
       gSpeechIntro:
-        "browser_google 모드는 주소 표시줄이 있는 별도 Chrome 창에서 Web Speech를 실행합니다(숨은 탭 아님).",
+        "browser_google 모드는 별도 Chrome 창에서 Web Speech를 실행합니다 — 기본은 주소 표시줄 전체 UI, Live 탭에서 선택적 컴팩트 --app=도 가능.",
       gSpeech1: "마이크 권한은 Chrome 안에서 허용합니다(getUserMedia).",
       gSpeech2: "user-data 아래 격리 프로필. Windows 안티스로틀링 적용.",
       gSpeech3: "인식 언어와 advanced restart / force-final은 Settings에 있습니다.",
@@ -594,7 +594,7 @@
       gTranslateIntro:
         "17개 제공자, 큐·캐시·stale 보호. 번역을 꺼도 ASR(원문만)은 동작합니다.",
       gTranslate1: "번역 줄 최대 4개(원문은 별도).",
-      gTranslate2: "키 없음: Google Web, Free Web Translate, Microsoft Edge Translate.",
+      gTranslate2: "키 없음: Google Web, Free Web Translate, Bing Translator.",
       gTranslate3:
         "선택적 실시간 번역 — 말하는 동안 자막이 갱신되며 문장 끝을 기다리지 않습니다(기본 꺼짐).",
       gTranslate4:
@@ -602,8 +602,8 @@
       gSubsTitle: "자막 — 오버레이 배치",
       gSubsIntro:
         "OBS 오버레이에 보일 줄, 순서, 프리셋, 완료 텍스트 유지 시간을 제어합니다.",
-      gSubs1: "프리셋: single, dual-line, stacked, compact(URL 쿼리 덮어쓰기 가능).",
-      gSubs2: "원문과 번역 표시를 독립적으로 전환.",
+      gSubs1: "프리셋: single, dual-line, stacked + 컴팩트 간격(URL 쿼리 덮어쓰기 가능).",
+      gSubs2: "OBS 박스 안에 맞추기(기본): 설계 글꼴 유지; 넘치면 줄별 스크롤(?fit=0이면 클리핑).",
       gSubs3: "TTL / lifecycle로 다음 partial 동안 완료 텍스트를 안정적으로 유지.",
       gSubs4: "줄 순서로 오버레이 맨 위 내용을 정합니다.",
       gObsTitle: "OBS — Browser Source & CC",
@@ -612,7 +612,7 @@
       gObs1: "Browser Source 추가 → http://127.0.0.1:8765/overlay",
       gObs2: "Copy URL / Open overlay는 OBS 탭에 있습니다.",
       gObs3: "Closed Captions는 Twitch 스트림 자막용(다른 용도는 드묾).",
-      gObs4: "앱 업데이트 후 오버레이가 오래되면 Browser Source를 다시 로드.",
+      gObs4: "앱 업데이트 후 Browser Source를 다시 로드해 fit-to-box / 스타일을 반영하세요.",
       gTtsTitle: "TTS — 음성 & Twitch 채팅",
       gTtsIntro:
         "자막 음성 및 Twitch 채팅 TTS 사이드카. native 또는 Sonic(피치 유지) 재생.",

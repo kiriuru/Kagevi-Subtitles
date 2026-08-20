@@ -120,6 +120,7 @@ export function createBrowserAsrStateSeed(existing?: Partial<BrowserAsrState>): 
     micRms: Number(seed.micRms || 0),
     micActiveRecentMs: seed.micActiveRecentMs == null ? null : Number(seed.micActiveRecentMs || 0),
     lastMicActivityAt: Number(seed.lastMicActivityAt || 0),
+    micHotSinceMs: Number(seed.micHotSinceMs || 0),
     getUserMediaCount: Number(seed.getUserMediaCount || 0),
     getUserMediaLastError: seed.getUserMediaLastError ?? null,
     micStreamActive: Boolean(seed.micStreamActive),

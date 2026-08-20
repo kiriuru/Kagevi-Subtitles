@@ -145,6 +145,15 @@
         />
         <span>{tr("subtitles.compact")}</span>
       </label>
+      <label class="checkbox-row">
+        <input
+          type="checkbox"
+          checked={overlay.fit_to_box !== false}
+          on:change={(e) => patchOverlay({ fit_to_box: (e.currentTarget as HTMLInputElement).checked })}
+        />
+        <span>{tr("subtitles.fit_to_box")}</span>
+      </label>
+      <p class="muted">{tr("subtitles.fit_to_box.help")}</p>
 
       <label class="checkbox-row">
         <input

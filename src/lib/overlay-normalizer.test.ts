@@ -62,6 +62,11 @@ describe("normalizeOverlayPayload", () => {
     expect(out.show_translations).toBe(true);
   });
 
+  it("defaults fit_to_box to true", () => {
+    expect(normalizeOverlayPayload({}).fit_to_box).toBe(true);
+    expect(normalizeOverlayPayload({ fit_to_box: false }).fit_to_box).toBe(false);
+  });
+
   it("clamps invalid preset to stacked", () => {
     expect(normalizeOverlayPayload({ preset: "bogus" }).preset).toBe("stacked");
     expect(normalizeOverlayPayload({ preset: "single" }).preset).toBe("single");

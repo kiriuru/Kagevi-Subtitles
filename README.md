@@ -2,7 +2,7 @@
 
 **Live translated subtitles for streamers — local-first, privacy-first, OBS-ready.**
 
-[![Version](https://img.shields.io/badge/version-0.6.4-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
+[![Version](https://img.shields.io/badge/version-0.6.5-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#system-requirements)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
@@ -19,7 +19,7 @@
 
 Kagevi Subtitles is a Windows desktop app that turns speech into real-time subtitles with optional translation. Recognition runs through **Google Chrome Web Speech** or optional offline **Local ASR** (Parakeet / ONNX). Everything stays on your machine — default bind `127.0.0.1:8765`, no cloud backend, no accounts.
 
-First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.4`**.
+First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.5`**.
 
 <p align="center">
   <img src="./Images/kagevi_live.png" alt="Kagevi Subtitles Live tab" width="860">
@@ -45,7 +45,7 @@ First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.6.4`**.
 | Area | What you get |
 | --- | --- |
 | **Speech** | Google Chrome Web Speech worker, or offline Local ASR (Parakeet / ONNX, CPU or CUDA) |
-| **Translation** | 18 providers (incl. Baidu / Youdao / Tencent / Caiyun), up to **4** translation lines (source is separate). Optional **realtime** translation for classic MT (off by default). Four need **no API key**: Google Web, Free Web Translate, Microsoft Edge Translate, and Bing Translator |
+| **Translation** | 17 providers (incl. Baidu / Youdao / Tencent / Caiyun), up to **4** translation lines (source is separate). Optional **realtime** translation for classic MT (off by default). Three need **no API key**: Google Web, Free Web Translate, and Bing Translator |
 | **OBS** | Browser Source overlay + optional Closed Captions via OBS WebSocket (mainly for Twitch) |
 | **Style** | Animated presets, per-slot styling, theme palette |
 | **TTS** | Native / Sonic playback; subtitle speech + Twitch chat TTS (up to 5 channels) |
@@ -152,7 +152,7 @@ No Python, Node.js, or CUDA in the core installer. CUDA is an optional Local ASR
 
 ## Quick start
 
-1. Install from `Kagevi Subtitles_0.6.4_x64-setup.exe` (or the latest build in your release folder).
+1. Install from `Kagevi Subtitles_0.6.5_x64-setup.exe` (or the latest build in your release folder).
 2. Launch **Kagevi Subtitles.exe** — the dashboard opens at `http://127.0.0.1:8765/`.
 3. In OBS, add a **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. Configure translation and subtitle style if needed, then click **Start**.
@@ -172,7 +172,7 @@ Step-by-step UI guide: [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.ht
 | `http://127.0.0.1:8765/tts` | TTS module |
 | `http://127.0.0.1:8765/local-asr` | Local ASR module |
 
-Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default`
+Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default` · `?fit=0` (disable auto-fit)
 
 ## Data paths
 
@@ -193,6 +193,7 @@ Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default`
 | No subtitles | **Start** pressed; Chrome worker not minimized (Web Speech) **or** Local ASR ready + mic selected |
 | Source text, no translation | Translation on; at least one line active; provider credentials |
 | Empty OBS | Browser Source URL is `/overlay`; visibility on Subtitles tab; reload source after updates |
+| Text clipped in OBS | Subtitles tab: Keep captions inside the OBS box (on by default) scrolls each line at full size; reload the Browser Source after updating |
 | Text stuck after TTL / Stop | Update build; reload Browser Source |
 | Port in use | Free `8765` or change bind (dev builds) |
 | Local ASR missing on Live | Modules → Local ASR: finish wizard until `ready` |

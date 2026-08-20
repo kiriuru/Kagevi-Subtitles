@@ -19,6 +19,7 @@ export function normalizeOverlayPayload(
       ? String(current.preset || "stacked")
       : "stacked",
     compact: current.compact === true,
+    fit_to_box: current.fit_to_box !== false,
     completed_block_visible: current.completed_block_visible === true,
     lifecycle_state,
     show_source: current.show_source !== false,

@@ -45,7 +45,8 @@ pub use decode_pacing::{adaptive_partial_decode_interval_ms, max_segment_ms_for_
 pub use decode_timing::DecodeTimingBreakdown;
 pub use deps::{
     CUDA_TOOLKIT_URL, DepDownloadKind, LocalAsrEnvCheck, delete_dependency, download_dependency,
-    env_check, is_silero_vad_ready, ort_dll_path_for_provider, prepare_ort_runtime, runtime_layout,
+    env_check, is_silero_vad_ready, ort_dll_path_for_provider, prepare_ort_runtime,
+    refresh_ort_dll_search_path, runtime_layout,
 };
 pub use diagnostics::{
     LocalAsrDiagnosticsInput, assemble_local_asr_diagnostics, partial_emit_from_config,

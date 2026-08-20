@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use parakeet_rs::{ExecutionConfig, ExecutionProvider, ParakeetTDT};
 use parking_lot::Mutex;
@@ -13,7 +12,8 @@ use crate::config::{
     normalize_inference_session_options,
 };
 use crate::deps::{
-    DepError, env_check, ort_dll_path_for_provider, prepare_ort_runtime, validate_deps_for_provider,
+    DepError, env_check, ort_dll_path_for_provider, preferred_ort_dll, prepare_ort_runtime,
+    validate_deps_for_provider,
 };
 use crate::model_family::ModelFamily;
 use crate::model_manager::{
@@ -103,13 +103,36 @@ impl InferenceEngine {
         }
     }
 
+    /// Load ONNX Runtime from the preferred module DLL. Failures are not sticky: a later
+    /// warm-load can retry after CUDA redist / GPU ORT lands on disk.
+    ///
+    /// Switching the *execution provider* (`cpu` ↔ `cuda`) does not need a restart — the GPU
+    /// ORT package exposes both EPs. A restart is only required if this process already mapped
+    /// `runtime/cpu/onnxruntime.dll` and a later download prefers `runtime/gpu/onnxruntime.dll`
+    /// (Windows cannot replace a loaded ORT DLL).
     pub fn ensure_ort_initialized(module_dir: &Path) -> Result<(), InferenceError> {
-        static ORT_READY: OnceLock<Result<(), String>> = OnceLock::new();
-        let cached = ORT_READY
-            .get_or_init(|| init_ort_environment(module_dir).map_err(|err| err.to_string()));
-        match cached.as_ref() {
-            Ok(()) => Ok(()),
-            Err(msg) => Err(InferenceError::Runtime(msg.clone())),
+        static ORT_LOADED_DLL: Mutex<Option<PathBuf>> = Mutex::new(None);
+        let preferred = preferred_ort_dll(module_dir).ok_or_else(|| {
+            InferenceError::Deps(DepError::Check(
+                "ONNX Runtime DLL missing (download CPU or GPU package)".into(),
+            ))
+        })?;
+        let mut loaded = ORT_LOADED_DLL.lock();
+        match decide_ort_init(loaded.as_deref(), &preferred) {
+            OrtInitDecision::AlreadyReady => Ok(()),
+            OrtInitDecision::RestartRequired {
+                loaded: current,
+                preferred: next,
+            } => Err(InferenceError::Runtime(format!(
+                "ONNX Runtime DLL is already mapped from {}. The GPU package at {} cannot replace it until Kagevi Subtitles is restarted (then cpu/cuda EP switching works as usual).",
+                current.display(),
+                next.display()
+            ))),
+            OrtInitDecision::Init => {
+                init_ort_environment(module_dir)?;
+                *loaded = Some(preferred);
+                Ok(())
+            }
         }
     }
 
@@ -436,7 +459,55 @@ fn model_family(config: &LocalAsrConfig) -> ModelFamily {
     ModelFamily::parse(&config.model.family).unwrap_or(ModelFamily::ParakeetTdt)
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum OrtInitDecision {
+    Init,
+    AlreadyReady,
+    RestartRequired { loaded: PathBuf, preferred: PathBuf },
+}
+
+fn decide_ort_init(loaded: Option<&Path>, preferred: &Path) -> OrtInitDecision {
+    match loaded {
+        None => OrtInitDecision::Init,
+        Some(path) if dll_paths_match(path, preferred) => OrtInitDecision::AlreadyReady,
+        Some(path) => OrtInitDecision::RestartRequired {
+            loaded: path.to_path_buf(),
+            preferred: preferred.to_path_buf(),
+        },
+    }
+}
+
+fn dll_paths_match(left: &Path, right: &Path) -> bool {
+    if left == right {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        left.to_string_lossy()
+            .eq_ignore_ascii_case(&right.to_string_lossy())
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
+}
+
 fn init_ort_environment(module_dir: &Path) -> Result<(), InferenceError> {
+    match init_ort_environment_once(module_dir) {
+        Ok(()) => Ok(()),
+        Err(first) => {
+            warn!(
+                target: "voicesub.asr_local.inference",
+                error = %first,
+                "ORT init failed — retrying once after DLL search path refresh"
+            );
+            std::thread::sleep(Duration::from_millis(250));
+            init_ort_environment_once(module_dir)
+        }
+    }
+}
+
+fn init_ort_environment_once(module_dir: &Path) -> Result<(), InferenceError> {
     let env = env_check(module_dir);
     let provider = if env.ort_gpu.ok {
         EXECUTION_PROVIDER_CUDA
@@ -451,6 +522,12 @@ fn init_ort_environment(module_dir: &Path) -> Result<(), InferenceError> {
             dll.display()
         ))));
     }
+    info!(
+        target: "voicesub.asr_local.inference",
+        dll = %dll.display(),
+        provider,
+        "initializing ONNX Runtime from module DLL"
+    );
     ort::init_from(&dll)
         .map_err(|err| InferenceError::Runtime(err.to_string()))?
         .commit();
@@ -686,6 +763,34 @@ mod tests {
         assert!(!snap.ort_profiling_stopped_budget);
         assert_eq!(snap.ort_profiling_decode_count, 0);
         assert!(snap.last_ort_profile_path.is_none());
+    }
+
+    #[test]
+    fn ort_init_retries_when_nothing_is_loaded_yet() {
+        let preferred = PathBuf::from("runtime/gpu/onnxruntime.dll");
+        assert_eq!(decide_ort_init(None, &preferred), OrtInitDecision::Init);
+    }
+
+    #[test]
+    fn ort_init_is_ready_when_preferred_dll_already_loaded() {
+        let preferred = PathBuf::from("runtime/gpu/onnxruntime.dll");
+        assert_eq!(
+            decide_ort_init(Some(preferred.as_path()), &preferred),
+            OrtInitDecision::AlreadyReady
+        );
+    }
+
+    #[test]
+    fn ort_init_requires_restart_when_preferred_dll_changes() {
+        let loaded = PathBuf::from("runtime/cpu/onnxruntime.dll");
+        let preferred = PathBuf::from("runtime/gpu/onnxruntime.dll");
+        assert_eq!(
+            decide_ort_init(Some(loaded.as_path()), &preferred),
+            OrtInitDecision::RestartRequired {
+                loaded: loaded.clone(),
+                preferred,
+            }
+        );
     }
 
     #[test]

@@ -561,6 +561,11 @@ export const voicesubNewKeysEn = {
     "No API key required. Uses the Bing Translator web session (page token → ttranslatev3).",
   "provider.bing_translator.status":
     "Experimental keyless provider. Availability can change without notice.",
+  "obs.overlay.fit_note":
+    "The overlay keeps captions inside the Browser Source at full size. Each line (source and translations) scrolls on its own when it is too tall. Turn this off on the Subtitles tab if you want edges to clip instead. Reload the source after updating the app.",
+  "subtitles.fit_to_box": "Keep captions inside the OBS box",
+  "subtitles.fit_to_box.help":
+    "When the Browser Source is too small, each subtitle line stays at the designed font size and slowly scrolls inside its own slot. Uncheck to clip at the edges (old behaviour).",
 };
 
 const voicesubExtrasLocalized = {
@@ -594,6 +599,11 @@ const voicesubExtrasLocalized = {
     "save.status.saved": "Настройки сохранены.",
     "obs.overlay.instructions":
       "Добавьте этот URL как OBS Browser Source. Обновите URL при смене bind-адреса Kagevi Subtitles.",
+    "obs.overlay.fit_note":
+      "Overlay держит субтитры в размере Browser Source крупным шрифтом. Каждая линия (исходник и переводы) прокручивается сама, если не влезает. Отключается галочкой на вкладке «Субтитры». После обновления приложения перезагрузите источник.",
+    "subtitles.fit_to_box": "Вписывать субтитры в окно OBS",
+    "subtitles.fit_to_box.help":
+      "Если Browser Source слишком маленький, каждая линия остаётся крупной и медленно прокручивается в своём слоте. Снимите галочку, чтобы обрезать по краям (как раньше).",
     "subtitles.display_order": "Порядок строк субтитров",
     "settings.fonts.eyebrow": "Ресурсы",
     "settings.fonts.title": "Каталог шрифтов",
@@ -1202,6 +1212,11 @@ const voicesubExtrasLocalized = {
     "save.status.saved": "設定を保存しました。",
     "obs.overlay.instructions":
       "この URL を OBS Browser Source として追加してください。Kagevi Subtitles の bind アドレスが変わったら URL を更新してください。",
+    "obs.overlay.fit_note":
+      "オーバーレイは Browser Source 内で字幕を実寸のまま保ち、各行（原文と翻訳）がはみ出すときだけその行をスクロールします。「字幕」タブのチェックでオフにできます。アプリ更新後はソースを再読み込みしてください。",
+    "subtitles.fit_to_box": "字幕を OBS 枠内に収める",
+    "subtitles.fit_to_box.help":
+      "Browser Source が小さいときは、設定したフォントサイズのまま各行をゆっくりスクロールします。端で切る旧動作にするにはチェックを外してください。",
     "subtitles.display_order": "字幕行の表示順",
     "settings.fonts.eyebrow": "リソース",
     "settings.fonts.title": "フォントカタログ",
@@ -1651,6 +1666,11 @@ const voicesubExtrasLocalized = {
     "save.status.saved": "설정을 저장했습니다.",
     "obs.overlay.instructions":
       "이 URL을 OBS Browser Source로 추가하세요. Kagevi Subtitles bind 주소가 바뀌면 URL을 업데이트하세요.",
+    "obs.overlay.fit_note":
+      "오버레이는 Browser Source 안에서 자막을 원래 크기로 유지하고, 각 줄(원문과 번역)이 넘칠 때만 그 줄을 스크롤합니다. 자막 탭 체크박스로 끌 수 있습니다. 앱 업데이트 후에는 소스를 새로고침하세요.",
+    "subtitles.fit_to_box": "자막을 OBS 상자 안에 맞추기",
+    "subtitles.fit_to_box.help":
+      "Browser Source가 작으면 설정한 글꼴 크기를 유지한 채 각 줄을 천천히 스크롤합니다. 가장자리에서 자르려면 체크를 해제하세요.",
     "subtitles.display_order": "자막 줄 표시 순서",
     "settings.fonts.eyebrow": "리소스",
     "settings.fonts.title": "글꼴 카탈로그",
@@ -2099,6 +2119,11 @@ const voicesubExtrasLocalized = {
     "save.status.saved": "设置已保存。",
     "obs.overlay.instructions":
       "将此 URL 添加为 OBS Browser Source。Kagevi Subtitles bind 地址变更时请更新 URL。",
+    "obs.overlay.fit_note":
+      "叠加层在 Browser Source 内保持原字号。源文本和各翻译行过长时分别滚动，互不影响。可在「字幕」页关闭。更新应用后请刷新该源。",
+    "subtitles.fit_to_box": "将字幕留在 OBS 框内",
+    "subtitles.fit_to_box.help":
+      "当 Browser Source 太小时，各行字幕保持设定字号并在自己的槽位内缓慢滚动。取消勾选则按边缘裁切（旧行为）。",
     "subtitles.display_order": "字幕行显示顺序",
     "settings.fonts.eyebrow": "资源",
     "settings.fonts.title": "字体目录",

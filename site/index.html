@@ -112,7 +112,7 @@
             <a class="btn btn--secondary" href="#guide" data-i18n="ctaGuide">Feature guide</a>
           </div>
           <p class="hero__meta">
-            <span data-i18n="heroMeta">Windows 10/11 · MIT · v0.6.4</span>
+            <span data-i18n="heroMeta">Windows 10/11 · MIT · v0.6.5</span>
           </p>
         </div>
         <a class="hero__scroll" href="#guide" aria-label="Scroll to guide">
@@ -182,7 +182,8 @@
                 <h3 data-i18n="gSpeechTitle">Web Speech — Chrome worker</h3>
                 <p data-i18n="gSpeechIntro">
                   Production mode browser_google runs Google Chrome Web Speech in a
-                  separate visible window with an address bar — not a hidden tab.
+                  separate window — full UI with address bar by default, or optional
+                  compact --app= from the Live tab.
                 </p>
                 <ul>
                   <li data-i18n="gSpeech1">Microphone permission is granted inside Chrome (getUserMedia).</li>
@@ -233,7 +234,7 @@
                 </p>
                 <ul>
                   <li data-i18n="gTranslate1">Up to four translation lines (source text is separate).</li>
-                  <li data-i18n="gTranslate2">Keyless options: Google Web, Free Web Translate, Microsoft Edge Translate.</li>
+                  <li data-i18n="gTranslate2">Keyless options: Google Web, Free Web Translate, Bing Translator.</li>
                   <li data-i18n="gTranslate3">Optional realtime translation — captions update while you speak, without waiting for the phrase to finish (off by default).</li>
                   <li data-i18n="gTranslate4">Memory/disk cache; late translations allowed; completed blocks stay until the next phrase finalizes.</li>
                 </ul>
@@ -253,8 +254,8 @@
                   and how long completed text remains visible.
                 </p>
                 <ul>
-                  <li data-i18n="gSubs1">Presets: single, dual-line, stacked, compact (URL query overrides available).</li>
-                  <li data-i18n="gSubs2">Toggle source and translation visibility independently.</li>
+                  <li data-i18n="gSubs1">Presets: single, dual-line, stacked + compact spacing (URL query overrides available).</li>
+                  <li data-i18n="gSubs2">Keep captions inside the OBS box (default): full-size font; each line scrolls when too tall (?fit=0 to clip).</li>
                   <li data-i18n="gSubs3">TTL / lifecycle settings keep completed text stable during the next partial.</li>
                   <li data-i18n="gSubs4">Reorder lines to control what appears first on the overlay.</li>
                 </ul>
@@ -277,7 +278,7 @@
                   <li data-i18n="gObs1">Add Browser Source → http://127.0.0.1:8765/overlay</li>
                   <li data-i18n="gObs2">Copy URL / open overlay helpers live on the OBS tab.</li>
                   <li data-i18n="gObs3">Closed Captions: meant for Twitch stream captions (other uses are uncommon).</li>
-                  <li data-i18n="gObs4">After app updates, reload the Browser Source if the overlay looks stale.</li>
+                  <li data-i18n="gObs4">After app updates, reload the Browser Source so fit-to-box / style assets refresh.</li>
                 </ul>
               </div>
             </article>

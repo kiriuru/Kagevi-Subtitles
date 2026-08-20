@@ -30,6 +30,23 @@ import {
   _applyStyleMapIfChanged,
   _setClassNameIfChanged,
 } from "./render-state.js";
+import { applyOverlayOverflow, clearOverlayFit, stopOverlayOverflowScroll } from "./fit-box.js";
+
+function persistOverlayOverflow(container, wrapper, options, renderStateOut) {
+  const fitEnabled = Boolean(options?.overlay) && options?.fitToBox !== false;
+  renderStateOut.fitToBoxEnabled = fitEnabled;
+  if (!fitEnabled) {
+    clearOverlayFit(wrapper);
+    stopOverlayOverflowScroll(wrapper);
+    renderStateOut.overflowPx = 0;
+    return;
+  }
+  renderStateOut.overflowPx = applyOverlayOverflow({
+    viewport: container,
+    shell: wrapper,
+    enabled: true,
+  });
+}
 
 /**
  * Layout CSS lives on stage/row ancestors (not surfaces). Fast path must refresh
@@ -304,7 +321,7 @@ export function render(container, payload, options) {
       : Date.now();
     const layoutRefs = cachedWrapper.__sstLayoutRefs || {};
     delete cachedWrapper.__sstLayoutRefs;
-    container.__subtitleStyleRenderState = {
+    const nextRenderState = {
       entrySignatures: nextEntrySignatures,
       partialBySlot: Object.fromEntries(nextPartialBySlot.entries()),
       partialSurfaceBySlot: _persistPartialSurfaceBySlot(nextPartialSurfaceBySlot),
@@ -316,6 +333,8 @@ export function render(container, payload, options) {
       rowElements: _surfaceRefsFromElements(layoutRefs.rows || []),
       lastRenderedAt: renderFinishedAt,
     };
+    persistOverlayOverflow(container, cachedWrapper, options, nextRenderState);
+    container.__subtitleStyleRenderState = nextRenderState;
     if (traceCallback) {
       const anomalies = [];
       traceFrameEvents.forEach((event) => {
@@ -611,7 +630,7 @@ export function render(container, payload, options) {
     ? performance.now()
     : Date.now();
   const slowPathRows = Array.from(stage.querySelectorAll(".subtitle-line"));
-  container.__subtitleStyleRenderState = {
+  const nextRenderState = {
     entrySignatures: nextEntrySignatures,
     partialBySlot: Object.fromEntries(nextPartialBySlot.entries()),
     partialSurfaceBySlot: _persistPartialSurfaceBySlot(nextPartialSurfaceBySlot),
@@ -623,6 +642,8 @@ export function render(container, payload, options) {
     rowElements: _surfaceRefsFromElements(slowPathRows),
     lastRenderedAt: renderFinishedAt,
   };
+  persistOverlayOverflow(container, wrapper, options, nextRenderState);
+  container.__subtitleStyleRenderState = nextRenderState;
   if (traceCallback) {
     const anomalies = [];
     // Detect the common "fresh suffix is most of the line because the ASR

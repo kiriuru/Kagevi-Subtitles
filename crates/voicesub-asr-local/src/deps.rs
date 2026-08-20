@@ -204,8 +204,26 @@ pub fn preferred_ort_dll(module_dir: &Path) -> Option<PathBuf> {
     }
 }
 
-pub fn prepare_ort_runtime(module_dir: &Path, provider: &str) -> Result<(), DepError> {
+/// Update PATH / Windows DLL directories so a later ORT init can see freshly extracted
+/// CUDA/ORT files. Does **not** load `onnxruntime.dll` — that must wait until warm-load
+/// so CUDA redist is already on disk.
+pub fn refresh_ort_dll_search_path(module_dir: &Path) {
     let layout = runtime_layout(module_dir);
+    let env = env_check(module_dir);
+    if env.ort_gpu.ok || env.cuda_redist.ok {
+        prepend_path_dir(&layout.cuda);
+        register_dll_search_dir(&layout.cuda);
+        prepend_path_dir(&layout.gpu);
+        register_dll_search_dir(&layout.gpu);
+        prepend_system_cuda_search_paths();
+    }
+    if env.ort_cpu.ok {
+        prepend_path_dir(&layout.cpu);
+        register_dll_search_dir(&layout.cpu);
+    }
+}
+
+pub fn prepare_ort_runtime(module_dir: &Path, provider: &str) -> Result<(), DepError> {
     let dll = ort_dll_path_for_provider(module_dir, provider);
     if !dll.is_file() {
         return Err(DepError::Check(format!(
@@ -217,14 +235,7 @@ pub fn prepare_ort_runtime(module_dir: &Path, provider: &str) -> Result<(), DepE
     unsafe {
         std::env::set_var("ORT_DYLIB_PATH", dll.as_os_str());
     }
-    let env = env_check(module_dir);
-    if env.ort_gpu.ok {
-        prepend_path_dir(&layout.cuda);
-        prepend_path_dir(&layout.gpu);
-        prepend_system_cuda_search_paths();
-    } else {
-        prepend_path_dir(&layout.cpu);
-    }
+    refresh_ort_dll_search_path(module_dir);
     Ok(())
 }
 
@@ -237,6 +248,8 @@ fn prepend_system_cuda_search_paths() {
         }
         prepend_path_dir(&bin);
         prepend_path_dir(&bin.join("x64"));
+        register_dll_search_dir(&bin);
+        register_dll_search_dir(&bin.join("x64"));
     }
 }
 
@@ -318,6 +331,59 @@ fn prepend_path_dir(dir: &Path) {
     unsafe {
         std::env::set_var("PATH", format!("{dir_str};{current}"));
     }
+}
+
+/// Windows ORT CUDA EP loads `cudart`/`cudnn` via `LoadLibraryEx` + user dirs.
+/// PATH prepend alone is not enough after a same-process extract.
+fn register_dll_search_dir(dir: &Path) {
+    if !dir.is_dir() {
+        return;
+    }
+    #[cfg(windows)]
+    register_dll_search_dir_windows(dir);
+}
+
+#[cfg(windows)]
+fn register_dll_search_dir_windows(dir: &Path) {
+    use std::os::windows::ffi::OsStrExt;
+
+    use parking_lot::Mutex;
+
+    static REGISTERED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
+    let canonical = dir.canonicalize().unwrap_or_else(|_| dir.to_path_buf());
+    {
+        let mut registered = REGISTERED.lock();
+        if registered.iter().any(|existing| existing == &canonical) {
+            return;
+        }
+        registered.push(canonical.clone());
+    }
+    let wide: Vec<u16> = canonical
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    // SAFETY: `wide` is a NUL-terminated directory path that exists on disk.
+    let cookie = unsafe { AddDllDirectory(wide.as_ptr()) };
+    if cookie.is_null() {
+        warn!(
+            target: "voicesub.asr_local.deps",
+            path = %canonical.display(),
+            "AddDllDirectory failed — CUDA EP may need a process restart after first install"
+        );
+    } else {
+        info!(
+            target: "voicesub.asr_local.deps",
+            path = %canonical.display(),
+            "registered ORT/CUDA DLL search directory"
+        );
+    }
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+unsafe extern "system" {
+    fn AddDllDirectory(new_directory: *const u16) -> *mut core::ffi::c_void;
 }
 
 pub fn env_check(module_dir: &Path) -> LocalAsrEnvCheck {
@@ -1094,6 +1160,34 @@ mod tests {
         }
         let check = env_check(dir.path());
         assert!(check.ort_cpu.ok);
+    }
+
+    #[test]
+    fn refresh_ort_dll_search_path_prepends_extracted_runtime_dirs() {
+        let dir = tempfile::tempdir().unwrap();
+        let layout = runtime_layout(dir.path());
+        fs::create_dir_all(&layout.cpu).unwrap();
+        fs::create_dir_all(&layout.cuda).unwrap();
+        for name in ORT_CPU_DLLS {
+            fs::write(layout.cpu.join(name), b"fake").unwrap();
+        }
+        for name in CUDA_REDIST_DLLS {
+            fs::write(layout.cuda.join(name), b"fake").unwrap();
+        }
+        refresh_ort_dll_search_path(dir.path());
+        let path = std::env::var("PATH").expect("PATH");
+        let cpu = layout.cpu.to_string_lossy();
+        let cuda = layout.cuda.to_string_lossy();
+        assert!(
+            path.split(';')
+                .any(|entry| entry.eq_ignore_ascii_case(cpu.as_ref())),
+            "cpu runtime dir missing from PATH: {path}"
+        );
+        assert!(
+            path.split(';')
+                .any(|entry| entry.eq_ignore_ascii_case(cuda.as_ref())),
+            "cuda runtime dir missing from PATH: {path}"
+        );
     }
 
     #[test]

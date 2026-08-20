@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserAsrStateSeed } from "./session-state";
-import { evaluateWatchdogTick } from "./watchdog-logic";
+import {
+  asrQuietWhileMicHotMs,
+  evaluateWatchdogTick,
+  updateMicHotStreak,
+} from "./watchdog-logic";
 
 const limits = {
   maxBrowserSessionAgeMs: 180_000,
@@ -24,6 +28,7 @@ describe("watchdog-logic", () => {
       lastResultAtMs: 2000,
       lastEventAtMs: 20_000,
       lastMicActivityAt: 11_500,
+      micHotSinceMs: 1500,
       micRms: 0.04,
     });
     const tick = evaluateWatchdogTick({
@@ -42,6 +47,7 @@ describe("watchdog-logic", () => {
       lastStartAtMs: 1000,
       lastResultAtMs: 2000,
       lastMicActivityAt: 6500,
+      micHotSinceMs: 1500,
       micRms: 0.05,
     });
     const tick = evaluateWatchdogTick({
@@ -60,6 +66,7 @@ describe("watchdog-logic", () => {
       lastStartAtMs: 1000,
       lastResultAtMs: 0,
       lastMicActivityAt: 5000,
+      micHotSinceMs: 1000,
       micRms: 0.05,
     });
     const tick = evaluateWatchdogTick({
@@ -120,11 +127,51 @@ describe("watchdog-logic", () => {
       lastResultAtMs: 19_000,
       lastEventAtMs: 19_500,
       lastMicActivityAt: 19_400,
+      micHotSinceMs: 18_000,
       micRms: 0.04,
     });
     const tick = evaluateWatchdogTick({
       state,
       nowMs: 20_000,
+      limits,
+      documentHidden: false,
+    });
+    expect(tick.type).toBe("heartbeat");
+  });
+
+  it("does not stall on the first words after a long pause", () => {
+    const state = createBrowserAsrStateSeed({
+      desiredRunning: true,
+      browserSupervisorState: "running",
+      lastStartAtMs: 1000,
+      lastResultAtMs: 2000,
+      lastMicActivityAt: 12_000,
+      micHotSinceMs: 11_500,
+      micRms: 0.05,
+    });
+    const tick = evaluateWatchdogTick({
+      state,
+      nowMs: 12_000,
+      limits,
+      documentHidden: false,
+    });
+    expect(tick.type).toBe("heartbeat");
+    expect(asrQuietWhileMicHotMs(state, 12_000)).toBe(500);
+  });
+
+  it("does not cold-start stall when speech resumes after a quiet generation", () => {
+    const state = createBrowserAsrStateSeed({
+      desiredRunning: true,
+      browserSupervisorState: "running",
+      lastStartAtMs: 1000,
+      lastResultAtMs: 0,
+      lastMicActivityAt: 5600,
+      micHotSinceMs: 5000,
+      micRms: 0.05,
+    });
+    const tick = evaluateWatchdogTick({
+      state,
+      nowMs: 5600,
       limits,
       documentHidden: false,
     });
@@ -149,5 +196,19 @@ describe("watchdog-logic", () => {
       documentHidden: false,
     });
     expect(tick.type).not.toBe("active_speech_stall");
+  });
+});
+
+describe("mic hot streak", () => {
+  it("starts on first energy and resets after the quiet break window", () => {
+    const state = createBrowserAsrStateSeed({ lastMicActivityAt: 0, micHotSinceMs: 0 });
+    updateMicHotStreak(state, 1000, true, 3000);
+    expect(state.micHotSinceMs).toBe(1000);
+    updateMicHotStreak(state, 1500, true, 3000);
+    expect(state.micHotSinceMs).toBe(1000);
+    updateMicHotStreak(state, 2000, false, 3000);
+    expect(state.micHotSinceMs).toBe(1000);
+    updateMicHotStreak(state, 5100, false, 3000);
+    expect(state.micHotSinceMs).toBe(0);
   });
 });

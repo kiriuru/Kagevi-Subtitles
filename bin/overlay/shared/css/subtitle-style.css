@@ -17,6 +17,26 @@
   border-radius: 0;
   min-height: 0;
   padding: 0;
+  width: 100%;
+}
+
+/* Each physical line clips and scrolls on its own. top: 0 keeps the start of
+   the line at the top of its slot (OBS top-anchor). Negative --overlay-scroll-y
+   crawls toward the latest wrapped text. */
+.is-overlay-shell .subtitle-line.is-overlay-line-clip {
+  position: relative;
+  overflow: hidden;
+  height: var(--overlay-line-height);
+  flex-shrink: 0;
+}
+
+.is-overlay-shell .subtitle-line.is-overlay-line-clip .subtitle-line__content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  transform: translateY(var(--overlay-scroll-y, 0px));
 }
 
 .subtitle-stage {

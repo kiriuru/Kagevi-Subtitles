@@ -14,6 +14,21 @@
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-08-20
+
+### Added
+
+- OBS overlay: субтитры сидят на **верхней** границе Browser Source и растут **вниз**. Каждая линия (исходник + до 4 переводов) остаётся **крупной** и **прокручивается отдельно**, если не влезает. Галочка **«Вписывать субтитры в окно OBS»** на вкладке Субтитры (`overlay.fit_to_box`, по умолчанию вкл.). После обновления **перезагрузите** Browser Source (cache-bust `?v=20260820f`).
+
+### Removed
+
+- Провайдер перевода `microsoft_edge` (Microsoft Edge Translate без ключа). Анонимный Edge-путь Microsoft окончательно мёртв (HTTP 404). Существующие конфиги миграционно переводятся на `bing_translator` (тоже без ключа) при load/save; `public_libretranslate_mirror` теперь тоже мапится на Bing.
+
+### Fixed
+
+- Local ASR: прогрев на чистой установке больше не падает после скачивания ORT/CUDA в той же сессии. ONNX Runtime теперь инициализируется при warm-load (не сразу после zip ORT), повторно пробует неудачный первый `init` и регистрирует извлечённые папки CUDA/ORT в DLL search path до загрузки.
+- Browser Web Speech: после длинной паузы stall/hot-mic rearm больше не делает `stop()` на первых словах следующей фразы (и continuous, и overlap). Таймер stall — **текущий** mic-hot streak, а не время с последнего ASR-результата.
+
 ## [0.6.4] - 2026-08-08
 
 ### Added
@@ -464,7 +479,8 @@
 
 Более ранняя история `0.2.9.*` SST Desktop остаётся в архивных GitHub release notes и здесь не развёрнута.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2

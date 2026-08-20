@@ -220,8 +220,6 @@
   "provider.libretranslate.status": "클래식 공급자. 안정성은 선택한 엔드포인트에 따라 달라집니다.",
   "provider.lm_studio.hint": "로컬 OpenAI 호환 서버. 품질은 로컬로 로드된 모델에 따라 달라집니다.",
   "provider.lm_studio.status": "지역 공급자. 품질은 선택한 지역 모델에 따라 다릅니다.",
-  "provider.microsoft_edge.hint": "API 키가 필요하지 않습니다. Edge 자체가 요청하는 익명 Microsoft Translator 액세스를 사용합니다. Microsoft가 경로를 차단하면 HTTP 404가 날 수 있습니다.",
-  "provider.microsoft_edge.status": "키가 필요 없는 실험적 공급자. 인증/번역이 예고 없이 HTTP 404로 실패할 수 있습니다. 실패 시 Bing Translator 또는 Google Web을 시도하세요.",
   "provider.ollama.hint": "로컬 OpenAI 호환 엔드포인트. 품질은 지역 모델에 따라 다릅니다.",
   "provider.ollama.status": "지역 공급자. 품질은 선택한 지역 모델에 따라 다릅니다.",
   "provider.openai.hint": "유연한 LLM 자막 번역. API 키와 모델이 필요하며 재정의되지 않는 한 내장된 자막 프롬프트를 사용합니다.",
