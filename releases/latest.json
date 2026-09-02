@@ -1,0 +1,11 @@
+{
+  "version": "0.7.0",
+  "notes": "Kagevi Subtitles 0.7.0. See the GitHub release notes for details.",
+  "pub_date": "2026-09-02T12:55:16.607Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUWU2bVUxQ3IvZ3BrdUhzRUovZk1oRVNoa0JsVWNOVUhoQkZvdWQ0SHczL1lrTTlGWVA4S2tSbEVRay81c1Y3L1Y1YnpYSjBqZFFwaTVPa2JieFQvTk81c2k3R0VOV2dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg4MzUzNzE1CWZpbGU6S2FnZXZpIFN1YnRpdGxlc18wLjcuMF94NjQtc2V0dXAuZXhlCmJuOTRlM2E4Z21velBtVmNUZ2MzRTVIbmJlTUphMEczWi9DUEhjYTUwNWhpamlPeGJHNDUxdThGY3lRbmg4Y0dDQ0Fqa0dUZ29xTUdwaHZjTjRlYkNBPT0K",
+      "url": "https://github.com/kiriuru/Kagevi-Subtitles/releases/download/v0.7.0/Kagevi.Subtitles_0.7.0_x64-setup.exe"
+    }
+  }
+}

@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Kagevi Subtitles Wiki — operational guide" />
+    <meta name="theme-color" content="#101319" />
+    <title>Wiki · Kagevi Subtitles</title>
+    <link rel="icon" type="image/png" href="assets/kagevi-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,550;12..96,750;12..96,800&family=Sora:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="doc.css" />
+  </head>
+  <body class="doc-page" data-doc="wiki">
+    <a class="skip-link" href="#doc-main">Skip to content</a>
+    <div class="noise" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand-mark" href="index.html">
+        <img src="assets/kagevi-icon.png" alt="" width="40" height="40" />
+        <span class="brand-mark__text">
+          <span class="brand-mark__main">Kagevi</span>
+          <span class="brand-mark__sub">Subtitles</span>
+        </span>
+      </a>
+      <div class="topbar__actions">
+        <button
+          type="button"
+          class="nav-toggle"
+          aria-controls="site-nav"
+          aria-expanded="false"
+          data-i18n-aria="navMenu"
+          aria-label="Menu"
+        >
+          <span class="nav-toggle__bars" aria-hidden="true"></span>
+        </button>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" class="lang__btn is-active" data-lang="en">EN</button>
+          <button type="button" class="lang__btn" data-lang="ru">RU</button>
+        </div>
+        <a class="btn btn--ghost btn--sm" href="index.html" data-i18n="navHome">Home</a>
+      </div>
+      <nav class="topbar__nav" id="site-nav" aria-label="Primary">
+        <a href="index.html#guide" data-i18n="navGuide">Guide</a>
+        <a href="wiki.html" class="is-current" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" data-i18n="navChangelog">Changelog</a>
+        <a href="index.html#download" data-i18n="navDownload">Download</a>
+      </nav>
+    </header>
+
+    <div class="doc-shell">
+      <aside class="doc-toc" aria-label="On this page">
+        <p class="doc-toc__title" data-i18n="tocTitle">On this page</p>
+        <nav class="doc-toc__nav" id="doc-toc"></nav>
+      </aside>
+
+      <main class="doc-main" id="doc-main">
+        <header class="doc-hero">
+          <p class="doc-hero__eyebrow" data-i18n="wikiEyebrow">Documentation</p>
+          <h1 data-i18n="wikiTitle">Wiki</h1>
+          <p class="doc-hero__lede" data-i18n="wikiLede">
+            Operational guide for the dashboard, recognition modes, translation, OBS, and modules.
+          </p>
+        </header>
+
+        <div class="doc-panels">
+          <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
+            
+<p>User guide for <strong>Kagevi Subtitles <code>0.7.0</code></strong> — how to get live subtitles on stream, what each screen does, and how to fix common problems.</p>
+<p align="center">
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/README.md" target="_blank" rel="noopener noreferrer">README</a> ·
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md" target="_blank" rel="noopener noreferrer">Architecture</a> ·
+  <a href="changelog.html">Changelog</a>
+</p>
+
+
+
+<h2>About</h2>
+<p>Kagevi Subtitles turns your microphone speech into <strong>live subtitles</strong> for OBS — with optional translation, styling, TTS, and Twitch chat reading.</p>
+<p>Everything runs on <strong>your PC</strong>. There is no account and no Kagevi cloud. The app listens on <code>http://127.0.0.1:8765</code> by default (this machine only).</p>
+<table>
+<thead>
+<tr>
+<th>You want…</th>
+<th>Use…</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fast setup, Google recognition in Chrome</td>
+<td><strong>Web Speech</strong> (default)</td>
+</tr>
+<tr>
+<td>Offline recognition, no Chrome worker</td>
+<td><strong>Local ASR</strong> (Parakeet / ONNX)</td>
+</tr>
+<tr>
+<td>Subtitles in OBS</td>
+<td>Browser Source → <code>/overlay</code></td>
+</tr>
+<tr>
+<td>Optional cloud / free translation</td>
+<td><strong>Translation</strong> tab (up to 4 lines)</td>
+</tr>
+<tr>
+<td>Read subtitles aloud</td>
+<td><strong>TTS</strong> module (needs Live <strong>Start</strong>)</td>
+</tr>
+<tr>
+<td>Read Twitch chat aloud</td>
+<td><strong>Twitch</strong> module (independent of subtitle TTS)</td>
+</tr>
+<tr>
+<td>Subtitles in VRChat social chatbox</td>
+<td><strong>VRChat</strong> module (OSC Chatbox)</td>
+</tr>
+<tr>
+<td>Subtitles inside your PCVR headset</td>
+<td><strong>SteamVR HUD</strong> module (wearer only)</td>
+</tr>
+</tbody></table>
+<p>Current version line: <strong><code>0.7.0</code></strong> (first Kagevi release was <code>0.5.0</code>). This line adds <strong>VRChat Chatbox OSC</strong>, <strong>SteamVR HUD</strong>, subtitle scroll speed, factory reset, full-snapshot profiles, and a Live status bar on every tab. Details: <a href="changelog.html">Changelog</a>.</p>
+<p>The app is free to use. Copyright © 2026 Kiriuru. All rights reserved. See the <strong><a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">Kagevi Subtitles License</a></strong> for terms of use.</p>
+<blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
+In OBS, use exactly: <code>http://127.0.0.1:8765/overlay</code><br>After updating the app, <strong>reload</strong> that Browser Source if the overlay looks stuck or blank.</p>
+</blockquote>
+<h3>System requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Windows 10 or 11 (64-bit)</td>
+<td>Supported platform</td>
+</tr>
+<tr>
+<td>WebView2 Runtime</td>
+<td>Powers the app windows (usually already on Windows 11; installer can add it on Windows 10)</td>
+</tr>
+<tr>
+<td>Google Chrome</td>
+<td>Only if you use <strong>Web Speech</strong>. Not required for Local ASR alone</td>
+</tr>
+<tr>
+<td>Microphone</td>
+<td>Granted in Chrome (Web Speech) or chosen in the Local ASR window</td>
+</tr>
+<tr>
+<td>Internet</td>
+<td>Optional for cloud translation; also needed the first time Local ASR downloads models / runtimes</td>
+</tr>
+</tbody></table>
+<p>No Python or Node.js is required to run the installed app.</p>
+<h3>Install and update</h3>
+<ol>
+<li>Run <code>Kagevi Subtitles_0.7.0_x64-setup.exe</code> (or the latest setup from the <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">releases page</a>).</li>
+<li>Open <strong>Kagevi Subtitles.exe</strong>.</li>
+<li>Later updates: the dashboard can show an <strong>update banner</strong>. <strong>Install update</strong> downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in <code>user-data/</code> stay put.</li>
+</ol>
+<p>Manual <strong>Download</strong> / release-page links remain available if you prefer not to install from inside the app.</p>
+<h3>Useful local addresses</h3>
+<table>
+<thead>
+<tr>
+<th>Address</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>http://127.0.0.1:8765/</code></td>
+<td>Main dashboard</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/overlay</code></td>
+<td>OBS Browser Source page</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/google-asr</code></td>
+<td>Chrome Web Speech worker</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/google-asr-compact</code></td>
+<td>Compact Chrome <code>--app=</code> worker (optional)</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/tts</code></td>
+<td>TTS module window (subtitle speech)</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/twitch</code></td>
+<td>Twitch module window (IRC + chat TTS)</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/local-asr</code></td>
+<td>Local ASR module window</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/vrchat</code></td>
+<td>VRChat Chatbox OSC module window</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/vr-overlay</code></td>
+<td>SteamVR HUD overlay module window</td>
+</tr>
+</tbody></table>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Quick start</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_live.png" alt="Live tab" width="820"><br>
+  <em><strong>Live</strong> — Start/Stop, recognition status, transcript, subtitle preview</em>
+</p>
+
+<h3>First stream setup (about 5 minutes)</h3>
+<ol>
+<li><strong>Install and launch</strong> Kagevi Subtitles.</li>
+<li>In <strong>OBS</strong>, add a <strong>Browser Source</strong>:<ul>
+<li>URL: <code>http://127.0.0.1:8765/overlay</code></li>
+<li>Width/height: match your canvas (or full canvas and crop).</li>
+</ul>
+</li>
+<li>On the <strong>Live</strong> tab, pick recognition:<ul>
+<li><strong>Web Speech</strong> (default) — Chrome will open when you Start.</li>
+<li><strong>Local ASR</strong> — only appears after setup is finished (see <a href="#local-asr">Local ASR</a>).</li>
+</ul>
+</li>
+<li>Optional: open <strong>Translation</strong>, turn translation on, enable at least one line, pick a provider (three work with <strong>no API key</strong> — see below).</li>
+<li>Optional: open <strong>Subtitles</strong> / <strong>Style</strong> to set preset, TTL, fonts, colors, <strong>Subtitle scrolling</strong>, and <strong>Scroll speed</strong>.</li>
+<li>Press <strong>Start</strong>. A status bar (ASR / WebSocket / Worker / OBS CC + Start/Stop) stays on <strong>every</strong> tab — full on Live, compact elsewhere.</li>
+<li>Speak — check the Live preview, then check OBS.</li>
+<li>Optional <strong>VRChat</strong>: <a href="#vrchat-module">VRChat module</a> — OSC on → <strong>Enable output</strong> → <strong>Start</strong> on Live.</li>
+<li>Optional <strong>PCVR</strong>: <a href="#steamvr-hud-module">SteamVR HUD</a> — <strong>Start SteamVR</strong> on the module hero card → <strong>Enable subtitle overlay</strong> and/or <strong>Enable chat overlay</strong> → <strong>Start</strong> on Live (captions). Quest standalone cannot show this overlay.</li>
+</ol>
+<h3>Start and Stop (plain English)</h3>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Start</strong></td>
+<td>Begins recognition, translation (if enabled), and optional OBS captions. Uses your <strong>current</strong> on-screen settings, even if you have not pressed Save yet.</td>
+</tr>
+<tr>
+<td><strong>Stop</strong></td>
+<td>Stops recognition. For Web Speech, the Chrome worker is closed. Subtitle state resets.</td>
+</tr>
+</tbody></table>
+<h3>Preview on Live</h3>
+<p>Before Start, the preview shows sample text so you can tune style. After Start, it shows what OBS should see. Saving settings alone will not wipe that preview when idle.</p>
+<h3>Compact window</h3>
+<p>Use compact layout for a tall, phone-like window on a second monitor (<strong>Settings</strong> → Layout, or <code>Ctrl+K</code>). Live stays in focus; other hubs stay one tap away. The same status bar (full on Live, compact elsewhere) stays at the top.</p>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_compact_UI.png" alt="Compact layout" width="420"><br>
+  <em><strong>Compact layout</strong> — phone-style window for a second monitor</em>
+</p>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Choose recognition</h2>
+<p><a id="choose-recognition"></a></p>
+<p>You only need <strong>one</strong> path at a time.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Web Speech (default)</th>
+<th>Local ASR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Engine</td>
+<td>Google Chrome Web Speech</td>
+<td>Parakeet on your PC (ONNX)</td>
+</tr>
+<tr>
+<td>Chrome window</td>
+<td>Yes — keep it open while streaming</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Internet for recognition</td>
+<td>Usually yes (Google)</td>
+<td>No (after models are downloaded)</td>
+</tr>
+<tr>
+<td>Best when…</td>
+<td>You want the familiar Chrome path</td>
+<td>You want offline / no worker window</td>
+</tr>
+<tr>
+<td>Setup</td>
+<td>Mic permission in Chrome</td>
+<td>Modules → Local ASR wizard until <strong>ready</strong></td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--tip"><p><strong>TIP</strong>
+New users: start with <strong>Web Speech</strong>. Switch to Local ASR later if you want offline recognition.</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Troubleshooting</h2>
+<blockquote class="doc-callout--tip"><p><strong>TIP</strong>
+Check in this order: <strong>Start pressed?</strong> → <strong>recognition working?</strong> → <strong>translation on?</strong> → <strong>OBS URL correct?</strong></p>
+</blockquote>
+<h3>No subtitles anywhere</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Pressed <strong>Start</strong> on Live?</li>
+<li><input disabled="" type="checkbox"> <strong>Web Speech:</strong> Is the Chrome <code>/google-asr</code> window open? Mic allowed <strong>in Chrome</strong>? Prefer not minimizing it for long periods (it can sit behind other apps).</li>
+<li><input disabled="" type="checkbox"> <strong>Local ASR:</strong> Is Local ASR selected on Live? Did Modules → Local ASR show <strong>ready</strong>? Mic selected there?</li>
+<li><input disabled="" type="checkbox"> Open <strong>More → Tools &amp; Data</strong> and check runtime / recognition status.</li>
+</ul>
+<h3>I see source text, but no translation</h3>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Translation</strong> tab → translation is enabled.</li>
+<li><input disabled="" type="checkbox"> At least one translation line is enabled.</li>
+<li><input disabled="" type="checkbox"> Provider needs a key? Add it under provider settings. Or switch to a <strong>keyless</strong> provider (Google Web, Free Web Translate, Bing Translator).</li>
+<li><input disabled="" type="checkbox"> Look at translation results / errors on the same tab — delays can also mean a newer phrase cancelled an older request (normal).</li>
+</ul>
+<h3>OBS is empty</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Browser Source URL ends with <code>/overlay</code>, not <code>/</code> (dashboard).</li>
+<li><input disabled="" type="checkbox"> <strong>Subtitles</strong>: source and/or translations are set to visible.</li>
+<li><input disabled="" type="checkbox"> TTL is not extremely short (text can vanish before you notice).</li>
+<li><input disabled="" type="checkbox"> After an app update: right‑click the source → <strong>Refresh</strong>.</li>
+<li><input disabled="" type="checkbox"> Brief disconnects: overlay often keeps the last frame while reconnecting — that is expected.</li>
+</ul>
+<h3>Text is cut off at the edge of the OBS source</h3>
+<p>Reload the Browser Source after updating. With <strong>Subtitle scrolling</strong> (Subtitles tab, on by default) the overlay keeps the designed font size; each line (source and translations) slowly scrolls inside its own slot. <strong>Scroll speed</strong> (default 48 px/s, range 12–120) is on the same tab. Uncheck scrolling to clip at the edges.</p>
+<h3>Local ASR mode missing on Live</h3>
+<p>Finish <strong>Modules → Local ASR</strong> until the module reports ready (deps + model + warm load). CPU is enough; CUDA is optional.</p>
+<h3>VRChat Chatbox empty / not updating</h3>
+<p>Needs <strong>VRChat on this Windows PC</strong> with OSC on. Quest standalone has no OSC for this app.</p>
+<ol>
+<li>In VRChat: <strong>Action Menu → OSC → Enable</strong></li>
+<li><strong>Modules → VRChat → Open</strong></li>
+<li><strong>Test connection</strong> (OSCQuery / listen port <strong>9001</strong>) and <strong>Send test</strong> (Chatbox send port <strong>9000</strong>)</li>
+<li>Press <strong>Enable output</strong>, then <strong>Start</strong> on Live — live phrases do not go out until Live is running</li>
+<li>Close the module window if you want; output keeps running while enabled</li>
+</ol>
+<p>If <strong>Send test</strong> appears in Chatbox but Live does not: Start is off, or <strong>What to send</strong> points at a disabled translation line. Mute/AFK pause needs OSCQuery on localhost; Chatbox send on 9000 can still work without inbound packets.</p>
+<h3>Google Web / keyless translation returns HTTP 429</h3>
+<p>Keyless web providers get a short gap between HTTP calls by default. The shared parallel-jobs cap in <strong>Settings</strong> applies to every provider; Google Web / Free Web / Bing can add an extra per-name cap in the same section. Wait, enable fewer translation lines, switch to <strong>Free Web Translate</strong> or <strong>Bing Translator</strong>, or change the interval. Empty <code>provider_limits</code> in config is not rewritten on save — the runtime still applies the interval.</p>
+<h3>SteamVR HUD not visible (PCVR)</h3>
+<p>Requires <strong>Steam + SteamVR</strong> on this PC. Quest standalone cannot show this overlay.</p>
+<ol>
+<li><strong>Modules → SteamVR HUD → Open</strong></li>
+<li>Press <strong>Start SteamVR</strong> on the <strong>hero status card</strong> at the top (not in the checklist section below)</li>
+<li>Wait until the badge is <strong>Enabled</strong>, not <strong>Waiting for SteamVR</strong></li>
+<li>Configure attach point, wrist presets, and <strong>What to show</strong></li>
+<li>Press <strong>Enable subtitle overlay</strong> and/or <strong>Enable chat overlay</strong>, then <strong>Start</strong> on Live (captions)</li>
+<li>Close the module window — the HUD keeps running while SteamVR and the core session are active</li>
+<li>Optional: <strong>Send test</strong> in the SteamVR section — if the test frame appears, placement is fine and live captions need <strong>Start</strong></li>
+</ol>
+<p>If you quit SteamVR yourself (desktop or headset), start it again from the module. The HUD <strong>never</strong> auto-launches SteamVR.</p>
+<p>Laptop / two GPUs: leave SteamVR on the GPU that drives the headset. The HUD follows SteamVR’s adapter.</p>
+<h3>Squares instead of commas / letters in the SteamVR HUD</h3>
+<p>The HUD draws its own pixels (it is not a browser). Empty boxes used to appear for Japanese <code>、。</code>, Polish / Turkish / Vietnamese letters, and digits next to Thai. Current builds use full Noto Sans plus CJK / Arabic / Hindi / Thai faces, and fall back to Segoe UI on Windows.</p>
+<ul>
+<li>Update to the latest <code>0.7.0</code> (or newer) build.</li>
+<li><strong>Send test</strong> with a line that includes those characters.</li>
+<li>OBS <code>/overlay</code> is unrelated — Chrome already falls back to system fonts there.</li>
+</ul>
+<h3>Worker keeps dying (Web Speech)</h3>
+<ul>
+<li>Unstable network to Google speech endpoints.</li>
+<li><strong>Stop → Start</strong>, or relaunch the worker from Tools.</li>
+<li>Advanced: <code>VOICESUB_TRACE_BROWSER=1</code> writes <code>logs/browser-trace.jsonl</code> (for bug reports).</li>
+</ul>
+<h3>Text stuck on screen after Stop / expiry</h3>
+<p>Update to the latest build and <strong>refresh</strong> the OBS Browser Source. The overlay must clear empty frames; an old build can leave a ghost line.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Where things are</h2>
+<p><a id="where-things-are"></a></p>
+<p>Primary destinations (left rail / bottom nav):</p>
+<table>
+<thead>
+<tr>
+<th>Place</th>
+<th>What you do there</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Live</strong></td>
+<td>Start/Stop, recognition mode, <strong>status bar</strong> (full KPI here), transcript, subtitle preview</td>
+</tr>
+<tr>
+<td><strong>Translation</strong></td>
+<td>Providers, up to 4 lines, cache, live/realtime options</td>
+</tr>
+<tr>
+<td><strong>Subtitles</strong></td>
+<td>Overlay layout, <strong>Subtitle scrolling</strong> + speed, visibility, order, how long completed lines stay</td>
+</tr>
+<tr>
+<td><strong>OBS</strong></td>
+<td>Copy overlay URL; optional Closed Captions</td>
+</tr>
+<tr>
+<td><strong>Modules</strong></td>
+<td>Compact square cards (icon / status / Open / <strong>?</strong>) for <strong>TTS</strong>, <strong>Twitch</strong>, <strong>Local ASR</strong>, <strong>VRChat</strong>, and <strong>SteamVR HUD</strong></td>
+</tr>
+<tr>
+<td><strong>More</strong></td>
+<td>Theme, Word Replace, Tools &amp; Data, Settings (including factory reset), Help</td>
+</tr>
+</tbody></table>
+<p><strong>Command palette</strong> (<code>Ctrl+K</code> or header search): jump to a panel, Start/Stop, Save, export diagnostics.</p>
+<table>
+<thead>
+<tr>
+<th>Tab under More / hubs</th>
+<th>Guide section</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Style (under Subtitles)</td>
+<td><a href="#subtitle-style">Subtitle style</a></td>
+</tr>
+<tr>
+<td>UI Theme</td>
+<td><a href="#ui-theme">UI theme</a></td>
+</tr>
+<tr>
+<td>Word Replace</td>
+<td><a href="#word-replacement">Word replacement</a></td>
+</tr>
+<tr>
+<td>Tools &amp; Data</td>
+<td><a href="#tools-and-data">Tools and data</a></td>
+</tr>
+<tr>
+<td>Settings</td>
+<td><a href="#settings">Settings</a></td>
+</tr>
+<tr>
+<td>Help</td>
+<td><a href="#help">Help</a></td>
+</tr>
+</tbody></table>
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_translation.png" alt="Translation" width="280"><br>
+      <sub><a href="#translation">Translation</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_subtitles.png" alt="Subtitles" width="280"><br>
+      <sub><a href="#subtitles">Subtitles</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_style_1.png" alt="Style" width="280"><br>
+      <sub><a href="#subtitle-style">Style</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_UI_theme.png" alt="UI Theme" width="280"><br>
+      <sub><a href="#ui-theme">UI Theme</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_obs_1.png" alt="OBS" width="280"><br>
+      <sub><a href="#obs">OBS</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_word_replace.png" alt="Word Replace" width="280"><br>
+      <sub><a href="#word-replacement">Word Replace</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_modules_main.png" alt="Modules" width="280"><br>
+      <sub><a href="#tts-module">TTS</a> · <a href="#twitch-module">Twitch</a> · <a href="#local-asr">Local ASR</a> · <a href="#vrchat-module">VRChat</a> · <a href="#steamvr-hud-module">SteamVR HUD</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_settings.png" alt="Settings" width="280"><br>
+      <sub><a href="#settings">Settings</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_more.png" alt="More" width="280"><br>
+      <sub><a href="#help">More / Help</a></sub>
+    </td>
+  </tr>
+</table>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Browser Speech (Web Speech)</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_webWorker.png" alt="Web Speech worker" width="820"><br>
+  <em><strong>Web Speech worker</strong> — Chrome window at <code>/google-asr</code> (keep open while listening)</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_webWorker_compact.png" alt="Compact Web Speech worker" width="520"><br>
+  <em><strong>Compact worker</strong> — optional Chrome <code>/google-asr-compact</code> <code>--app=</code> window</em>
+</p>
+
+<h3>How it feels day to day</h3>
+<ol>
+<li>On Live, leave recognition on <strong>Web Speech</strong> (browser Google).</li>
+<li>Press <strong>Start</strong> — a separate Chrome window opens to the worker page.</li>
+<li>Allow the microphone <strong>in that Chrome window</strong>.</li>
+<li>Leave the window open (it may sit behind OBS/game). Closing it stops recognition.</li>
+</ol>
+<p>The microphone list in the main dashboard stays empty on purpose — the mic is chosen in Chrome, not in Kagevi settings.</p>
+<h3>Worker window rules (important)</h3>
+<ul>
+<li><strong>Full worker</strong> (default): a <strong>normal Chrome window</strong> with an address bar (not a hidden tab).</li>
+<li><strong>Compact worker</strong> (optional): Live-tab checkbox opens <code>/google-asr-compact</code> in a smaller Chrome <code>--app=</code> window (no omnibox). Same isolated profile and recognition path.</li>
+<li>It uses its own Chrome profile under <code>user-data/</code> so it does not mess with your daily browser.</li>
+<li>Windows is tuned so Chrome is less likely to “sleep” the tab while you stream.</li>
+</ul>
+<h3>Recognition language</h3>
+<p>Set the speech language in <strong>Settings</strong> (Web Speech / recognition language). Match the language you actually speak. The worker window also shows live text — if it shows words but Live does not, recognition works and the problem is downstream (restart the session).</p>
+<details>
+<summary><strong>Advanced Web Speech (optional)</strong></summary>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings_web_speech_advenced.png" alt="Advanced Web Speech settings" width="820"><br>
+  <em><strong>Advanced Web Speech</strong> — forced finals, reconnect, session rotation</em>
+</p>
+
+<p><strong>Settings → Advanced Web Speech settings</strong> — forced finals, reconnect delays, session length, and related knobs. Each field has an <strong><code>!</code> help</strong> tip.</p>
+<p>After big changes: <strong>Save → Stop → Start</strong>, and reopen the worker if it was already open.</p>
+<p>Idle “force final” timing is edited in the <strong>worker window</strong> itself (<code>force_finalization_timeout_ms</code>), not only in Advanced settings.</p>
+<p>Some older config names (<code>pause_to_finalize_ms</code>, <code>hard_max_phrase_ms</code>, …) are ignored at runtime — leave them alone.</p>
+</details>
+
+<details>
+<summary><strong>Stability notes</strong></summary>
+
+<ul>
+<li>Sessions rotate about every 3 minutes by default to keep Chrome recognition healthy.</li>
+<li>After a long finalized phrase (≥200 characters), the worker refreshes its internal buffer so the next lines stay clean.</li>
+<li>Screen wake lock can keep the machine from sleeping while recognition runs.</li>
+</ul>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Local ASR</h2>
+<p>Offline speech recognition on your machine (Parakeet + ONNX). No Chrome worker while Live uses this mode.</p>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_modules_main.png" alt="Modules" width="400">
+  &nbsp;
+  <img loading="lazy" src="images/kagevi_localASR_1.png" alt="Local ASR module" width="400"><br>
+  <em><strong>Modules</strong> / <strong>Local ASR</strong> — open the module and finish setup</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_setup.png" alt="Local ASR setup" width="720"><br>
+  <em><strong>Setup</strong> — download ORT / optional CUDA pieces and a Parakeet model</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_2.png" alt="Local ASR test bench" width="720"><br>
+  <em><strong>Local ASR</strong> — realtime options, inference, and mic test bench</em>
+</p>
+
+<h3>Setup once</h3>
+<ol>
+<li>Open <strong>Modules → Local ASR</strong> (separate window).</li>
+<li>Follow the checklist: check/download runtime → download a model → warm-load → pick a mic → run a short test until you see final text.</li>
+<li>When the module is <strong>ready</strong>, close the window if you like — settings stay in <code>user-data/modules/local-asr/</code>.</li>
+<li>On <strong>Live</strong>, choose <strong>Local ASR</strong>, then <strong>Start</strong>.</li>
+</ol>
+<p>CPU is enough for Live. CUDA is optional (faster on supported NVIDIA GPUs after extra downloads). For CUDA pick <strong>fp16</strong> or <strong>fp32</strong> models — <strong>int8</strong> stays on CPU.</p>
+<p>On a clean install, warm-load can run in the <strong>same session</strong> right after ORT/CUDA finish downloading (no app restart required for the usual first-setup path).</p>
+<h3>After changing VAD / realtime options</h3>
+<p><strong>Stop → Start</strong> on Live so the new mic/pipeline settings apply.</p>
+<h3>What you get</h3>
+<p>Same subtitle, translation, style, and OBS path as Web Speech — only the speech engine changes.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Translation</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_translation.png" alt="Translation tab" width="820"><br>
+  <em><strong>Translation</strong> — turn the pipeline on, pick providers, up to 4 lines</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_translation_provider_settings.png" alt="Translation provider settings" width="820"><br>
+  <em><strong>Provider settings</strong> — API keys, endpoints, and per-provider options</em>
+</p>
+
+<h3>Simple setup</h3>
+<ol>
+<li>Enable <strong>translation</strong>.</li>
+<li>Enable one or more lines (<code>translation_1</code> … <code>translation_4</code>).</li>
+<li>Pick target language and provider per line.</li>
+<li>Save (or just Start — Start also takes the current UI snapshot).</li>
+</ol>
+<p>ASR still works with translation off (source-only subtitles).</p>
+<h3>Lines</h3>
+<p>Each line is independent: on/off, language, provider, short label. More enabled lines = more work for providers. Order on screen is controlled under <strong>Subtitles</strong>.</p>
+<h3>Providers without an API key</h3>
+<p>Good starting points if you do not want cloud accounts:</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Google Web</strong></td>
+<td>Free Translate Element path. If you see <strong>HTTP 429</strong>, wait, use fewer lines, or raise limits in Settings</td>
+</tr>
+<tr>
+<td><strong>Free Web Translate</strong></td>
+<td>Separate free Google path (own rate limits)</td>
+</tr>
+<tr>
+<td><strong>Bing Translator</strong></td>
+<td>Keyless Bing web session (<code>ttranslatev3</code>)</td>
+</tr>
+</tbody></table>
+<p>There are <strong>17</strong> providers total (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, China providers, and more). Keys stay only in your local <code>config.toml</code>. Older configs that still name <code>microsoft_edge</code> or <code>public_libretranslate_mirror</code> migrate to <strong>Bing Translator</strong> on load/save.</p>
+<h3>Cache</h3>
+<p>Memory and optional disk cache (<code>user-data/translation-cache/</code>) avoid repeating the same request. If you change LLM prompts a lot, clear or expect old cached answers until the text changes.</p>
+<h3>Optional realtime translation</h3>
+<p>Off by default. When enabled for classic MT providers, growing speech can show draft translations before the phrase finishes. LLM providers still wait for finals. Good for snappy overlays; use finals-only if you prefer stable text.</p>
+<h3>How lines behave on screen</h3>
+<p>A finished subtitle <strong>stays</strong> until the <strong>next</strong> phrase finishes. Late translations can still arrive. If a newer phrase supersedes an old request, the old job is dropped — that is intentional, not a random failure.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Subtitles</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_subtitles.png" alt="Subtitles tab" width="820"><br>
+  <em><strong>Subtitles</strong> — layout preset, what is visible, order, how long lines stay</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>In plain words</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Overlay preset</td>
+<td>How rows are stacked: <strong>single</strong>, <strong>dual-line</strong>, or <strong>stacked</strong>. Compact spacing is a separate toggle. OBS URL can override with <code>?preset=…&amp;compact=1</code>.</td>
+</tr>
+<tr>
+<td>Subtitle scrolling</td>
+<td>On by default (<code>overlay.fit_to_box</code>). Full-size font; each line scrolls inside the Browser Source when it is too tall. <code>?fit=0</code> turns this off for one source.</td>
+</tr>
+<tr>
+<td>Scroll speed</td>
+<td>Default <strong>48</strong> px/s (range <strong>12–120</strong>). How fast overflowing lines crawl when Subtitle scrolling is on.</td>
+</tr>
+<tr>
+<td>Visibility</td>
+<td>Show source and translations. How many translation lines appear follows the <strong>enabled</strong> Translation lines (no separate max-lines control).</td>
+</tr>
+<tr>
+<td>TTL / lifetime</td>
+<td>How long a finished line stays after speech stops.</td>
+</tr>
+<tr>
+<td>Line order</td>
+<td>Order for preview, OBS overlay, and “first visible line” Closed Captions.</td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
+While you start a new sentence, the previous finished translation can stay until the new sentence <strong>finalizes</strong>. That keeps the screen readable during natural pauses.</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Subtitle style</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_style_1.png" alt="Subtitle Style tab" width="820"><br>
+  <em><strong>Subtitle Style</strong> — fonts, colors, effects, per-line overrides</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_style_2.png" alt="Subtitle Style slot overrides" width="820"><br>
+  <em><strong>Per-line overrides</strong> — separate style for source and each translation slot</em>
+</p>
+
+<ul>
+<li>Pick a built-in preset or customize fonts, size, outline, shadow, background, alignment.</li>
+<li>Font picker shows each face in its own typeface; alphabet tags stay in native scripts (<code>Latin</code>, <code>Кириллица</code>, <code>日本語</code>, …) so CJK / Latin-only coverage is obvious.</li>
+<li>Effects include fade, slide, zoom, glow, and similar.</li>
+<li>Style <strong>source</strong> and each <strong>enabled</strong> <code>translation_1…4</code> separately if you want (tabs only for active lines).</li>
+<li>Live preview and OBS share the same look — Save (or Start) after edits.</li>
+<li>In OBS each line <strong>scrolls inside the Browser Source</strong> at full size (Subtitles: <strong>Subtitle scrolling</strong>).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>UI theme</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_UI_theme.png" alt="UI Theme tab" width="820"><br>
+  <em><strong>UI Theme</strong> — dark/light and accent colors for the app chrome</em>
+</p>
+
+<p>This only changes the <strong>dashboard / module windows</strong>. OBS subtitle look comes from <strong>Subtitle style</strong>, not this theme.</p>
+<p>Pick a preset from the gallery — <strong>click</strong> applies it. The sample includes chips, an input, and primary/ghost buttons.</p>
+<p>Theme, language, and UI font can sync live across windows without a full Save when the app pushes a UI sync.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>OBS</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_obs_1.png" alt="OBS tab" width="820"><br>
+  <em><strong>OBS</strong> — overlay URL and optional Closed Captions</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_obs_2.png" alt="OBS Closed Captions extras" width="820"><br>
+  <em><strong>Closed Captions extras</strong> — debug text source, partials, and send gaps</em>
+</p>
+
+<h3>Overlay (what most streamers need)</h3>
+<ol>
+<li>Copy the URL from the <strong>OBS</strong> tab (default <code>http://127.0.0.1:8765/overlay</code>).</li>
+<li>Paste into an OBS <strong>Browser Source</strong>.</li>
+<li>Leave Kagevi running while you stream.</li>
+</ol>
+<p>The overlay <strong>keeps captions at full size</strong> inside the Browser Source (for example 800×600). Captions sit on the <strong>top</strong> and grow <strong>downward</strong>. If a line (source or a translation) is taller than its share of the box, <strong>that line scrolls</strong> on its own. Toggle this on the <strong>Subtitles</strong> tab: <em>Subtitle scrolling</em>. Speed is <strong>Scroll speed</strong> on the same tab.</p>
+<p>Optional URL tweaks: <code>?preset=stacked&amp;compact=1</code> (and similar). <code>?fit=0</code> turns off auto-fit for that source only. Prefer changing presets in the app unless you need a one-off OBS override.</p>
+<h3>Closed Captions (optional)</h3>
+<p>Sends captions into OBS via WebSocket (handy for platforms that surface CC, e.g. Twitch).</p>
+<ul>
+<li>Enable in the OBS tab; set host / port / password to match OBS WebSocket v5.</li>
+<li>Choose what to send: live source, finals only, a translation line (<code>translation_1</code>…<code>translation_4</code>), or the first visible line.</li>
+<li>Optional: send <strong>live-partial translations</strong> in <code>translation_*</code> modes (<code>send_translation_partials</code>; throttled like source). Finals still cover LLM / providers without partials.</li>
+<li>Native stream captions only work while OBS is actually streaming.</li>
+<li>Twitch native CC is reliable for <strong>Latin</strong> scripts; Cyrillic / CJK usually need the <strong>browser overlay</strong> instead.</li>
+<li>Debug mirror can push text into an OBS text source for testing.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Word replacement</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_word_replace.png" alt="Word Replace tab" width="820"><br>
+  <em><strong>Word Replace</strong> — fix ASR mistakes before translation and display</em>
+</p>
+
+<p>Use this to clean names, slang, or misheard words <strong>before</strong> they hit translation and the overlay.</p>
+<ul>
+<li>Custom find/replace pairs.</li>
+<li>Optional built-in lists / stem rules (en/ru/ja/ko/zh) and light obfuscation cleanup.</li>
+<li>Builtin / empty replacement mask keeps the <strong>first and last</strong> letter (<code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code>); already-masked forms with <code>*</code> are left alone.</li>
+<li>Case; <strong>whole-word</strong> for custom pairs. Builtin Latin/Cyrillic always matches whole tokens (so <code>бля</code> does not break <code>кораблями</code>); Hangul uses spaces; multi-char CJK is substring; single Han characters and short katakana only match when isolated.</li>
+</ul>
+<p>Twitch chat TTS has its <strong>own</strong> filter switches in the <strong>Twitch</strong> module window (same builtin mask rule); dashboard word-replace pairs do not automatically apply there.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>TTS module</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_1.png" alt="TTS module" width="820"><br>
+  <em><strong>TTS</strong> — speak subtitles aloud</em>
+</p>
+
+<p>Open from <strong>Modules → TTS</strong> (<code>/tts</code>). Settings live in <code>user-data/modules/tts/</code>. You can close the window — playback continues while the module stays enabled.</p>
+<p>Subtitle speech needs <strong>Start</strong> on Live (unlike Twitch IRC, which can run without Live).</p>
+<h3>Subtitle speech</h3>
+<ul>
+<li>Turn the speech channel on, pick voice / rate / volume.</li>
+<li>Volume goes up to <strong>150%</strong>.</li>
+<li>Playback modes:<ul>
+<li><strong>Native</strong> — lowest latency, rate fixed at 1.0×</li>
+<li><strong>Sonic</strong> — change speaking rate while keeping pitch</li>
+</ul>
+</li>
+<li>TTS engine: <strong>Google HTTP proxy</strong> (<code>browser_google</code>) or <strong>Python sidecar</strong> (<code>python_stdlib</code> via bundled <code>google_tts_fetch.exe</code>).</li>
+<li>Pick a dedicated output device for subtitle speech (independent from Twitch chat TTS).</li>
+</ul>
+<p>Use the sample / Speak control in the module to test without going Live.</p>
+<p>The Google TTS helper binary is bundled under the TTS module runtime — you do not install Python yourself.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Twitch module</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_1.png" alt="Twitch module" width="820"><br>
+  <em><strong>Twitch</strong> — IRC chat log and optional chat TTS (up to five channels)</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_connection.png" alt="Twitch connection" width="820"><br>
+  <em><strong>Twitch connection</strong> — broadcaster OAuth, channels, and EventSub alerts</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_2.png" alt="Twitch filters" width="820"><br>
+  <em><strong>Twitch filters</strong> — emotes, language, speak template, nick replacements</em>
+</p>
+
+<p>Open from <strong>Modules → Twitch</strong> (<code>/twitch</code>). Settings live in <code>user-data/modules/twitch/</code>. Enable-without-window: closing the webview does <strong>not</strong> disconnect IRC or stop chat TTS.</p>
+<p>Chat TTS is <strong>independent</strong> of subtitle TTS — you can use one, both, or neither.</p>
+<h3>Connect and channels</h3>
+<ol>
+<li><strong>Connect with Twitch</strong> — like Streamer.bot: <strong>Broadcaster</strong> token is enough (<code>chat:read</code> + EventSub scopes). It auto-joins the streamer&#39;s own chat and marks that channel <strong>Broadcaster</strong>. A <strong>bot</strong> token (<code>chat:read</code>) is optional for a separate IRC login / extra channels. OAuth opens in the system browser. Redirect URI is still <code>http://localhost:{port}/tts</code>; the unauthenticated <code>/tts</code> page is the OAuth shell.</li>
+<li>Extra channel logins (without <code>#</code>) are <strong>optional</strong> (total JOIN cap <strong>5</strong>, including the auto-joined streamer channel). Extra channels are <strong>chat-only</strong>.</li>
+<li>Toggle <strong>Speak chat</strong> to read filtered messages aloud.</li>
+<li>Toggle <strong>Speak channel events</strong> and edit templates for follow / sub / resub / gift / raid / cheer. Alerts are read <strong>only on the streamer (Broadcaster) channel</strong>. EventSub uses the broadcaster login; subs/raids/cheers also arrive from IRC as a fallback on that same channel.</li>
+<li>If IRC drops, the module retries with backoff; bad auth stops instead of looping forever.</li>
+<li><strong>?</strong> next to bot nick explains the optional IRC login used for extra JOINs.</li>
+</ol>
+<p>On app start, if the module is enabled and Broadcaster or bot credentials exist, IRC <strong>auto-connects</strong> (no Live <strong>Start</strong> required).</p>
+<h3>Chat TTS engine and playback</h3>
+<ul>
+<li><strong>TTS engine:</strong> Google HTTP proxy (<code>browser_google</code>) or Python sidecar (<code>python_stdlib</code>) — separate from subtitle TTS settings.</li>
+<li><strong>Playback mode:</strong> Native or Sonic (same semantics as the TTS module).</li>
+<li><strong>Output device</strong>, volume, and rate for chat/event TTS are configured here (independent of subtitle speech; rate applies in Sonic mode).</li>
+<li><strong>Test phrase</strong> and <strong>Clear queue</strong> help verify audio without waiting for chat.</li>
+</ul>
+<p>Filters (emotes, links, symbols, language, profanity mask) apply live — usually no reconnect needed.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>VRChat module</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_vrchat_1.png" alt="VRChat module" width="820"><br>
+  <em><strong>VRChat</strong> — OSC Chatbox output for social captions in VR</em>
+</p>
+
+<p>Optional <strong>social</strong> output: pipeline text goes to the VRChat <strong>Chatbox</strong> over OSC. Other players in the instance see it. This is <strong>not</strong> a headset HUD and <strong>not</strong> KAT — for wearer-only captions in SteamVR use the <a href="#steamvr-hud-module">SteamVR HUD</a>.</p>
+<p>Open from <strong>Modules → VRChat</strong>. Theme, locale, and UI font follow the dashboard. Settings live in <code>user-data/modules/vrchat/config.toml</code> (created on first open). Profiles and <strong>Reset to factory defaults</strong> include this file.</p>
+<h3>VRChat requirements</h3>
+<ul>
+<li><strong>VRChat on this Windows PC</strong> (PCVR or desktop). Quest standalone has no OSC for Kagevi.</li>
+<li>OSC <strong>Enabled</strong> in VRChat (<strong>Action Menu → OSC</strong>)</li>
+<li>Core app <strong>Start</strong> on Live for live captions (<strong>Send test</strong> / <strong>Test connection</strong> work without Live)</li>
+<li>Chatbox cap: <strong>144 characters / 9 lines</strong>, UTF-8 (Japanese, Russian, and other scripts VRChat already shows)</li>
+</ul>
+<p>Stay on <code>127.0.0.1</code>. The listen socket is loopback-only, so Windows should not ask for local-network access under a random process name.</p>
+<h3>VRChat setup</h3>
+<ol>
+<li>Launch VRChat and turn on <strong>OSC</strong></li>
+<li>Open <strong>Modules → VRChat</strong></li>
+<li>Confirm host <code>127.0.0.1</code>, send port <strong>9000</strong>, listen port <strong>9001</strong> (must match VRChat’s OSC send port)</li>
+<li>Pick <a href="#what-to-send-to-chatbox">what to send</a> and <a href="#chatbox-options">Chatbox options</a></li>
+<li><strong>Test connection</strong>, then <strong>Send test</strong> — you should see the test line in Chatbox</li>
+<li>Press <strong>Enable output</strong></li>
+<li>Press <strong>Start</strong> on Live</li>
+<li>Close the module window — Chatbox keeps updating while <code>enabled</code> and Live is running</li>
+</ol>
+<p>Dashboard <strong>Modules</strong> card badges: <strong>Off</strong> / <strong>Enabled</strong> / <strong>Muted</strong> / <strong>AFK</strong> (+ the selected layer).</p>
+<h3>OSC ports</h3>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>Default</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>App → VRChat</td>
+<td><code>127.0.0.1:9000</code></td>
+<td>Chatbox text (<code>/chatbox/input</code>)</td>
+</tr>
+<tr>
+<td>VRChat → app</td>
+<td><code>127.0.0.1:9001</code></td>
+<td><strong>Test connection</strong> and optional mute / AFK pause</td>
+</tr>
+</tbody></table>
+<p><strong>Test connection</strong> looks for VRChat OSCQuery on localhost (<code>/?HOST_INFO</code>) and can also wait for UDP on the listen port. A result like “VRChat OSC is on (OSCQuery)” means OSC is up; Chatbox send on <strong>9000</strong> does <strong>not</strong> need inbound packets.</p>
+<p><strong>Send test</strong> writes to Chatbox immediately (bypasses Enable output and Live). Use it to check the send port before going Live.</p>
+<p>There is no Chatbox notification beep in the UI. Packets always send the OSC SFX argument as off (VRChat often ignores that flag).</p>
+<h3>What to send to Chatbox</h3>
+<p>Same idea as OBS Closed Captions. Translation lines in the list match <strong>enabled</strong> lines on the Translation tab (labels like <code>Source · ja</code>, <code>Translation 1 · en</code>). The window refreshes those lines about every 2 s while open.</p>
+<table>
+<thead>
+<tr>
+<th>Content</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Source</strong></td>
+<td>Recognized text (language shown when recognition is not <code>auto</code>)</td>
+</tr>
+<tr>
+<td><strong>Translation 1–4</strong></td>
+<td>That translation slot — only if the line is enabled</td>
+</tr>
+<tr>
+<td><strong>First visible line</strong></td>
+<td>First line that is currently visible in the overlay payload</td>
+</tr>
+<tr>
+<td><strong>Source + Translation 1</strong></td>
+<td>Both, stacked (still clamped to 144 / 9 lines)</td>
+</tr>
+<tr>
+<td><strong>Custom template</strong></td>
+<td>Placeholders <code>{source}</code>, <code>{tr1}</code>, <code>{tr2}</code>, <code>{tr3}</code>, <code>{tr4}</code></td>
+</tr>
+</tbody></table>
+<p>If you pick a translation line and then disable it on the Translation tab, the dropdown keeps it marked inactive until you choose another mode.</p>
+<h3>Chatbox options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Send on final segments only</strong></td>
+<td>on</td>
+<td>Skip live partials; wait for a finished phrase</td>
+</tr>
+<tr>
+<td><strong>Skip unchanged text</strong></td>
+<td>on</td>
+<td>Do not resend the same string</td>
+</tr>
+<tr>
+<td><strong>Pause sending while muted</strong></td>
+<td>off</td>
+<td>Stop while VRChat <strong>MuteSelf</strong> is true (needs OSCQuery)</td>
+</tr>
+<tr>
+<td><strong>Pause sending while AFK</strong></td>
+<td>off</td>
+<td>Stop while VRChat <strong>AFK</strong> is true (needs OSCQuery)</td>
+</tr>
+<tr>
+<td><strong>Max chars</strong></td>
+<td><strong>144</strong></td>
+<td>Clamp 1–144</td>
+</tr>
+<tr>
+<td><strong>Min interval (ms)</strong></td>
+<td><strong>1000</strong></td>
+<td>200–10000. Faster phrases: only the <strong>latest</strong> is sent</td>
+</tr>
+<tr>
+<td><strong>Clear Chatbox after (ms)</strong></td>
+<td><strong>5000</strong></td>
+<td>Empty Chatbox when the timer elapses. <strong>0</strong> = keep until the next phrase. Otherwise 500–60000. A newer send cancels the previous timer. After a timed clear, the same completed phrase is <strong>not</strong> sent again until the text changes</td>
+</tr>
+</tbody></table>
+<p>Mute / AFK are polled from OSCQuery about twice a second (UDP change-only packets are not enough). Enable output, Save, and keep OSC on in VRChat.</p>
+<h3>Enable without the window</h3>
+<p>Enable-without-window: configure → <strong>Enable output</strong> → close. Sends continue while Live is running. Reopening the window reloads <code>config.toml</code> and the dashboard theme. <strong>Disable output</strong> in the module (or factory reset) stops Chatbox updates.</p>
+<p>Contracts (OSC, HTTP, config keys): <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md#18b-vrchat-chatbox-osc-module">Technical Architecture §18b</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>SteamVR HUD module</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_1.png" alt="SteamVR HUD module" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — module window, placement, and what to show</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_2.png" alt="SteamVR HUD settings" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — canvas presets, fonts, and submit interval</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_chatOvly.png" alt="SteamVR HUD in headset" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — wearer-only overlay in PCVR (not captured in OBS)</em>
+</p>
+
+<p>Optional <strong>wearer-only</strong> output: the same subtitle lines OBS uses, drawn on an OpenVR overlay quad inside SteamVR. Only <strong>you</strong> see it in the headset. Stream viewers still use OBS <code>/overlay</code>. People in VRChat still use the <a href="#vrchat-module">VRChat Chatbox</a> module — that is a different, 144-character social path.</p>
+<p>Open from <strong>Modules → SteamVR HUD</strong>. Settings live in <code>user-data/modules/vr-overlay/</code> (<code>config.toml</code>, plus <code>openvr-host.pid</code> / <code>openvr-host.log</code> for the overlay host). Theme, locale, and UI font follow the dashboard.</p>
+<p>The HUD is <strong>not</strong> captured in OBS. It sits over SteamVR games for the wearer only.</p>
+<h3>Requirements</h3>
+<ul>
+<li>Windows PCVR with <strong>Steam + SteamVR</strong> installed</li>
+<li><strong>Not</strong> Quest standalone (no SteamVR compositor there)</li>
+<li>Core app <strong>Start</strong> on Live for live captions (test frames work without Live)</li>
+<li>Headset tracking when origin is <strong>Headset</strong>; a tracked controller when origin is left/right</li>
+</ul>
+<h3>Setup once</h3>
+<ol>
+<li>Open <strong>Modules → SteamVR HUD</strong></li>
+<li>Press <strong>Start SteamVR</strong> on the <strong>hero card</strong> at the top (not the checklist)</li>
+<li>Wait for <strong>SteamVR connected</strong> / badge <strong>Enabled</strong> (or <strong>Waiting for SteamVR</strong> until the runtime is up)</li>
+<li>Pick <a href="#placement">placement</a>, <a href="#what-to-show">what to show</a>, and a canvas preset</li>
+<li>Press <strong>Save settings</strong>, then <strong>Enable subtitle overlay</strong> and/or <strong>Enable chat overlay</strong></li>
+<li>Optional: type a <strong>Test message</strong> → <strong>Send test</strong> and look in the headset</li>
+<li>Press <strong>Start</strong> on Live (needed for captions; chat overlay does not require Live)</li>
+<li>Close the module window — the HUD keeps running while either overlay is enabled, SteamVR, and the core session are active</li>
+</ol>
+<p><strong>Check SteamVR</strong> only probes whether the overlay API is available. It does not start SteamVR.</p>
+<p>Dashboard <strong>Modules</strong> card badges: <strong>Off</strong> / <strong>Waiting for SteamVR</strong> / <strong>Enabled</strong> (+ origin) / <strong>Paused</strong>.</p>
+<h3>Placement</h3>
+<table>
+<thead>
+<tr>
+<th>Origin</th>
+<th>Where the panel sits</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Headset (HMD)</strong></td>
+<td>Default: in front of the eyes, slightly below. Follows the HMD.</td>
+</tr>
+<tr>
+<td><strong>Left / right controller</strong></td>
+<td>Follows that controller. <strong>Wrist preset</strong>: Wrist, Near, Far, Palm, Above hand, Below hand.</td>
+</tr>
+<tr>
+<td><strong>World (absolute)</strong></td>
+<td>Fixed in the play space (does not follow the head).</td>
+</tr>
+</tbody></table>
+<p>Pose (offset, rotation, width) is <strong>remembered per origin</strong> and per wrist preset. Switching HMD → wrist → HMD restores the last HMD setup instead of factory defaults.</p>
+<ul>
+<li><strong>Reset offset</strong> returns the <em>current</em> origin to its calibrated base (not every origin).</li>
+<li><strong>Nudge</strong> moves in 1 mm / 5 mm / 1 cm steps.</li>
+<li>OpenVR local space: <strong>+X right, +Y up, −Z forward</strong>. HMD default is about <code>{0, -0.28, -1.15}</code> meters.</li>
+<li>Do not yaw the panel 180° — the overlay has no backside, so it disappears.</li>
+<li>Width default is <strong>0.55 m</strong> on the HMD and <strong>0.14 m</strong> on a controller. Opacity and curvature are optional.</li>
+</ul>
+<h3>What to show</h3>
+<p>Checkboxes, not a single dropdown — same labels as OBS / VRChat (<code>Source · ja</code>, <code>Translation 1 · en</code>, …). Only <strong>enabled</strong> translation lines appear. Source shows the recognition language when it is not <code>auto</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Source</strong> / <strong>Translation 1–4</strong></td>
+<td>Which pipeline lines to draw</td>
+</tr>
+<tr>
+<td><strong>Finals only</strong></td>
+<td>Hide live partials; wait for a finished phrase</td>
+</tr>
+<tr>
+<td><strong>Min submit interval</strong></td>
+<td>How often the HUD raster updates (default <strong>90 ms</strong>). This is not 90 FPS video — SteamVR gets a GPU texture when the text changes.</td>
+</tr>
+</tbody></table>
+<p>Empty payload hides the panel (same idea as OBS clearing an empty overlay).</p>
+<h3>Display (canvas)</h3>
+<p>The HUD is a fixed pixel canvas, then scaled in meters in VR.</p>
+<table>
+<thead>
+<tr>
+<th>Canvas preset</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Default</strong></td>
+<td>1920×512</td>
+</tr>
+<tr>
+<td><strong>Tall</strong></td>
+<td>1920×768</td>
+</tr>
+<tr>
+<td><strong>Large</strong></td>
+<td>2560×720</td>
+</tr>
+<tr>
+<td><strong>Compact</strong></td>
+<td>1280×384</td>
+</tr>
+<tr>
+<td><strong>Custom</strong></td>
+<td>Even width/height, 256–2048</td>
+</tr>
+</tbody></table>
+<p><strong>Font size 0</strong> = auto-fit to canvas height and line count. Try <strong>36–48</strong> if text looks small in VR; a taller preset helps more lines.</p>
+<h3>Languages and text</h3>
+<p>The HUD rasters itself (fontdue + shaping). It is not a web page, so missing glyphs used to show as empty squares.</p>
+<p>Current builds cover the translation / ASR languages:</p>
+<ul>
+<li>Japanese / Chinese punctuation (<code>、。「」</code> and fullwidth <code>，！？</code>)</li>
+<li>Korean Hangul</li>
+<li>Polish, Turkish, Vietnamese (extended Latin)</li>
+<li>Russian and other Cyrillic</li>
+<li>Arabic (joined letters, right-to-left; Latin names and <code>OBS</code> stay left-to-right inside the sentence)</li>
+<li>Hindi (Devanagari conjuncts) and Thai (stacked marks; ASCII digits stay Latin)</li>
+</ul>
+<p>Line breaks follow words where there are spaces, and character clusters for CJK. Japanese closers (<code>。、」</code>) are not left hanging at the start of the next row.</p>
+<h3>SteamVR start and stop</h3>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Start SteamVR</strong></td>
+<td>Launches SteamVR (<code>vrstartup</code>, fallback <code>steam.exe -applaunch 250820</code>). <strong>User action only</strong> — the module never auto-starts SteamVR.</td>
+</tr>
+<tr>
+<td><strong>Stop SteamVR</strong></td>
+<td>Tears down the overlay session first, then asks SteamVR to quit (monitor window, fallback console command).</td>
+</tr>
+</tbody></table>
+<p>If you exit SteamVR from Steam or the headset, the HUD goes to <strong>Waiting for SteamVR</strong> and waits. Press <strong>Start SteamVR</strong> again when you want it back. A 5 s backoff sits between reconnect attempts so a shutdown is not hammered.</p>
+<p>OpenVR runs in a helper process <code>kageviSub-vr-overlay-host.exe</code> so a stuck compositor cannot freeze Live, VRChat, or TTS. You can ignore it in Task Manager unless you are filing a bug; then attach <code>user-data/modules/vr-overlay/openvr-host.log</code>.</p>
+<h3>After you close the window</h3>
+<p>Enable-without-window: configure → <strong>Enable subtitle overlay</strong> and/or <strong>Enable chat overlay</strong> → close. Submits continue while the core app is running. Profiles and <strong>Reset to factory defaults</strong> include this module’s <code>config.toml</code>. Reopening the window reloads the saved file and the dashboard theme.</p>
+<h3>Three outputs compared</h3>
+<table>
+<thead>
+<tr>
+<th>Output</th>
+<th>Who sees it</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OBS <code>/overlay</code></td>
+<td>Stream viewers</td>
+<td>Browser Source</td>
+</tr>
+<tr>
+<td>VRChat <code>/vrchat</code></td>
+<td>People in VRChat</td>
+<td>OSC Chatbox (144 chars / 9 lines)</td>
+</tr>
+<tr>
+<td>SteamVR <code>/vr-overlay</code></td>
+<td><strong>Headset wearer</strong></td>
+<td>OpenVR overlay (full lines, wearer only)</td>
+</tr>
+</tbody></table>
+<p>OpenVR / D3D11 / raster contracts: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md#18c-steamvr-openvr-hud-overlay-module">Technical Architecture §18c</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Tools and data</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tools_data.png" alt="Tools and Data tab" width="820"><br>
+  <em><strong>Tools & Data</strong> — profiles, status, diagnostics ZIP</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Why you care</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Runtime status</td>
+<td>See if recognition / translation / OBS CC are alive</td>
+</tr>
+<tr>
+<td>Profiles</td>
+<td>Save and switch named setups (<code>user-data/profiles/*.json</code>) — includes TTS, Twitch, Local ASR, VRChat, and SteamVR HUD module configs. Loading a profile applies it immediately (theme and open module windows included).</td>
+</tr>
+<tr>
+<td>Export diagnostics</td>
+<td>ZIP with redacted config + logs — attach when asking for help</td>
+</tr>
+<tr>
+<td>Logs folder</td>
+<td><code>logs/core.log</code>, <code>runtime-events.log</code>, <code>session-latest.jsonl</code> next to the app data</td>
+</tr>
+</tbody></table>
+<details>
+<summary><strong>Deep diagnostics (advanced)</strong></summary>
+
+<p>Turn on full logging in Settings / config (<code>logging.full_enabled</code>) or set <code>VOICESUB_DEEP_DIAGNOSTICS=1</code>. Extra JSONL traces can be enabled with <code>VOICESUB_TRACE_*</code> variables. Detailed Tools metrics / Local ASR decode counters need <code>logging.runtime_metrics_enabled</code> (off by default). Only needed when hunting a tough bug.</p>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Settings</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings.png" alt="Settings tab" width="820"><br>
+  <em><strong>Settings</strong> — language, layout, Advanced Web Speech</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings_web_speech_advenced.png" alt="Advanced Web Speech settings" width="820"><br>
+  <em><strong>Advanced Web Speech</strong> — same panel as under [Browser Speech](#browser-speech-web-speech)</em>
+</p>
+
+<h3>UI language</h3>
+<p>English, Russian, Japanese, Korean, Chinese. Saved with your config. The Web Speech worker follows the locale when it launches.</p>
+<h3>Layout</h3>
+<p><strong>Standard</strong> desktop window vs <strong>compact</strong> second-monitor layout.</p>
+<h3>Reset to factory defaults</h3>
+<p><strong>Settings → Reset to factory defaults</strong> applies the <code>default</code> profile plus TTS / Twitch / Local ASR / VRChat / SteamVR HUD module configs, then saves immediately. Open module windows pick up theme and settings without a Save + reopen. Downloaded Local ASR models / ORT are <strong>not</strong> deleted.</p>
+<h3>Keyless translation limits</h3>
+<p>Settings shows both layers in one dispatcher block: shared <strong>Maximum parallel jobs</strong> (all providers) plus extra fields for Google Web / Free Web / Bing (optional per-name cap + 750/750/500 ms interval). The interval reduces HTTP 429 at Start; empty concurrent does not add a cap beyond the global job limit.</p>
+<h3>Fonts / other</h3>
+<p>Project subtitle fonts come from <code>bin/fonts/</code> (the SteamVR HUD uses the same files plus a Windows system fallback). Advanced Web Speech options are described in <a href="#browser-speech-web-speech">Browser Speech</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Help</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_more.png" alt="More hub" width="820"><br>
+  <em><strong>More</strong> — Theme, Word Replace, Settings, Tools & Data, Help</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_help.png" alt="Help tab" width="820"><br>
+  <em><strong>Help</strong> — in-app guide and quick-start checklist</em>
+</p>
+
+<p>In-app Help summarizes recognition, translation, subtitles, OBS, and tools. VRChat Chatbox: <a href="#vrchat-module">VRChat module</a>. SteamVR HUD: <a href="#steamvr-hud-module">SteamVR HUD module</a>. Deeper contracts (HTTP/WS/IPC, OpenVR): <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md">Technical Architecture</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Privacy and local-first</h2>
+<ul>
+<li>By default the app listens only on <strong>localhost</strong> (<code>127.0.0.1</code>). Other devices on your LAN cannot reach it.</li>
+<li>LAN bind (<code>VOICESUB_ALLOW_LAN=1</code>) is for advanced setups — WebSockets then have <strong>no login</strong>, so use only on trusted networks.</li>
+<li>Translation API keys and Twitch tokens stay on your disk.</li>
+<li>Diagnostics ZIP <strong>redacts</strong> secrets before export.</li>
+<li>The Chrome worker uses an isolated profile (not your everyday Chrome sync).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Live</strong></td>
+<td>Main screen with Start/Stop and preview</td>
+</tr>
+<tr>
+<td><strong>partial</strong></td>
+<td>Text still being recognized (draft)</td>
+</tr>
+<tr>
+<td><strong>final</strong></td>
+<td>Phrase finished by the recognizer</td>
+</tr>
+<tr>
+<td><strong>translation line / slot</strong></td>
+<td>One of up to four translated rows (<code>translation_1</code>…<code>translation_4</code>)</td>
+</tr>
+<tr>
+<td><strong>overlay</strong></td>
+<td>The <code>/overlay</code> page you add in OBS</td>
+</tr>
+<tr>
+<td><strong>Web Speech / browser worker</strong></td>
+<td>Chrome window that listens with Google Web Speech</td>
+</tr>
+<tr>
+<td><strong>Local ASR</strong></td>
+<td>Offline Parakeet recognition module</td>
+</tr>
+<tr>
+<td><strong>completed block</strong></td>
+<td>Finished subtitle that stays until the next phrase finishes</td>
+</tr>
+<tr>
+<td><strong>TTS module</strong></td>
+<td>Separate window for speaking finalized subtitles (<code>/tts</code>)</td>
+</tr>
+<tr>
+<td><strong>Twitch module</strong></td>
+<td>IRC chat log + optional chat TTS (<code>/twitch</code>), independent of subtitle TTS</td>
+</tr>
+<tr>
+<td><strong>VRChat module</strong></td>
+<td>OSC output to VRChat Chatbox (social, 144 chars)</td>
+</tr>
+<tr>
+<td><strong>SteamVR HUD</strong></td>
+<td>OpenVR overlay for the headset wearer in PCVR (not OBS, not VRChat Chatbox)</td>
+</tr>
+<tr>
+<td><strong>TTL</strong></td>
+<td>How long a finished line remains on screen</td>
+</tr>
+</tbody></table>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<p align="center">
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/README.md" target="_blank" rel="noopener noreferrer">README</a> ·
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md" target="_blank" rel="noopener noreferrer">Architecture</a>
+</p>
+
+
+          </article>
+          <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
+            
+<p>Руководство пользователя для <strong>Kagevi Subtitles <code>0.7.0</code></strong> — как получить живые субтитры на стриме, что делает каждый экран и как чинить типичные проблемы.</p>
+<p align="center">
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/README.ru.md" target="_blank" rel="noopener noreferrer">README</a> ·
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Архитектура</a> ·
+  <a href="changelog.html">Список изменений</a>
+</p>
+
+
+
+<h2>О продукте</h2>
+<p>Kagevi Subtitles превращает речь с микрофона в <strong>живые субтитры</strong> для OBS — с опциональным переводом, стилем, озвучкой и чтением Twitch-чата.</p>
+<p>Всё работает <strong>на вашем ПК</strong>. Аккаунта Kagevi и облачного бэкенда нет. По умолчанию приложение слушает только <code>http://127.0.0.1:8765</code> (этот компьютер).</p>
+<table>
+<thead>
+<tr>
+<th>Хотите…</th>
+<th>Используйте…</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Быстрый старт, распознавание Google в Chrome</td>
+<td><strong>Web Speech</strong> (по умолчанию)</td>
+</tr>
+<tr>
+<td>Офлайн без окна Chrome</td>
+<td><strong>Local ASR</strong> (Parakeet / ONNX)</td>
+</tr>
+<tr>
+<td>Субтитры в OBS</td>
+<td>Browser Source → <code>/overlay</code></td>
+</tr>
+<tr>
+<td>Перевод (облако или без ключа)</td>
+<td>вкладка <strong>Перевод</strong> (до 4 линий)</td>
+</tr>
+<tr>
+<td>Озвучка субтитров</td>
+<td>модуль <strong>TTS</strong> (нужен <strong>Start</strong> на Эфире)</td>
+</tr>
+<tr>
+<td>Озвучка Twitch-чата</td>
+<td>модуль <strong>Twitch</strong> (независимо от TTS субтитров)</td>
+</tr>
+<tr>
+<td>Субтитры в Chatbox VRChat</td>
+<td>модуль <strong>VRChat</strong> (OSC Chatbox)</td>
+</tr>
+<tr>
+<td>Субтитры в шлеме PCVR</td>
+<td>модуль <strong>SteamVR HUD</strong> (только для носителя)</td>
+</tr>
+</tbody></table>
+<p>Текущая линия: <strong><code>0.7.0</code></strong> (первый релиз Kagevi — <code>0.5.0</code>). В этой линии: <strong>VRChat Chatbox OSC</strong>, <strong>SteamVR HUD</strong>, скорость прокрутки субтитров, сброс к заводским, полные снимки профилей и статус-бар Эфира на всех вкладках. Подробности: <a href="changelog.html">список изменений</a>.</p>
+<p>Программой можно пользоваться бесплатно. Copyright © 2026 Kiriuru. Все права защищены. Условия использования — в <strong><a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">лицензии Kagevi Subtitles</a></strong>.</p>
+<blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
+В OBS нужен именно: <code>http://127.0.0.1:8765/overlay</code><br>После обновления приложения <strong>перезагрузите</strong> Browser Source, если overlay пустой или «залип».</p>
+</blockquote>
+<h3>Системные требования</h3>
+<table>
+<thead>
+<tr>
+<th>Нужно</th>
+<th>Зачем</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Windows 10 или 11 (x64)</td>
+<td>Поддерживаемая платформа</td>
+</tr>
+<tr>
+<td>WebView2 Runtime</td>
+<td>Окна приложения (на Win11 обычно уже есть; на Win10 установщик может поставить)</td>
+</tr>
+<tr>
+<td>Google Chrome</td>
+<td>Только для <strong>Web Speech</strong>. Для одного Local ASR не нужен</td>
+</tr>
+<tr>
+<td>Микрофон</td>
+<td>Разрешение в Chrome (Web Speech) или выбор в окне Local ASR</td>
+</tr>
+<tr>
+<td>Интернет</td>
+<td>Опционально для облачного перевода; также для первой загрузки моделей / runtime Local ASR</td>
+</tr>
+</tbody></table>
+<p>Для запуска установленного приложения Python и Node.js не нужны.</p>
+<h3>Установка и обновление</h3>
+<ol>
+<li>Запустите <code>Kagevi Subtitles_0.7.0_x64-setup.exe</code> (или свежий setup со <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">страницы релизов</a>).</li>
+<li>Откройте <strong>Kagevi Subtitles.exe</strong>.</li>
+<li>Позже: на dashboard может появиться <strong>баннер обновления</strong>. <strong>Установить обновление</strong> скачивает подписанный NSIS (minisign), ставит его и перезапускает приложение. По-прежнему можно закрыть приложение и поставить новый setup поверх со страницы GitHub. Настройки в <code>user-data/</code> сохраняются.</li>
+</ol>
+<p>Ручная ссылка <strong>Скачать</strong> / страница релиза остаётся, если не хотите ставить из приложения.</p>
+<h3>Полезные локальные адреса</h3>
+<table>
+<thead>
+<tr>
+<th>Адрес</th>
+<th>Что это</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>http://127.0.0.1:8765/</code></td>
+<td>Главный dashboard</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/overlay</code></td>
+<td>Страница для OBS Browser Source</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/google-asr</code></td>
+<td>Chrome Web Speech worker</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/google-asr-compact</code></td>
+<td>Компактный Chrome <code>--app=</code> worker (опционально)</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/tts</code></td>
+<td>Окно модуля TTS (озвучка субтитров)</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/twitch</code></td>
+<td>Окно модуля Twitch (IRC + chat TTS)</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/local-asr</code></td>
+<td>Окно модуля Local ASR</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/vrchat</code></td>
+<td>Окно модуля VRChat Chatbox OSC</td>
+</tr>
+<tr>
+<td><code>http://127.0.0.1:8765/vr-overlay</code></td>
+<td>Окно модуля SteamVR HUD overlay</td>
+</tr>
+</tbody></table>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Быстрый старт</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_live.png" alt="Вкладка Live" width="820"><br>
+  <em><strong>Live</strong> — Start/Stop, статус распознавания, транскрипт, превью субтитров</em>
+</p>
+
+<h3>Первый запуск под стрим (около 5 минут)</h3>
+<ol>
+<li><strong>Установите и запустите</strong> Kagevi Subtitles.</li>
+<li>В <strong>OBS</strong> добавьте <strong>Browser Source</strong>:<ul>
+<li>URL: <code>http://127.0.0.1:8765/overlay</code></li>
+<li>Размер — под ваш холст (или полный холст + crop).</li>
+</ul>
+</li>
+<li>На вкладке <strong>Эфир / Live</strong> выберите распознавание:<ul>
+<li><strong>Web Speech</strong> (по умолчанию) — при Start откроется Chrome.</li>
+<li><strong>Local ASR</strong> — появится только после настройки модуля (см. <a href="#local-asr">Local ASR</a>).</li>
+</ul>
+</li>
+<li>По желанию: <strong>Перевод</strong> — включите перевод, активируйте хотя бы одну линию, выберите провайдера (три работают <strong>без API key</strong> — ниже).</li>
+<li>По желанию: <strong>Субтитры</strong> / <strong>Стиль</strong> — пресет, TTL, шрифты, цвета, <strong>Прокручивание субтитров</strong> и <strong>скорость прокрутки</strong>.</li>
+<li>Нажмите <strong>Start</strong>. Статус-бар (ASR / WebSocket / Worker / OBS CC + Старт / Стоп) остаётся на <strong>всех</strong> вкладках — полный на Эфире, сжатый на остальных.</li>
+<li>Говорите — смотрите превью на Live, затем OBS.</li>
+<li>По желанию <strong>VRChat</strong>: <a href="#vrchat-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">VRChat-модуль</a> — OSC вкл. → <strong>Включить вывод</strong> → <strong>Start</strong> на Эфире.</li>
+<li>По желанию <strong>PCVR</strong>: <a href="#steamvr-hud-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">SteamVR HUD</a> — <strong>Запустить SteamVR</strong> в верхней карточке модуля → <strong>Включить оверлей субтитров</strong> и/или <strong>Включить чат-оверлей</strong> → <strong>Start</strong> на Эфире (субтитры). Quest standalone этот overlay не показывает.</li>
+</ol>
+<h3>Start и Stop простым языком</h3>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Что происходит</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Start</strong></td>
+<td>Запускает распознавание, перевод (если включён) и опциональные Closed Captions. Берёт <strong>текущие</strong> настройки с экрана, даже если вы ещё не нажимали Save.</td>
+</tr>
+<tr>
+<td><strong>Stop</strong></td>
+<td>Останавливает распознавание. Для Web Speech закрывается окно Chrome. Состояние субтитров сбрасывается.</td>
+</tr>
+</tbody></table>
+<h3>Превью на Live</h3>
+<p>До Start показывается пример текста — удобно настроить стиль. После Start — то, что должно уходить в OBS. Одно только сохранение настроек в idle не «стирает» превью.</p>
+<h3>Компактное окно</h3>
+<p>Компактный layout — высокое «телефонное» окно на второй монитор (<strong>Настройки</strong> → Layout или <code>Ctrl+K</code>). Live остаётся в фокусе, остальное — в один тап. Тот же статус-бар (полный на Эфире, сжатый на остальных) остаётся сверху.</p>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_compact_UI.png" alt="Компактный layout" width="420"><br>
+  <em><strong>Компактный layout</strong> — узкое окно под второй монитор</em>
+</p>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Выбор распознавания</h2>
+<p><a id="выбор-распознавания"></a></p>
+<p>Одновременно нужен только <strong>один</strong> путь.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Web Speech (по умолчанию)</th>
+<th>Local ASR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Движок</td>
+<td>Google Chrome Web Speech</td>
+<td>Parakeet на вашем ПК (ONNX)</td>
+</tr>
+<tr>
+<td>Окно Chrome</td>
+<td>Да — держите открытым на стриме</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td>Интернет для распознавания</td>
+<td>Обычно да (Google)</td>
+<td>Нет (после скачивания моделей)</td>
+</tr>
+<tr>
+<td>Когда удобнее</td>
+<td>Знакомый путь через Chrome</td>
+<td>Офлайн / без worker-окна</td>
+</tr>
+<tr>
+<td>Настройка</td>
+<td>Разрешение mic в Chrome</td>
+<td>Modules → Local ASR до статуса <strong>ready</strong></td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--tip"><p><strong>TIP</strong>
+Новичкам: начните с <strong>Web Speech</strong>. На Local ASR переключитесь позже, если нужен офлайн.</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Диагностика</h2>
+<blockquote class="doc-callout--tip"><p><strong>TIP</strong>
+Идите по порядку: <strong>нажали Start?</strong> → <strong>распознавание живое?</strong> → <strong>перевод включён?</strong> → <strong>URL в OBS верный?</strong></p>
+</blockquote>
+<h3>Нет субтитров нигде</h3>
+<ul>
+<li><input disabled="" type="checkbox"> На Live нажат <strong>Start</strong>?</li>
+<li><input disabled="" type="checkbox"> <strong>Web Speech:</strong> окно Chrome <code>/google-asr</code> открыто? Микрофон разрешён <strong>в Chrome</strong>? Лучше не сворачивать его надолго (может лежать под OBS/игрой).</li>
+<li><input disabled="" type="checkbox"> <strong>Local ASR:</strong> на Live выбран Local ASR? В Modules → Local ASR статус <strong>ready</strong>? Mic выбран там?</li>
+<li><input disabled="" type="checkbox"> Откройте <strong>Ещё → Инструменты и данные</strong> и посмотрите статус runtime / распознавания.</li>
+</ul>
+<h3>Исходный текст есть, перевода нет</h3>
+<ul>
+<li><input disabled="" type="checkbox"> Вкладка <strong>Перевод</strong> → перевод включён.</li>
+<li><input disabled="" type="checkbox"> Включена хотя бы одна линия перевода.</li>
+<li><input disabled="" type="checkbox"> Провайдеру нужен ключ? Добавьте в настройках провайдера. Или возьмите <strong>безключевой</strong>: Google Web, Free Web Translate, Bing Translator.</li>
+<li><input disabled="" type="checkbox"> Смотрите блок результатов / ошибок на той же вкладке — задержка иногда значит, что новая фраза отменила старый запрос (это нормально).</li>
+</ul>
+<h3>В OBS пусто</h3>
+<ul>
+<li><input disabled="" type="checkbox"> URL Browser Source заканчивается на <code>/overlay</code>, а не на <code>/</code> (это dashboard).</li>
+<li><input disabled="" type="checkbox"> <strong>Субтитры</strong>: исходник и/или переводы видимы.</li>
+<li><input disabled="" type="checkbox"> TTL не слишком короткий (текст может исчезнуть раньше, чем вы заметите).</li>
+<li><input disabled="" type="checkbox"> После обновления приложения: ПКМ по источнику → <strong>Refresh</strong>.</li>
+<li><input disabled="" type="checkbox"> Короткие обрывы связи: overlay часто держит последний кадр, пока переподключается — ожидаемо.</li>
+</ul>
+<h3>Текст обрезается по краю источника OBS</h3>
+<p>После обновления перезагрузите Browser Source. Галочка <strong>«Прокручивание субтитров»</strong> (вкладка Субтитры, по умолчанию вкл.) оставляет крупный шрифт; каждая линия (исходник и переводы) медленно прокручивается в своём слоте. <strong>Скорость прокрутки</strong> (по умолчанию 48 px/с, диапазон 12–120) — на той же вкладке. Снимите галочку, чтобы обрезать по краям.</p>
+<h3>На Live нет режима Local ASR</h3>
+<p>Доведите <strong>Modules → Local ASR</strong> до ready (зависимости + модель + warm load). CPU достаточно; CUDA опционален.</p>
+<h3>В Chatbox VRChat пусто / не обновляется</h3>
+<p>Нужен <strong>VRChat на этом ПК Windows</strong> с включённым OSC. Quest standalone OSC для этого приложения не отдаёт.</p>
+<ol>
+<li>В VRChat: <strong>Action Menu → OSC → Enable</strong></li>
+<li><strong>Модули → VRChat → Открыть</strong></li>
+<li><strong>Проверить соединение</strong> (OSCQuery / порт приёма <strong>9001</strong>) и <strong>Отправить тест</strong> (отправка в Chatbox, порт <strong>9000</strong>)</li>
+<li><strong>Включить вывод</strong>, затем <strong>Start</strong> на Эфире — live-фразы не уходят, пока Эфир не запущен</li>
+<li>Окно модуля можно закрыть; вывод идёт, пока модуль включён</li>
+</ol>
+<p>Если <strong>Отправить тест</strong> виден в Chatbox, а Live нет: не нажат Start, или <strong>Что отправлять</strong> указывает на выключенную линию перевода. Пауза по муту/AFK читает OSCQuery на localhost; отправка в Chatbox на 9000 может работать и без входящих пакетов.</p>
+<h3>Google Web / keyless-перевод отвечает HTTP 429</h3>
+<p>Keyless web-провайдеры по умолчанию получают паузу между HTTP-вызовами. Общий лимит параллельных задач в <strong>Настройках</strong> действует на всех провайдеров; для Google Web / Free Web / Bing там же можно добавить потолок по имени. Подождите, включите меньше линий перевода, переключитесь на <strong>Free Web Translate</strong> или <strong>Bing Translator</strong>, либо измените интервал. Пустой <code>provider_limits</code> в конфиге при save не переписывается — runtime всё равно применяет интервал.</p>
+<h3>HUD SteamVR не виден (PCVR)</h3>
+<p>Нужны <strong>Steam + SteamVR</strong> на этом ПК. Quest standalone overlay не показывает.</p>
+<ol>
+<li><strong>Модули → SteamVR HUD → Открыть</strong></li>
+<li>Нажмите <strong>Запустить SteamVR</strong> в <strong>верхней карточке статуса</strong> (не в чеклисте ниже)</li>
+<li>Дождитесь бейджа <strong>Включён</strong>, а не <strong>Ожидание SteamVR</strong></li>
+<li>Настройте точку крепления, пресеты запястья и <strong>Что показывать</strong></li>
+<li>Нажмите <strong>Включить оверлей субтитров</strong> и/или <strong>Включить чат-оверлей</strong>, затем <strong>Start</strong> на Эфире (субтитры)</li>
+<li>Закройте окно модуля — HUD работает, пока запущены SteamVR и сессия ядра</li>
+<li>По желанию: <strong>Отправить тест</strong> в секции SteamVR — если тестовый кадр виден, позиция в порядке, а live-субтитрам нужен <strong>Start</strong></li>
+</ol>
+<p>Если вы сами вышли из SteamVR (рабочий стол или шлем), запустите его снова из модуля. HUD <strong>никогда</strong> не поднимает SteamVR сам.</p>
+<p>Ноутбук / две видеокарты: оставьте SteamVR на GPU, которая кормит шлем. HUD берёт тот же адаптер.</p>
+<h3>Квадраты вместо запятых / букв в SteamVR HUD</h3>
+<p>HUD рисует свои пиксели (это не браузер). Пустые рамки раньше были у японских <code>、。</code>, польских / турецких / вьетнамских букв и цифр рядом с тайским. В текущих сборках — полный Noto Sans, CJK / арабица / хинди / тайский и фолбэк на Segoe UI в Windows.</p>
+<ul>
+<li>Обновитесь до актуального <code>0.7.0</code> (или новее).</li>
+<li><strong>Отправить тест</strong> со строкой, где есть эти символы.</li>
+<li>OBS <code>/overlay</code> здесь ни при чём — Chrome и так подставляет системные шрифты.</li>
+</ul>
+<h3>Worker постоянно падает (Web Speech)</h3>
+<ul>
+<li>Нестабильная сеть до endpoints Google Speech.</li>
+<li><strong>Stop → Start</strong> или перезапуск worker из инструментов.</li>
+<li>Для бага: <code>VOICESUB_TRACE_BROWSER=1</code> → <code>logs/browser-trace.jsonl</code>.</li>
+</ul>
+<h3>Текст «залип» после Stop / истечения TTL</h3>
+<p>Обновите сборку и <strong>обновите</strong> Browser Source в OBS. Старый билд иногда не чистит пустой кадр.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Где что лежит</h2>
+<p><a id="где-что-лежит"></a></p>
+<p>Основные разделы (левая / нижняя навигация):</p>
+<table>
+<thead>
+<tr>
+<th>Место</th>
+<th>Что делаете</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Эфир (Live)</strong></td>
+<td>Start/Stop, режим распознавания, <strong>статус-бар</strong> (полный KPI здесь), транскрипт, превью</td>
+</tr>
+<tr>
+<td><strong>Перевод</strong></td>
+<td>Провайдеры, до 4 линий, кэш, опции realtime</td>
+</tr>
+<tr>
+<td><strong>Субтитры</strong></td>
+<td>Раскладка overlay, <strong>Прокручивание субтитров</strong> + скорость, видимость, порядок, время жизни строк</td>
+</tr>
+<tr>
+<td><strong>OBS</strong></td>
+<td>Скопировать URL overlay; опциональные Closed Captions</td>
+</tr>
+<tr>
+<td><strong>Модули</strong></td>
+<td>Компактные квадратные карточки (иконка / статус / Открыть / <strong>?</strong>) для <strong>TTS</strong>, <strong>Twitch</strong>, <strong>Local ASR</strong>, <strong>VRChat</strong> и <strong>SteamVR HUD</strong></td>
+</tr>
+<tr>
+<td><strong>Ещё</strong></td>
+<td>Тема, замена слов, инструменты, настройки (включая сброс к заводским), справка</td>
+</tr>
+</tbody></table>
+<p><strong>Command palette</strong> (<code>Ctrl+K</code> или поиск в шапке): прыжок к панели, Start/Stop, Save, экспорт diagnostics.</p>
+<table>
+<thead>
+<tr>
+<th>Вкладка в Ещё / хабах</th>
+<th>Раздел гайда</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Стиль (в хабе Субтитры)</td>
+<td><a href="#%D1%81%D1%82%D0%B8%D0%BB%D1%8C-%D1%81%D1%83%D0%B1%D1%82%D0%B8%D1%82%D1%80%D0%BE%D0%B2">Стиль субтитров</a></td>
+</tr>
+<tr>
+<td>Тема UI</td>
+<td><a href="#%D1%82%D0%B5%D0%BC%D0%B0-ui">Тема UI</a></td>
+</tr>
+<tr>
+<td>Замена слов</td>
+<td><a href="#%D0%B7%D0%B0%D0%BC%D0%B5%D0%BD%D0%B0-%D1%81%D0%BB%D0%BE%D0%B2">Замена слов</a></td>
+</tr>
+<tr>
+<td>Инструменты и данные</td>
+<td><a href="#%D0%B8%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-%D0%B8-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5">Инструменты и данные</a></td>
+</tr>
+<tr>
+<td>Настройки</td>
+<td><a href="#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B8">Настройки</a></td>
+</tr>
+<tr>
+<td>Справка</td>
+<td><a href="#%D1%81%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B0">Справка</a></td>
+</tr>
+</tbody></table>
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_translation.png" alt="Перевод" width="280"><br>
+      <sub><a href="#перевод">Перевод</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_subtitles.png" alt="Субтитры" width="280"><br>
+      <sub><a href="#субтитры">Субтитры</a></sub>
+    </td>
+    <td align="center" width="33%">
+      <img loading="lazy" src="images/kagevi_style_1.png" alt="Стиль" width="280"><br>
+      <sub><a href="#стиль-субтитров">Стиль</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_UI_theme.png" alt="Тема UI" width="280"><br>
+      <sub><a href="#тема-ui">Тема UI</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_obs_1.png" alt="OBS" width="280"><br>
+      <sub><a href="#obs">OBS</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_word_replace.png" alt="Замена слов" width="280"><br>
+      <sub><a href="#замена-слов">Замена слов</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_modules_main.png" alt="Модули" width="280"><br>
+      <sub><a href="#tts-модуль">TTS</a> · <a href="#twitch-модуль">Twitch</a> · <a href="#local-asr">Local ASR</a> · <a href="#vrchat-модуль">VRChat</a> · <a href="#steamvr-hud-модуль">SteamVR HUD</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_settings.png" alt="Настройки" width="280"><br>
+      <sub><a href="#настройки">Настройки</a></sub>
+    </td>
+    <td align="center">
+      <img loading="lazy" src="images/kagevi_more.png" alt="Ещё" width="280"><br>
+      <sub><a href="#справка">Ещё / Справка</a></sub>
+    </td>
+  </tr>
+</table>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Browser Speech (Web Speech)</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_webWorker.png" alt="Web Speech worker" width="820"><br>
+  <em><strong>Web Speech worker</strong> — окно Chrome на <code>/google-asr</code> (держите открытым, пока слушаете)</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_webWorker_compact.png" alt="Компактный Web Speech worker" width="520"><br>
+  <em><strong>Компактный worker</strong> — опциональное окно Chrome <code>/google-asr-compact</code> <code>--app=</code></em>
+</p>
+
+<h3>Как это выглядит каждый день</h3>
+<ol>
+<li>На Live оставьте распознавание <strong>Web Speech</strong> (browser Google).</li>
+<li>Нажмите <strong>Start</strong> — откроется отдельное окно Chrome со страницей worker.</li>
+<li>Разрешите микрофон <strong>в этом окне Chrome</strong>.</li>
+<li>Не закрывайте окно на стриме (может лежать под OBS/игрой). Закрытие = стоп распознавания.</li>
+</ol>
+<p>Список микрофонов в главном dashboard пустой специально — mic выбирается в Chrome, не в настройках Kagevi.</p>
+<h3>Правила окна worker (важно)</h3>
+<ul>
+<li><strong>Полный worker</strong> (по умолчанию): <strong>обычное окно Chrome</strong> с адресной строкой (не скрытая вкладка).</li>
+<li><strong>Компактный worker</strong> (опционально): галочка на вкладке Эфир открывает <code>/google-asr-compact</code> в меньшем Chrome <code>--app=</code> (без omnibox). Тот же изолированный профиль и путь распознавания.</li>
+<li>Отдельный профиль Chrome в <code>user-data/</code>, чтобы не мешать вашему повседневному браузеру.</li>
+<li>На Windows Chrome реже «засыпает» вкладку во время стрима.</li>
+</ul>
+<h3>Язык распознавания</h3>
+<p>Задайте язык речи в <strong>Настройках</strong> (Web Speech / язык распознавания). Совпадайте с тем, на каком говорите. В окне worker виден живой текст — если слова там есть, а на Live нет, проблема не в Chrome (перезапустите сессию).</p>
+<details>
+<summary><strong>Advanced Web Speech (по желанию)</strong></summary>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings_web_speech_advenced.png" alt="Advanced Web Speech" width="820"><br>
+  <em><strong>Advanced Web Speech</strong> — forced final, reconnect, ротация сессии</em>
+</p>
+
+<p><strong>Настройки → Advanced Web Speech</strong> — forced final, паузы перезапуска, длина сессии и соседние параметры. У каждого поля есть подсказка <strong><code>!</code></strong>.</p>
+<p>После крупных правок: <strong>Save → Stop → Start</strong>, при необходимости заново откройте worker.</p>
+<p>Idle-таймаут forced final правится в самом <strong>окне worker</strong> (<code>force_finalization_timeout_ms</code>), не только в Advanced.</p>
+<p>Старые имена вроде <code>pause_to_finalize_ms</code> / <code>hard_max_phrase_ms</code> в рантайме не работают — не трогайте их вручную.</p>
+</details>
+
+<details>
+<summary><strong>Стабильность</strong></summary>
+
+<ul>
+<li>Сессия Chrome по умолчанию ротируется примерно раз в 3 минуты.</li>
+<li>После длинной финальной фразы (≥200 символов) worker обновляет внутренний буфер — следующие фразы чище.</li>
+<li>Wake Lock может не давать ПК уснуть, пока идёт распознавание.</li>
+</ul>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Local ASR</h2>
+<p>Офлайн-распознавание на вашем ПК (Parakeet + ONNX). Без окна Chrome, пока на Live выбран этот режим.</p>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_modules_main.png" alt="Модули" width="400">
+  &nbsp;
+  <img loading="lazy" src="images/kagevi_localASR_1.png" alt="Модуль Local ASR" width="400"><br>
+  <em><strong>Модули</strong> / <strong>Local ASR</strong> — откройте модуль и доведите setup</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_setup.png" alt="Настройка Local ASR" width="720"><br>
+  <em><strong>Setup</strong> — скачать ORT / опционально CUDA и модель Parakeet</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_localASR_2.png" alt="Test bench Local ASR" width="720"><br>
+  <em><strong>Local ASR</strong> — realtime-опции, inference и mic test bench</em>
+</p>
+
+<h3>Один раз настроить</h3>
+<ol>
+<li>Откройте <strong>Модули → Local ASR</strong> (отдельное окно).</li>
+<li>Пройдите чеклист: проверить/скачать runtime → скачать модель → warm-load → выбрать mic → короткий тест до появления final-текста.</li>
+<li>Когда модуль <strong>ready</strong>, окно можно закрыть — настройки в <code>user-data/modules/local-asr/</code>.</li>
+<li>На <strong>Live</strong> выберите <strong>Local ASR</strong> и нажмите <strong>Start</strong>.</li>
+</ol>
+<p>Для Live хватает CPU. CUDA опционален (быстрее на подходящих NVIDIA после доп. загрузок). Для CUDA берите модели <strong>fp16</strong> или <strong>fp32</strong> — <strong>int8</strong> остаётся на CPU.</p>
+<p>На чистой установке warm-load можно запускать <strong>в той же сессии</strong> сразу после скачивания ORT/CUDA (для обычного первого setup перезапуск приложения не нужен).</p>
+<h3>После смены VAD / realtime</h3>
+<p>На Live сделайте <strong>Stop → Start</strong>, чтобы новые настройки микрофона/пайплайна применились.</p>
+<h3>Что получаете</h3>
+<p>Тот же путь субтитров, перевода, стиля и OBS, что у Web Speech — меняется только движок речи.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Перевод</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_translation.png" alt="Вкладка Перевод" width="820"><br>
+  <em><strong>Перевод</strong> — включить пайплайн, выбрать провайдеров, до 4 линий</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_translation_provider_settings.png" alt="Настройки провайдера перевода" width="820"><br>
+  <em><strong>Настройки провайдера</strong> — API-ключи, endpoint и опции конкретного движка</em>
+</p>
+
+<h3>Простая настройка</h3>
+<ol>
+<li>Включите <strong>перевод</strong>.</li>
+<li>Включите одну или несколько линий (<code>translation_1</code> … <code>translation_4</code>).</li>
+<li>Для каждой линии — язык и провайдер.</li>
+<li>Save (или сразу Start — Start тоже берёт текущий снимок UI).</li>
+</ol>
+<p>ASR работает и без перевода (только исходник).</p>
+<h3>Линии</h3>
+<p>Каждая линия независима: вкл/выкл, язык, провайдер, короткая метка. Больше активных линий — больше нагрузки на провайдеров. Порядок на экране задаётся во вкладке <strong>Субтитры</strong>.</p>
+<h3>Провайдеры без API key</h3>
+<p>Удобный старт без аккаунтов:</p>
+<table>
+<thead>
+<tr>
+<th>Провайдер</th>
+<th>Заметки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Google Web</strong></td>
+<td>Бесплатный путь Translate Element. При <strong>HTTP 429</strong> — пауза, меньше линий или лимиты в Настройках</td>
+</tr>
+<tr>
+<td><strong>Free Web Translate</strong></td>
+<td>Отдельный бесплатный путь Google (свои лимиты)</td>
+</tr>
+<tr>
+<td><strong>Bing Translator</strong></td>
+<td>Keyless Bing web session (<code>ttranslatev3</code>)</td>
+</tr>
+</tbody></table>
+<p>Всего <strong>17</strong> провайдеров (Google API, DeepL, Azure, LibreTranslate, OpenAI-compatible, китайские и др.). Ключи хранятся только в локальном <code>config.toml</code>. Старые конфиги с <code>microsoft_edge</code> или <code>public_libretranslate_mirror</code> при load/save мигрируют на <strong>Bing Translator</strong>.</p>
+<h3>Кэш</h3>
+<p>Память и опциональный диск (<code>user-data/translation-cache/</code>) не дергают провайдера повторно на тот же текст. Если часто меняете промпты LLM — учитывайте старый кэш, пока текст не изменится.</p>
+<h3>Опциональный realtime-перевод</h3>
+<p>По умолчанию выкл. Для классических MT можно показывать черновики перевода, пока фраза ещё растёт. LLM-провайдеры ждут finals. Удобно для «живой» картинки; если нужна только стабильная строка — оставьте выкл.</p>
+<h3>Поведение на экране</h3>
+<p>Завершённый блок субтитров <strong>остаётся</strong>, пока не завершится <strong>следующая</strong> фраза. Поздние переводы могут долететь. Если новая фраза отменила старый запрос — это защита от устаревшего текста, а не случайный сбой.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Субтитры</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_subtitles.png" alt="Вкладка Субтитры" width="820"><br>
+  <em><strong>Субтитры</strong> — пресет раскладки, видимость, порядок, время жизни строк</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Настройка</th>
+<th>Простыми словами</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Пресет overlay</td>
+<td>Как складываются ряды: <strong>single</strong>, <strong>dual-line</strong> или <strong>stacked</strong>. Компактные отступы — отдельный переключатель. URL OBS может переопределить <code>?preset=…&amp;compact=1</code>.</td>
+</tr>
+<tr>
+<td>Прокручивание субтитров</td>
+<td>По умолчанию вкл. (<code>overlay.fit_to_box</code>). Крупный шрифт; каждая линия прокручивается внутри Browser Source, если не влезает. <code>?fit=0</code> отключает для одного источника.</td>
+</tr>
+<tr>
+<td>Скорость прокрутки</td>
+<td>По умолчанию <strong>48</strong> px/с (диапазон <strong>12–120</strong>). Как быстро ползут длинные строки при включённом прокручивании.</td>
+</tr>
+<tr>
+<td>Видимость</td>
+<td>Показывать исходник и переводы. Сколько линий перевода на экране — по <strong>включённым</strong> линиям в Переводе (отдельного «максимума строк» нет).</td>
+</tr>
+<tr>
+<td>TTL / время жизни</td>
+<td>Как долго держать законченную строку после паузы.</td>
+</tr>
+<tr>
+<td>Порядок линий</td>
+<td>Для превью, OBS overlay и режима Closed Captions «первая видимая линия».</td>
+</tr>
+</tbody></table>
+<blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
+Пока начинается новая фраза, предыдущий готовый перевод может оставаться, пока новая фраза не <strong>финализируется</strong>. Так экран читается в естественных паузах.</p>
+</blockquote>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Стиль субтитров</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_style_1.png" alt="Вкладка Стиль" width="820"><br>
+  <em><strong>Стиль субтитров</strong> — шрифты, цвета, эффекты, оверрайды по слотам</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_style_2.png" alt="Оверрайды слотов стиля" width="820"><br>
+  <em><strong>Оверрайды слотов</strong> — отдельный стиль для source и каждой линии перевода</em>
+</p>
+
+<ul>
+<li>Встроенный пресет или свои шрифт, размер, обводка, тень, фон, выравнивание.</li>
+<li>В списке шрифтов каждая строка рисуется своим лицом; метки алфавитов в родных письменностях (<code>Latin</code>, <code>Кириллица</code>, <code>日本語</code>, …), чтобы было видно покрытие CJK / latin-only.</li>
+<li>Эффекты: fade, slide, zoom, glow и похожие.</li>
+<li>Можно отдельно стилизовать <strong>source</strong> и каждую <strong>включённую</strong> <code>translation_1…4</code> (вкладки только для активных линий).</li>
+<li>Превью и OBS выглядят одинаково — после правок Save (или Start).</li>
+<li>В OBS каждая линия <strong>прокручивается внутри Browser Source</strong> крупным шрифтом (Субтитры: <strong>«Прокручивание субтитров»</strong>).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Тема UI</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_UI_theme.png" alt="Вкладка Тема UI" width="820"><br>
+  <em><strong>Тема UI</strong> — тёмная/светлая тема и accent для оболочки приложения</em>
+</p>
+
+<p>Меняет только <strong>окна dashboard / модулей</strong>. Вид субтитров в OBS задаётся <strong>стилем субтитров</strong>, не этой темой.</p>
+<p>Выберите пресет из галереи — <strong>клик</strong> применяет его. В sample — чипы, поле ввода, primary/ghost-кнопки.</p>
+<p>Тема, язык и UI-шрифт могут синхронизироваться между окнами без полного Save, когда приложение шлёт UI sync.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>OBS</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_obs_1.png" alt="Вкладка OBS" width="820"><br>
+  <em><strong>OBS</strong> — URL overlay и опциональные Closed Captions</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_obs_2.png" alt="Доп. Closed Captions OBS" width="820"><br>
+  <em><strong>Closed Captions extras</strong> — debug text source, partials и интервалы отправки</em>
+</p>
+
+<h3>Overlay (то, что нужно большинству)</h3>
+<ol>
+<li>Скопируйте URL со вкладки <strong>OBS</strong> (по умолчанию <code>http://127.0.0.1:8765/overlay</code>).</li>
+<li>Вставьте в OBS <strong>Browser Source</strong>.</li>
+<li>Держите Kagevi запущенным на стриме.</li>
+</ol>
+<p>Overlay <strong>держит крупный шрифт</strong> внутри Browser Source (например 800×600). Субтитры сидят <strong>сверху</strong> и растут <strong>вниз</strong>. Если линия (исходник или перевод) выше своей доли окна, <strong>прокручивается только она</strong>. Включается на вкладке <strong>Субтитры</strong>: <em>Прокручивание субтитров</em>. Скорость — <strong>Скорость прокрутки</strong> на той же вкладке.</p>
+<p>Опционально в URL: <code>?preset=stacked&amp;compact=1</code>. <code>?fit=0</code> отключает автоподгонку только для этого источника. Обычно проще менять пресет в приложении, а не только в OBS.</p>
+<h3>Closed Captions (опционально)</h3>
+<p>Отправка captions в OBS через WebSocket (удобно платформам с CC, например Twitch).</p>
+<ul>
+<li>Включите на вкладке OBS; host / port / password как в OBS WebSocket v5.</li>
+<li>Что слать: live source, только finals, линия перевода (<code>translation_1</code>…<code>translation_4</code>) или первая видимая линия.</li>
+<li>Опционально: <strong>live-partial переводы</strong> в режимах <code>translation_*</code> (<code>send_translation_partials</code>; throttle как у source). Finals остаются для LLM / провайдеров без partials.</li>
+<li>Нативные stream captions работают только пока OBS реально стримит.</li>
+<li>Twitch native CC надёжен для <strong>латиницы</strong>; кириллица / CJK обычно через <strong>browser overlay</strong>.</li>
+<li>Debug mirror может писать в текстовый источник OBS для проверки.</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Замена слов</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_word_replace.png" alt="Вкладка Замена слов" width="820"><br>
+  <em><strong>Замена слов</strong> — правка ошибок ASR до перевода и показа</em>
+</p>
+
+<p>Чистит имена, сленг и ослышки <strong>до</strong> перевода и overlay.</p>
+<ul>
+<li>Свои пары find/replace.</li>
+<li>Опциональные builtin-списки / стемы (en/ru/ja/ko/zh) и лёгкая нормализация обходов.</li>
+<li>Маска builtin / пустой замены: видны <strong>первая и последняя</strong> буква (<code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code>); уже замаскированные формы с <code>*</code> не переписываются.</li>
+<li>Регистр; <strong>whole-word</strong> для своих пар. Builtin латиница/кириллица всегда по целому слову (чтобы <code>бля</code> не портил <code>кораблями</code>); Hangul — по пробелам; CJK multi-char — substring, одиночные иероглифы и короткая катакана — только изолированно.</li>
+</ul>
+<p>У Twitch chat TTS в окне модуля <strong>Twitch</strong> свои фильтры (то же правило маски); пары замены слов с dashboard туда сами не применяются.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>TTS-модуль</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_1.png" alt="Модуль TTS" width="820"><br>
+  <em><strong>TTS</strong> — озвучка субтитров</em>
+</p>
+
+<p>Открывается из <strong>Модули → TTS</strong> (<code>/tts</code>). Настройки в <code>user-data/modules/tts/</code>. Окно можно закрыть — воспроизведение продолжается, пока модуль включён.</p>
+<p>Озвучка субтитров требует <strong>Start</strong> на Эфире (в отличие от IRC Twitch, который может работать без Live).</p>
+<h3>Озвучка субтитров</h3>
+<ul>
+<li>Включите speech-канал, выберите голос / скорость / громкость.</li>
+<li>Громкость до <strong>150%</strong>.</li>
+<li>Режимы playback:<ul>
+<li><strong>Native</strong> — минимальная задержка, скорость 1.0×</li>
+<li><strong>Sonic</strong> — менять скорость речи с сохранением высоты тона</li>
+</ul>
+</li>
+<li>Движок TTS: <strong>Google HTTP proxy</strong> (<code>browser_google</code>) или <strong>Python sidecar</strong> (<code>python_stdlib</code> через встроенный <code>google_tts_fetch.exe</code>).</li>
+<li>Отдельное устройство вывода для озвучки субтитров (независимо от chat TTS Twitch).</li>
+</ul>
+<p>Проверка без Live — кнопка Speak / sample в модуле.</p>
+<p>Вспомогательный бинарник Google TTS уже лежит в runtime модуля — отдельно ставить Python не нужно.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Twitch-модуль</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_1.png" alt="Модуль Twitch" width="820"><br>
+  <em><strong>Twitch</strong> — лог IRC-чата и опциональная озвучка (до пяти каналов)</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_connection.png" alt="Подключение Twitch" width="820"><br>
+  <em><strong>Подключение Twitch</strong> — OAuth вещателя, каналы и EventSub-алерты</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_2.png" alt="Фильтры Twitch" width="820"><br>
+  <em><strong>Фильтры Twitch</strong> — emotes, язык, шаблон озвучки, замена ников</em>
+</p>
+
+<p>Открывается из <strong>Модули → Twitch</strong> (<code>/twitch</code>). Настройки в <code>user-data/modules/twitch/</code>. Enable-without-window: закрытие webview <strong>не</strong> рвёт IRC и не глушит chat TTS.</p>
+<p>Озвучка чата <strong>независима</strong> от TTS субтитров — можно использовать одно, оба или ни одного.</p>
+<h3>Подключение и каналы</h3>
+<ol>
+<li><strong>Подключиться к Twitch</strong> — как в Streamer.bot: токена <strong>Broadcaster</strong> достаточно (<code>chat:read</code> + скоупы EventSub). Он сам подключает чат стримера и помечает канал как <strong>Broadcaster</strong>. Токен <strong>бота</strong> (<code>chat:read</code>) необязателен — отдельный IRC-логин / доп. каналы. OAuth в системном браузере. Redirect URI по-прежнему <code>http://localhost:{port}/tts</code>; неаутентифицированная страница <code>/tts</code> — OAuth shell.</li>
+<li>Доп. логины каналов (без <code>#</code>) <strong>необязательны</strong> (всего до <strong>5</strong> JOIN, включая авто-канал стримера). Сторонние каналы — <strong>только чат</strong>.</li>
+<li>Включите <strong>Озвучивать сообщения чата</strong>, чтобы читать отфильтрованные сообщения вслух.</li>
+<li>Включите <strong>Озвучивать события канала</strong> и отредактируйте шаблоны фоллоу / саб / ресаб / гифт / рейд / чир. Алерты читаются <strong>только на канале стримера (Broadcaster)</strong>. EventSub идёт с аккаунта стримера; сабы/рейды/чиры также приходят из IRC как запасной путь на том же канале.</li>
+<li>При обрыве IRC модуль пытается переподключиться; ошибка auth останавливает цикл.</li>
+<li><strong>?</strong> у ника бота объясняет необязательный IRC-логин для доп. JOIN.</li>
+</ol>
+<p>При старте приложения, если модуль включён и есть Broadcaster или бот, IRC <strong>подключается сам</strong> (без <strong>Start</strong> на Эфире).</p>
+<h3>Движок и playback chat TTS</h3>
+<ul>
+<li><strong>Движок TTS:</strong> Google HTTP proxy (<code>browser_google</code>) или Python sidecar (<code>python_stdlib</code>) — отдельно от настроек субтитрового TTS.</li>
+<li><strong>Режим playback:</strong> Native или Sonic (как в модуле TTS).</li>
+<li><strong>Устройство вывода</strong>, громкость и скорость для озвучки чата/событий настраиваются здесь (независимо от TTS субтитров; скорость действует в режиме Sonic).</li>
+<li><strong>Тестовая фраза</strong> и <strong>Очистить очередь</strong> — проверка звука без ожидания чата.</li>
+</ul>
+<p>Фильтры (emotes, ссылки, символы, язык, маска мата) применяются сразу — обычно без reconnect.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>VRChat-модуль</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_vrchat_1.png" alt="Модуль VRChat" width="820"><br>
+  <em><strong>VRChat</strong> — OSC Chatbox для социальных субтитров в VR</em>
+</p>
+
+<p>Опциональный <strong>социальный</strong> вывод: текст пайплайна в <strong>Chatbox</strong> VRChat по OSC. Его видят другие игроки в инстансе. Это <strong>не</strong> HUD в шлеме и <strong>не</strong> KAT — субтитры только для себя в SteamVR даёт <a href="#steamvr-hud-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">SteamVR HUD</a>.</p>
+<p>Открывается из <strong>Модули → VRChat</strong>. Тема, язык интерфейса и шрифт UI совпадают с дашбордом. Настройки: <code>user-data/modules/vrchat/config.toml</code> (создаётся при первом открытии). Профили и <strong>Сброс к заводским</strong> включают этот файл.</p>
+<h3>Требования VRChat</h3>
+<ul>
+<li><strong>VRChat на этом ПК Windows</strong> (PCVR или десктоп). Quest standalone OSC для Kagevi не отдаёт.</li>
+<li>OSC <strong>включён</strong> в VRChat (<strong>Action Menu → OSC</strong>)</li>
+<li>На Эфире <strong>Start</strong> для live-субтитров (<strong>Отправить тест</strong> / <strong>Проверить соединение</strong> работают без Live)</li>
+<li>Лимит Chatbox: <strong>144 символа / 9 строк</strong>, UTF-8 (японский, русский и другие скрипты, которые VRChat уже показывает)</li>
+</ul>
+<p>Оставайтесь на <code>127.0.0.1</code>. Слушатель только loopback — Windows не должен спрашивать доступ к локальной сети от чужого имени процесса.</p>
+<h3>Настройка Chatbox</h3>
+<ol>
+<li>Запустите VRChat и включите <strong>OSC</strong></li>
+<li><strong>Модули → VRChat</strong></li>
+<li>Хост <code>127.0.0.1</code>, порт отправки <strong>9000</strong>, порт приёма <strong>9001</strong> (должен совпадать с портом отправки OSC в VRChat)</li>
+<li><a href="#%D1%87%D1%82%D0%BE-%D1%81%D0%BB%D0%B0%D1%82%D1%8C-%D0%B2-chatbox">Что слать в Chatbox</a> и <a href="#%D0%BE%D0%BF%D1%86%D0%B8%D0%B8-chatbox">опции Chatbox</a></li>
+<li><strong>Проверить соединение</strong>, затем <strong>Отправить тест</strong> — тестовая строка должна появиться в Chatbox</li>
+<li><strong>Включить вывод</strong></li>
+<li><strong>Start</strong> на Эфире</li>
+<li>Закройте окно модуля — Chatbox обновляется, пока <code>enabled</code> и Live запущен</li>
+</ol>
+<p>Бейджи карточки <strong>Модули</strong>: <strong>Выкл</strong> / <strong>Включён</strong> / <strong>Muted</strong> / <strong>AFK</strong> (+ выбранный слой).</p>
+<h3>Порты OSC</h3>
+<table>
+<thead>
+<tr>
+<th>Направление</th>
+<th>По умолчанию</th>
+<th>Для чего</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Приложение → VRChat</td>
+<td><code>127.0.0.1:9000</code></td>
+<td>Текст Chatbox (<code>/chatbox/input</code>)</td>
+</tr>
+<tr>
+<td>VRChat → приложение</td>
+<td><code>127.0.0.1:9001</code></td>
+<td><strong>Проверить соединение</strong> и опциональная пауза по муту / AFK</td>
+</tr>
+</tbody></table>
+<p><strong>Проверить соединение</strong> ищет OSCQuery VRChat на localhost (<code>/?HOST_INFO</code>) и может ждать UDP на порту приёма. Сообщение вроде «OSC VRChat включён (OSCQuery)» значит, что OSC жив; отправка в Chatbox на <strong>9000</strong> <strong>не</strong> ждёт входящих пакетов.</p>
+<p><strong>Отправить тест</strong> сразу пишет в Chatbox (обходит «Включить вывод» и Live). Так проверяют порт отправки до Эфира.</p>
+<p>Звука уведомления Chatbox в UI нет. В OSC-пакете аргумент SFX всегда выключен (VRChat этот флаг часто игнорирует).</p>
+<h3>Что слать в Chatbox</h3>
+<p>Та же идея, что у OBS Closed Captions. Линии перевода в списке — только <strong>включённые</strong> на вкладке Перевод (подписи вроде <code>Source · ja</code>, <code>Translation 1 · en</code>). Пока окно открыто, список обновляется примерно раз в 2 с.</p>
+<table>
+<thead>
+<tr>
+<th>Содержимое</th>
+<th>Смысл</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Источник</strong></td>
+<td>Распознанный текст (язык показывается, если распознавание не <code>auto</code>)</td>
+</tr>
+<tr>
+<td><strong>Перевод 1–4</strong></td>
+<td>Этот слот перевода — только если линия включена</td>
+</tr>
+<tr>
+<td><strong>Первая видимая строка</strong></td>
+<td>Первая строка, которая сейчас видна в payload overlay</td>
+</tr>
+<tr>
+<td><strong>Оригинал + перевод 1</strong></td>
+<td>Оба, друг под другом (всё равно clamp 144 / 9 строк)</td>
+</tr>
+<tr>
+<td><strong>Свой шаблон</strong></td>
+<td>Плейсхолдеры <code>{source}</code>, <code>{tr1}</code>, <code>{tr2}</code>, <code>{tr3}</code>, <code>{tr4}</code></td>
+</tr>
+</tbody></table>
+<p>Если выбрать линию перевода, а потом выключить её на вкладке Перевод, в списке она останется помеченной как неактивная, пока не выберете другой режим.</p>
+<h3>Опции Chatbox</h3>
+<table>
+<thead>
+<tr>
+<th>Опция</th>
+<th>По умолчанию</th>
+<th>Смысл</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Только финальные сегменты</strong></td>
+<td>вкл.</td>
+<td>Не слать live-partials; ждать готовую фразу</td>
+</tr>
+<tr>
+<td><strong>Не слать неизменённый текст</strong></td>
+<td>вкл.</td>
+<td>Не повторять ту же строку</td>
+</tr>
+<tr>
+<td><strong>Не слать текст, пока я в муте</strong></td>
+<td>выкл.</td>
+<td>Пауза при <strong>MuteSelf</strong> в VRChat (нужен OSCQuery)</td>
+</tr>
+<tr>
+<td><strong>Не слать текст, пока я AFK</strong></td>
+<td>выкл.</td>
+<td>Пауза при <strong>AFK</strong> в VRChat (нужен OSCQuery)</td>
+</tr>
+<tr>
+<td><strong>Макс. символов</strong></td>
+<td><strong>144</strong></td>
+<td>Clamp 1–144</td>
+</tr>
+<tr>
+<td><strong>Мин. интервал (мс)</strong></td>
+<td><strong>1000</strong></td>
+<td>200–10000. Если фразы чаще — уходит только <strong>последняя</strong></td>
+</tr>
+<tr>
+<td><strong>Очистить Chatbox через (мс)</strong></td>
+<td><strong>5000</strong></td>
+<td>Пустой Chatbox по таймеру. <strong>0</strong> = до следующей фразы. Иначе 500–60000. Новая отправка отменяет предыдущий таймер. После автоочистки ту же completed-фразу повторно не шлём, пока не сменится текст</td>
+</tr>
+</tbody></table>
+<p>Мут / AFK опрашиваются из OSCQuery примерно два раза в секунду (одних UDP change-only пакетов мало). Включите вывод, сохраните настройки и держите OSC в VRChat.</p>
+<h3>Включить и закрыть окно</h3>
+<p>Настроили → <strong>Включить вывод</strong> → закрыли. Отправка идёт, пока Live запущен. Повторное открытие окна подхватывает <code>config.toml</code> и тему дашборда. <strong>Выключить вывод</strong> в модуле (или сброс к заводским) останавливает Chatbox.</p>
+<p>Контракты (OSC, HTTP, ключи config): <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md#18b-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C-vrchat-chatbox-osc">Техническая архитектура §18b</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>SteamVR HUD-модуль</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_1.png" alt="Модуль SteamVR HUD" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — окно модуля, размещение и что показывать</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_2.png" alt="Настройки SteamVR HUD" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — пресеты canvas, шрифты и интервал submit</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_chatOvly.png" alt="SteamVR HUD в шлеме" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — overlay только для носителя в PCVR (не попадает в OBS)</em>
+</p>
+
+<p>Опциональный вывод <strong>только для носителя</strong>: те же строки, что в OBS, на quad OpenVR overlay внутри SteamVR. Видите <strong>только вы</strong> в шлеме. Зрители стрима по-прежнему смотрят OBS <code>/overlay</code>. Люди в VRChat — это отдельный <a href="#vrchat-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">модуль Chatbox</a> на 144 символа, не HUD.</p>
+<p>Открывается из <strong>Модули → SteamVR HUD</strong>. Настройки: <code>user-data/modules/vr-overlay/</code> (<code>config.toml</code>, плюс <code>openvr-host.pid</code> / <code>openvr-host.log</code> у хоста overlay). Тема, язык интерфейса и шрифт UI совпадают с дашбордом.</p>
+<p>HUD <strong>не</strong> попадает в захват OBS. Он рисуется поверх игр SteamVR только для носителя.</p>
+<h3>Требования</h3>
+<ul>
+<li>PCVR на Windows со <strong>Steam + SteamVR</strong></li>
+<li><strong>Не</strong> Quest standalone (нет compositor SteamVR)</li>
+<li>На Эфире <strong>Start</strong> для live-субтитров (тестовый кадр можно без Live)</li>
+<li>Трекинг шлема при креплении <strong>Headset</strong>; трекинг контроллера — для левого/правого</li>
+</ul>
+<h3>Настройка один раз</h3>
+<ol>
+<li><strong>Модули → SteamVR HUD</strong></li>
+<li><strong>Запустить SteamVR</strong> в <strong>верхней карточке</strong> (не в чеклисте)</li>
+<li>Дождитесь <strong>SteamVR connected</strong> / бейджа <strong>Включён</strong> (или <strong>Ожидание SteamVR</strong>, пока runtime не поднимется)</li>
+<li><a href="#%D1%80%D0%B0%D0%B7%D0%BC%D0%B5%D1%89%D0%B5%D0%BD%D0%B8%D0%B5">Размещение</a>, <a href="#%D1%87%D1%82%D0%BE-%D0%BF%D0%BE%D0%BA%D0%B0%D0%B7%D1%8B%D0%B2%D0%B0%D1%82%D1%8C">что показывать</a>, пресет холста</li>
+<li><strong>Сохранить настройки</strong>, затем <strong>Включить оверлей субтитров</strong> и/или <strong>Включить чат-оверлей</strong></li>
+<li>По желанию: <strong>Тестовое сообщение</strong> → <strong>Отправить тест</strong> и посмотрите в шлем</li>
+<li><strong>Start</strong> на Эфире (нужен для субтитров; чат-оверлей Live не требует)</li>
+<li>Закройте окно модуля — HUD работает, пока включён хотя бы один оверлей, SteamVR и сессия ядра живы</li>
+</ol>
+<p><strong>Проверить SteamVR</strong> только спрашивает, доступен ли overlay API. SteamVR он не запускает.</p>
+<p>Бейджи карточки <strong>Модули</strong>: <strong>Выкл</strong> / <strong>Ожидание SteamVR</strong> / <strong>Включён</strong> (+ origin) / <strong>Пауза</strong>.</p>
+<h3>Размещение</h3>
+<table>
+<thead>
+<tr>
+<th>Origin</th>
+<th>Где панель</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Headset (HMD)</strong></td>
+<td>По умолчанию перед глазами, чуть ниже. Следует за шлемом.</td>
+</tr>
+<tr>
+<td><strong>Левый / правый контроллер</strong></td>
+<td>Следует за контроллером. <strong>Пресет запястья</strong>: Wrist, Near, Far, Palm, над рукой, под рукой.</td>
+</tr>
+<tr>
+<td><strong>Мир (absolute)</strong></td>
+<td>Фиксирован в play space (голову не сопровождает).</td>
+</tr>
+</tbody></table>
+<p>Поза (смещение, поворот, ширина) <strong>запоминается отдельно</strong> для каждого origin и пресета запястья. Переключение HMD → запястье → HMD возвращает последний сетап HMD, а не заводской.</p>
+<ul>
+<li><strong>Сбросить смещение</strong> возвращает <em>текущий</em> origin к калиброванной базе (не все сразу).</li>
+<li><strong>Nudge</strong> двигает шагами 1 мм / 5 мм / 1 см.</li>
+<li>Локальные оси OpenVR: <strong>+X вправо, +Y вверх, −Z вперёд</strong>. Дефолт HMD около <code>{0, -0.28, -1.15}</code> м.</li>
+<li>Не крутите панель на 180° по yaw — у overlay нет «обратной стороны», он исчезнет.</li>
+<li>Ширина по умолчанию <strong>0.55 м</strong> на HMD и <strong>0.14 м</strong> на контроллере. Непрозрачность и кривизна — по желанию.</li>
+</ul>
+<h3>Что показывать</h3>
+<p>Галочки, не один выпадающий список — те же подписи, что в OBS / VRChat (<code>Source · ja</code>, <code>Translation 1 · en</code>, …). Видны только <strong>включённые</strong> линии перевода. У исходника показывается язык распознавания, если это не <code>auto</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Опция</th>
+<th>Смысл</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Исходник</strong> / <strong>Перевод 1–4</strong></td>
+<td>Какие линии пайплайна рисовать</td>
+</tr>
+<tr>
+<td><strong>Только финалы</strong></td>
+<td>Скрыть live-partials; ждать готовую фразу</td>
+</tr>
+<tr>
+<td><strong>Мин. интервал отправки</strong></td>
+<td>Как часто HUD перерисовывает растр (по умолчанию <strong>90 мс</strong>). Это не видео 90 FPS — SteamVR получает GPU-текстуру, когда меняется текст.</td>
+</tr>
+</tbody></table>
+<p>Пустой кадр прячет панель (как OBS очищает пустой overlay).</p>
+<h3>Экран (холст)</h3>
+<p>HUD — фиксированный пиксельный холст, в VR масштабируется в метрах.</p>
+<table>
+<thead>
+<tr>
+<th>Пресет холста</th>
+<th>Размер</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Default</strong></td>
+<td>1920×512</td>
+</tr>
+<tr>
+<td><strong>Tall</strong></td>
+<td>1920×768</td>
+</tr>
+<tr>
+<td><strong>Large</strong></td>
+<td>2560×720</td>
+</tr>
+<tr>
+<td><strong>Compact</strong></td>
+<td>1280×384</td>
+</tr>
+<tr>
+<td><strong>Custom</strong></td>
+<td>Чётные ширина/высота, 256–2048</td>
+</tr>
+</tbody></table>
+<p><strong>Размер шрифта 0</strong> = автоподгон под высоту холста и число строк. Попробуйте <strong>36–48</strong>, если в VR мелко; более высокий пресет лучше держит несколько линий.</p>
+<h3>Языки и текст</h3>
+<p>HUD растеризует сам (fontdue + шейпинг). Это не веб-страница, поэтому отсутствующие глифы раньше были пустыми квадратами.</p>
+<p>Текущие сборки покрывают языки перевода / ASR:</p>
+<ul>
+<li>японская / китайская пунктуация (<code>、。「」</code> и полноширинные <code>，！？</code>)</li>
+<li>корейский хангыль</li>
+<li>польский, турецкий, вьетнамский (расширенная латиница)</li>
+<li>русский и прочая кириллица</li>
+<li>арабица (связные формы, справа налево; латинские имена и <code>OBS</code> внутри фразы остаются слева направо)</li>
+<li>хинди (деванагари) и тайский (надстрочные знаки; ASCII-цифры остаются латинскими)</li>
+</ul>
+<p>Перенос — по словам, где есть пробелы, и по кластерам для CJK. Японские закрывающие (<code>。、」</code>) не оставляются висеть в начале следующей строки.</p>
+<h3>Старт и стоп SteamVR</h3>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Запустить SteamVR</strong></td>
+<td>Поднимает SteamVR (<code>vrstartup</code>, запасной <code>steam.exe -applaunch 250820</code>). <strong>Только по кнопке</strong> — модуль сам SteamVR не стартует.</td>
+</tr>
+<tr>
+<td><strong>Остановить SteamVR</strong></td>
+<td>Сначала снимает сессию overlay, затем просит SteamVR выйти (окно монитора, запасной console command).</td>
+</tr>
+</tbody></table>
+<p>Если вы закрыли SteamVR из Steam или шлема, HUD переходит в <strong>Ожидание SteamVR</strong>. Когда снова понадобится — <strong>Запустить SteamVR</strong>. Между попытками реконнекта 5 с пауза, чтобы не долбить выключение.</p>
+<p>OpenVR живёт в процессе <code>kageviSub-vr-overlay-host.exe</code>, чтобы зависший compositor не заморозил Live, VRChat и TTS. В диспетчере задач его можно не трогать; к баг-репорту приложите <code>user-data/modules/vr-overlay/openvr-host.log</code>.</p>
+<h3>После закрытия окна</h3>
+<p>Включить и закрыть: настроили → <strong>Включить оверлей субтитров</strong> и/или <strong>Включить чат-оверлей</strong> → закрыли. Отправка кадров идёт, пока работает ядро. Профили и <strong>Сброс к заводским</strong> включают <code>config.toml</code> этого модуля. Повторное открытие окна подхватывает сохранённый файл и тему дашборда.</p>
+<h3>Три выхода сравнение</h3>
+<table>
+<thead>
+<tr>
+<th>Выход</th>
+<th>Кто видит</th>
+<th>Как</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OBS <code>/overlay</code></td>
+<td>Зрители стрима</td>
+<td>Browser Source</td>
+</tr>
+<tr>
+<td>VRChat <code>/vrchat</code></td>
+<td>Люди в VRChat</td>
+<td>OSC Chatbox (144 символа / 9 строк)</td>
+</tr>
+<tr>
+<td>SteamVR <code>/vr-overlay</code></td>
+<td><strong>Носитель шлема</strong></td>
+<td>OpenVR overlay (полные строки, только носитель)</td>
+</tr>
+</tbody></table>
+<p>Контракты OpenVR / D3D11 / растеризации: <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md#18c-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C-steamvr-openvr-hud-overlay">Technical Architecture §18c</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Инструменты и данные</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tools_data.png" alt="Вкладка Инструменты и данные" width="820"><br>
+  <em><strong>Инструменты и данные</strong> — профили, статус, diagnostics ZIP</em>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Функция</th>
+<th>Зачем вам</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Статус runtime</td>
+<td>Живы ли распознавание / перевод / OBS CC</td>
+</tr>
+<tr>
+<td>Профили</td>
+<td>Сохранять и переключать настройки (<code>user-data/profiles/*.json</code>) — в снимок входят TTS, Twitch, Local ASR, VRChat и SteamVR HUD. Загрузка применяется сразу (тема и открытые окна модулей).</td>
+</tr>
+<tr>
+<td>Экспорт diagnostics</td>
+<td>ZIP с редактированным config + логами — прикладывайте к баг-репортам</td>
+</tr>
+<tr>
+<td>Папка логов</td>
+<td><code>logs/core.log</code>, <code>runtime-events.log</code>, <code>session-latest.jsonl</code> рядом с данными приложения</td>
+</tr>
+</tbody></table>
+<details>
+<summary><strong>Глубокая диагностика (advanced)</strong></summary>
+
+<p>Включите полное логирование в настройках / config (<code>logging.full_enabled</code>) или <code>VOICESUB_DEEP_DIAGNOSTICS=1</code>. Доп. JSONL — через <code>VOICESUB_TRACE_*</code>. Подробные метрики Tools / счётчики Local ASR — <code>logging.runtime_metrics_enabled</code> (по умолчанию выкл.). Нужно только для сложных багов.</p>
+</details>
+
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Настройки</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings.png" alt="Вкладка Настройки" width="820"><br>
+  <em><strong>Настройки</strong> — язык, layout, Advanced Web Speech</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_settings_web_speech_advenced.png" alt="Advanced Web Speech" width="820"><br>
+  <em><strong>Advanced Web Speech</strong> — та же панель, что в [Browser Speech](#browser-speech-web-speech)</em>
+</p>
+
+<h3>Язык интерфейса</h3>
+<p>EN / RU / JA / KO / ZH. Сохраняется в config. Worker Web Speech подхватывает locale при запуске.</p>
+<h3>Layout</h3>
+<p><strong>Standard</strong> — обычное окно; <strong>compact</strong> — под второй монитор.</p>
+<h3>Сброс к заводским</h3>
+<p><strong>Настройки → Сбросить к заводским</strong> применяет профиль <code>default</code> и конфиги модулей TTS / Twitch / Local ASR / VRChat / SteamVR HUD, затем сразу сохраняет. Открытые окна модулей подхватывают тему и настройки без Save + переоткрытия. Скачанные модели / ORT Local ASR <strong>не</strong> удаляются.</p>
+<h3>Лимиты keyless-перевода</h3>
+<p>В Настройках в одном блоке диспетчера: общий <strong>Максимум параллельных задач</strong> (на всех провайдеров) и доп. поля для Google Web / Free Web / Bing (опциональный потолок по имени + интервал 750/750/500 мс). Интервал снижает HTTP 429 при старте; пустой concurrent не ограничивает сверх общего лимита задач.</p>
+<h3>Шрифты / прочее</h3>
+<p>Шрифты субтитров — из <code>bin/fonts/</code> (SteamVR HUD берёт те же файлы плюс системный фолбэк Windows). Advanced Web Speech описан в <a href="#browser-speech-web-speech">Browser Speech</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Справка</h2>
+<p align="center">
+  <img loading="lazy" src="images/kagevi_more.png" alt="Хаб Ещё" width="820"><br>
+  <em><strong>Ещё</strong> — тема, замена слов, настройки, инструменты, справка</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_help.png" alt="Вкладка Справка" width="820"><br>
+  <em><strong>Справка</strong> — встроенный гайд и чеклист быстрого старта</em>
+</p>
+
+<p>Встроенная справка кратко покрывает распознавание, перевод, субтитры, OBS и инструменты. VRChat Chatbox: <a href="#vrchat-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">VRChat-модуль</a>. SteamVR HUD: <a href="#steamvr-hud-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">SteamVR HUD-модуль</a>. Контракты HTTP/WS/IPC и OpenVR — в <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md">Технической архитектуре</a>.</p>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Приватность и local-first</h2>
+<ul>
+<li>По умолчанию приложение слушает только <strong>localhost</strong> (<code>127.0.0.1</code>). Другие устройства в LAN не достучатся.</li>
+<li>LAN bind (<code>VOICESUB_ALLOW_LAN=1</code>) — для advanced-сетапов: WebSocket тогда <strong>без логина</strong>, включайте только в доверенной сети.</li>
+<li>API-ключи перевода и токены Twitch остаются на диске.</li>
+<li>Diagnostics ZIP <strong>редактирует</strong> секреты перед экспортом.</li>
+<li>Chrome worker — изолированный профиль (не ваш обычный Chrome sync).</li>
+</ul>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<h2>Глоссарий</h2>
+<table>
+<thead>
+<tr>
+<th>Термин</th>
+<th>Смысл</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Live / Эфир</strong></td>
+<td>Главный экран Start/Stop и превью</td>
+</tr>
+<tr>
+<td><strong>partial</strong></td>
+<td>Текст ещё распознаётся (черновик)</td>
+</tr>
+<tr>
+<td><strong>final</strong></td>
+<td>Фраза завершена распознавателем</td>
+</tr>
+<tr>
+<td><strong>линия / слот перевода</strong></td>
+<td>Одна из до четырёх строк (<code>translation_1</code>…<code>translation_4</code>)</td>
+</tr>
+<tr>
+<td><strong>overlay</strong></td>
+<td>Страница <code>/overlay</code> для OBS</td>
+</tr>
+<tr>
+<td><strong>Web Speech / browser worker</strong></td>
+<td>Окно Chrome с Google Web Speech</td>
+</tr>
+<tr>
+<td><strong>Local ASR</strong></td>
+<td>Офлайн-модуль Parakeet</td>
+</tr>
+<tr>
+<td><strong>completed block</strong></td>
+<td>Готовый субтитр, пока не завершится следующая фраза</td>
+</tr>
+<tr>
+<td><strong>TTS-модуль</strong></td>
+<td>Отдельное окно озвучки финализированных субтитров (<code>/tts</code>)</td>
+</tr>
+<tr>
+<td><strong>Twitch-модуль</strong></td>
+<td>Лог IRC-чата + опциональная озвучка чата (<code>/twitch</code>), независимо от TTS субтитров</td>
+</tr>
+<tr>
+<td><strong>VRChat-модуль</strong></td>
+<td>OSC-вывод в Chatbox VRChat (социальный, 144 символа)</td>
+</tr>
+<tr>
+<td><strong>SteamVR HUD</strong></td>
+<td>OpenVR overlay для носителя шлема в PCVR (не OBS и не Chatbox VRChat)</td>
+</tr>
+<tr>
+<td><strong>TTL</strong></td>
+<td>Сколько держать готовую строку на экране</td>
+</tr>
+</tbody></table>
+<p align="right"><a href="#doc-main">↑ Top</a></p>
+
+<hr>
+<p align="center">
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/README.ru.md" target="_blank" rel="noopener noreferrer">README</a> ·
+  <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Архитектура</a>
+</p>
+
+
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <footer class="footer doc-footer">
+      <div class="footer__brand">
+        <img src="assets/kagevi-icon.png" alt="" width="36" height="36" />
+        <div>
+          <strong>Kagevi Subtitles</strong>
+          <p data-i18n="footerTag">Local-first live subtitles for streamers.</p>
+        </div>
+      </div>
+      <div class="footer__links">
+        <a href="index.html" data-i18n="navHome">Home</a>
+        <a href="wiki.html" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" data-i18n="navChangelog">Changelog</a>
+        <a
+          href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/THIRD_PARTY_NOTICES.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-i18n="navLicenses"
+          >Licenses</a
+        >
+      </div>
+      <p class="footer__copy">© 2026 Kiriuru</p>
+    </footer>
+
+    <script src="doc.js" defer></script>
+  </body>
+</html>
