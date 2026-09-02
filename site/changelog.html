@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Kagevi Subtitles Changelog" />
+    <meta name="theme-color" content="#101319" />
+    <title>Changelog · Kagevi Subtitles</title>
+    <link rel="icon" type="image/png" href="assets/kagevi-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,550;12..96,750;12..96,800&family=Sora:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="doc.css" />
+  </head>
+  <body class="doc-page" data-doc="changelog">
+    <a class="skip-link" href="#doc-main">Skip to content</a>
+    <div class="noise" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand-mark" href="index.html">
+        <img src="assets/kagevi-icon.png" alt="" width="40" height="40" />
+        <span class="brand-mark__text">
+          <span class="brand-mark__main">Kagevi</span>
+          <span class="brand-mark__sub">Subtitles</span>
+        </span>
+      </a>
+      <div class="topbar__actions">
+        <button
+          type="button"
+          class="nav-toggle"
+          aria-controls="site-nav"
+          aria-expanded="false"
+          data-i18n-aria="navMenu"
+          aria-label="Menu"
+        >
+          <span class="nav-toggle__bars" aria-hidden="true"></span>
+        </button>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" class="lang__btn is-active" data-lang="en">EN</button>
+          <button type="button" class="lang__btn" data-lang="ru">RU</button>
+          <button type="button" class="lang__btn" data-lang="ja">JA</button>
+          <button type="button" class="lang__btn" data-lang="zh">ZH</button>
+          <button type="button" class="lang__btn" data-lang="ko">KO</button>
+        </div>
+        <a class="btn btn--ghost btn--sm" href="index.html" data-i18n="navHome">Home</a>
+      </div>
+      <nav class="topbar__nav" id="site-nav" aria-label="Primary">
+        <a href="index.html#guide" data-i18n="navGuide">Guide</a>
+        <a href="wiki.html" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" class="is-current" data-i18n="navChangelog">Changelog</a>
+        <a href="index.html#download" data-i18n="navDownload">Download</a>
+      </nav>
+    </header>
+
+    <div class="doc-shell">
+      <aside class="doc-toc" aria-label="On this page">
+        <p class="doc-toc__title" data-i18n="tocTitle">On this page</p>
+        <nav class="doc-toc__nav" id="doc-toc"></nav>
+      </aside>
+
+      <main class="doc-main" id="doc-main">
+        <header class="doc-hero">
+          <p class="doc-hero__eyebrow" data-i18n="changelogEyebrow">Release notes</p>
+          <h1 data-i18n="changelogTitle">Changelog</h1>
+          <p class="doc-hero__lede" data-i18n="changelogLede">
+            Notable changes across Kagevi Subtitles releases.
+          </p>
+        </header>
+
+        <div class="doc-panels">
+          <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
+            
+<p>This file covers the desktop line: <strong>Kagevi Subtitles</strong> (formerly VoiceSub, from <code>0.5.0</code>).</p>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.0...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...v0.7.0">0.7.0</a> - 2026-09-02</h2>
+<h3>Added</h3>
+<ul>
+<li><strong>VRChat Chatbox OSC</strong> module (<code>/vrchat</code>) — pipeline finals to VRChat Chatbox. Configure → <strong>Enable output</strong> → close the window. <strong>No KAT.</strong> OSC <code>127.0.0.1:9000</code> / <code>9001</code>; limit <strong>144</strong> characters / <strong>9</strong> lines; <strong>What to send</strong> matches OBS CC; optional pause on MuteSelf / AFK; Chatbox auto-clear (default <strong>5 s</strong>). <strong>Test connection</strong> / <strong>Send test</strong>. Config: <code>user-data/modules/vrchat/config.toml</code>.</li>
+<li><strong>SteamVR OpenVR HUD</strong> module (<code>/vr-overlay</code>) — wearer-only subtitles, separate from VRChat Chatbox. Attach to HMD, a controller (wrist ~12 cm / palm / above), or world; pose is remembered per origin; panel corner radius (default <strong>16</strong>). <strong>What to show</strong> is source plus enabled translation lines. Optional <strong>Twitch chat</strong> panel (portrait <strong>480×900</strong>, default left controller): badges, nick colors, <code>display (login)</code>; sub / raid / cheer only on Broadcaster. <strong>Start/Stop SteamVR</strong> from the module. Enable → close the window. PCVR only. Config: <code>user-data/modules/vr-overlay/config.toml</code>.</li>
+<li><strong>Twitch</strong> module (<code>/twitch</code>) split out of TTS: IRC, EventSub (follow / sub / gift / raid / cheer), broadcaster OAuth, filters, chat and event TTS independent of subtitle speech. Broadcaster token is enough; extra channels and a bot token are optional (extra channels stay chat-only). Raw chat forward to SteamVR HUD — <code>forward_to_vr_overlay</code> (both toggles required). Enable → close the window; auto-connects on start. Config: <code>user-data/modules/twitch/config.toml</code>. HTTP <code>/api/twitch/*</code>.</li>
+<li>Subtitles: overflow <strong>scroll speed</strong> (<code>overlay.scroll_speed_px_per_sec</code>, default <strong>48</strong>, <strong>12–120</strong>). After updating, reload the Browser Source.</li>
+<li>Settings: <strong>Reset to factory defaults</strong> — <code>default</code> profile plus TTS / Twitch / Local ASR / VRChat / SteamVR HUD configs. Profiles save that same full snapshot; load applies immediately.</li>
+<li>Modules: compact square cards (icon / status / Open) plus help; NVIDIA (Local ASR / Parakeet), VRChat, and SteamVR logos.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Word replace: mask <code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code> (first and last letter); forms that already contain <code>*</code> are left alone.</li>
+<li>Application license from <strong>0.7.0</strong>: Copyright © 2026 Kiriuru. All rights reserved. See <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">LICENSE</a>. Releases through <strong>0.6.5</strong> stay under MIT.</li>
+<li>Live runtime status bar is pinned on <strong>all</strong> tabs: full KPI on Live, collapsed strip elsewhere.</li>
+<li><strong>Keep captions inside the OBS box</strong> renamed to <strong>Subtitle scrolling</strong>.</li>
+<li>UI Theme: preset gallery (<strong>click only</strong>), <strong>GTA 6</strong> preset. Long hints sit behind a <strong>?</strong> popover.</li>
+<li>Google Web (<code>google_web</code>) uses <code>translate-pa.googleapis.com/v1/translateHtml</code> instead of gtx (<code>429</code>/<code>sorry</code>). Burst 429 is mitigated with a per-provider interval; <strong>Maximum parallel jobs</strong> is the shared cap.</li>
+<li><strong>TTS</strong> module (<code>/tts</code>) is subtitle speech only (needs Live <strong>Start</strong> and Enable). Closing the window does not mute playback. Twitch OAuth redirect stays <code>/tts</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Main window opens with bootstrap on <code>/live</code>. Leftover <code>running</code> after a kill is <strong>info</strong>, not WARN, when that PID is already dead.</li>
+<li>Closing a module window destroys its WebView2; the service without a window runs only while the module stays <strong>enabled</strong>.</li>
+<li>Installer no longer copies developer leftovers under <code>bin/</code> (TTS scripts, unpacked Google Fonts, zip metadata). Upgrade wipes <code>bin/modules</code> and <code>bin/fonts</code> first.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5">0.6.5</a> - 2026-08-20</h2>
+<h3>Added</h3>
+<ul>
+<li>OBS overlay: captions sit on the <strong>top</strong> of the Browser Source and grow <strong>downward</strong>. Each line (source + up to 4 translations) stays at the <strong>designed font size</strong> and <strong>scrolls on its own</strong> when it is too tall. Toggle <strong>Keep captions inside the OBS box</strong> on the Subtitles tab (<code>overlay.fit_to_box</code>, on by default). After updating, <strong>reload</strong> the Browser Source (cache-bust <code>?v=20260820f</code>).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Translation provider <code>microsoft_edge</code> (keyless Microsoft Edge Translate). Microsoft’s anonymous Edge path is dead (HTTP 404). Existing configs migrate to <code>bing_translator</code> (also keyless) on load/save; <code>public_libretranslate_mirror</code> now maps to Bing as well.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Local ASR: first-install warm-load no longer fails after downloading ORT/CUDA in the same session. ONNX Runtime now initializes on warm-load (not immediately after the ORT zip), retries a failed first <code>init</code>, and registers extracted CUDA/ORT folders on the DLL search path before loading.</li>
+<li>Browser Web Speech: after a long pause, stall/hot-mic rearm no longer <code>stop()</code>s recognition on the first words of the next phrase (continuous <strong>and</strong> overlap). The stall clock is the <strong>current</strong> mic-hot streak, not wall time since the last ASR result.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4">0.6.4</a> - 2026-08-08</h2>
+<h3>Added</h3>
+<ul>
+<li>Compact Browser Speech worker: Live-tab checkbox <code>asr.browser.compact_worker_ui</code> opens <code>/google-asr-compact</code> in a Chrome <code>--app=</code> window (no address bar) with a reduced UI (status, Start/Stop/Save, language, advanced checkboxes, Live Partial Text only).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS CC: realtime partials (<code>source_live</code> / translation live drafts) no longer send the full accumulated phrase — trailing window via <code>timing.max_partial_caption_chars</code> (default <strong>80</strong>, <code>0</code> = unlimited) scrolls by <strong>whole words</strong>; a final that follows live partials uses the same window (no full-text duplicate); finals without prior partials stay unclipped. Pending <code>clear_after</code> / <code>final_replace_delay</code> no longer block the worker — the next phrase/partial cancels the sleep immediately.</li>
+<li>Browser Web Speech continuous: close multi-second gaps while the mic still hears speech — stall/rearm <strong>9 s</strong> (cold-start <strong>4.5 s</strong>); <code>mic_silent</code> no longer masks <code>web_speech_stalled</code>; recovery uses <code>stop()</code> (not abort) so phrases are not chopped into tiny finals.</li>
+<li>Browser Web Speech overlap: silence rearm <strong>8 s</strong> (was 2.5 s) + <code>stop()</code>, <strong>3 s</strong> while mic is hot; forced-final floor <strong>8 s</strong>; orphan interim on active <code>onend</code>; stale soft-join partial no longer blocks rearm.</li>
+<li>Browser Web Speech overlap: soft-join across handoffs (one <code>client_segment_id</code> until ~<strong>1.8 s</strong> ASR quiet or <strong>450</strong> chars); buddy shadow flush on handoff; soft-final does not blank the UI; hold display when Chrome trims the same interim hypothesis.</li>
+<li>Worker settings (<code>continuous</code> / interim / force-finalization): dashboard Start/Save no longer clobbers these with a stale snapshot — deep-merge <code>asr</code> + omit worker-only keys. Recognition language still saves from the main UI.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3">0.6.3</a> - 2026-08-05</h2>
+<h3>Added</h3>
+<ul>
+<li>In-app auto-update via official <code>tauri-plugin-updater</code> (free minisign signatures, no paid Authenticode): banner <strong>Install update</strong> → download/install NSIS → relaunch; <code>latest.json</code> on GitHub Releases; keys under <code>secrets/</code> (gitignored).</li>
+<li>Unified updater release path: <code>npm run version:bump</code> → <code>npm run release</code> (<code>build-release.ps1</code> + <code>release:github</code>); GitHub-safe artifact names; <code>scripts/updater-release-lib.mjs</code>.</li>
+<li>Translation provider <strong><code>bing_translator</code></strong> (Bing Translator, no API key) — <code>bing.com/translator</code> → <code>ttranslatev3</code>.</li>
+<li>Style → font picker: custom <code>FontFamilyPicker</code> — each list row renders in its own typeface; English family names, alphabet tags in native scripts (<code>Latin</code>, <code>Кириллица</code>, <code>日本語</code>, <code>中文</code>, <code>한국어</code>).</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Browser worker: visible-window idle watchdog rearm after <strong>15 s</strong> without transcript (was 30 s), so quiet Web Speech stalls recover sooner.</li>
+<li>Style → font picker: alphabet tags no longer follow UI locale — always shown in the matching script so CJK / Latin-only coverage is visible at a glance.</li>
+<li>Desktop updater: NSIS installer is staged under the install/project root (not <code>%TEMP%</code>); leftovers are deleted on the next launch after a successful update (or immediately on a failed attempt).</li>
+<li>NSIS upgrade: before copying resources, wipe shipped <code>$INSTDIR\bin\{dashboard,worker,tts,local-asr,vrchat,vr-overlay,overlay,fonts,modules}</code> (and the same under <code>resources\bin</code>) so orphaned Vite content-hash files and other leftovers from prior builds cannot accumulate across updates; <code>user-data/</code> and <code>logs/</code> are never touched.</li>
+<li>TTS sidecar: <code>build_runtime.py</code> builds Nuitka in a work tree and ships only <code>google_tts_fetch.exe</code>; <code>npm run scrub:shipped-bin</code> (from <code>build-release.ps1</code>) refuses to package <code>*.build</code> / <code>runtime/build</code>.</li>
+<li>Docs / UI: <code>microsoft_edge</code> marked unreliable — Microsoft’s anonymous Edge path can fail with <strong>HTTP 404</strong>; prefer Bing / Google Web when it breaks.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS overlay: entrance effects readable again — opacity start lowered from ≥0.85; first (often long) ASR partial no longer drops <code>fade</code>/<code>blur_in</code>/<code>glow</code> via the 12-char cap (cap applies only to mid-phrase bursts); stronger glow + <code>text-shadow</code> CEF fallback; cache-bust <code>?v=20260805c</code>.</li>
+<li>OBS overlay: final translation after a live draft no longer replays entrance (including draft→final text refine / duplicate finals) — fade/glow from opacity 0 was re-blinking already-painted glyphs; cache-bust <code>?v=20260805d</code>.</li>
+<li>Loopback API: session token is no longer embedded in HTML for <code>/</code>, <code>/tts</code>, <code>/local-asr</code>, <code>/vrchat</code>, <code>/vr-overlay</code>, <code>/google-asr</code>, <code>/google-asr-compact</code> (any local browser could previously control <code>/api/*</code>). App HTML itself now requires bootstrap/cookie (401 otherwise); unauthenticated <code>/tts</code> serves only a minimal Twitch OAuth shell. Tauri/Chrome launch URLs carry one-time <code>bootstrap</code>; Twitch <code>oauth-complete</code> requires CSRF <code>state</code>. Non-loopback WebSocket clients need <code>loopback_token</code> (localhost OBS/worker unchanged).</li>
+<li>TTS: settings apply more reliably — flush debounced saves on <code>pagehide</code>/blur, Twitch rate/volume debounce on <code>oninput</code>, clear queue+prefetch when provider/playback mode changes; UI exposes <code>speech.max_queue_items</code> and <code>speak_chat</code>.</li>
+<li>Twitch emotes: IRC <code>emotes</code> indices applied before trim; lexical strip removes punctuated codes (<code>Kappa!</code>, <code>(OMEGALUL)</code>); added <strong>FFZ</strong> (FrankerFaceZ) emote source; Clear queue stops playback and drops prefetch.</li>
+<li>Twitch OAuth: cancelling auth in the system browser (<code>?error=access_denied</code>) shows a minimal page and forwards the error into the app TTS module via the bridge — full <code>/tts</code> UI is not mounted in the browser.</li>
+<li>OBS CC (<code>send_translation_partials</code>): completed translation finals are no longer dropped on <code>CompletedWithPartial</code> (a next-phrase live draft used to preempt the payload); pending <code>clear_after</code> is cancelled when the next draft arrives so growing caption text is not wiped.</li>
+<li>OBS CC: <code>translation_1…4</code> modes select by <code>slot_id</code>, not the Nth visible translation line — otherwise with <code>translation_1</code>+<code>translation_3</code> and output <code>translation_3</code>, finals never sent (especially with live-partials off).</li>
+<li>OBS CC: dedupe finals by <code>completed_sequence</code> (not the active partial sequence) — sticky completed-block republishes under keep_completed were flooding the queue and dropping phrases; sticky republish of the same text after <code>clear_after</code> no longer bypasses <code>avoid_duplicate_text</code>; payload queue coalesces only sticky/draft frames and keeps distinct completed finals (needed for realtime translation with OBS live-partials off).</li>
+<li>Installer / release package: Nuitka intermediate <code>google_tts_fetch.build</code> (~13 MB) is no longer left next to the sidecar and does not survive upgrades; orphaned hashed assets under worker/dashboard/tts/local-asr are cleared on upgrade.</li>
+<li>OBS overlay: live-partial translation flicker — <code>is_live_draft</code> is forwarded into the renderer so draft MT uses the transient/fast path (like source); completed-text changes patch in place without remount; entrance effects start at opacity ≥0.85; dashboard preview uses the same OBS paint policy (<code>obsPaintPolicy</code>); ~40 ms coalesce while drafts are visible; glow keyframes drop <code>color-mix</code> for older OBS CEF.</li>
+<li>UI locale: style slot tabs (“Translation 1 · Russian”) and OBS Output mode options update immediately when the interface language changes, without a page reload; same for Modules badges and Translation provider field labels.</li>
+<li>Update check: dashboard no longer force-polls GitHub again on bootstrap (reuses the runtime startup check).</li>
+<li>Style → font picker: dropdown list uses an opaque surface (glass tokens previously showed through underlying form fields).</li>
+<li>Style (base and slot override): all fields (font, colors, alignment, effect, metrics) update in the UI immediately after edits — no dashboard reload (Svelte 5 + reactive <code>resolveStyleFields</code>).</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2">0.6.2</a> - 2026-08-02</h2>
+<h3>Added</h3>
+<ul>
+<li>Neon-style display fonts (OFL): <strong>Tilt Neon</strong>, <strong>Audiowide</strong>, <strong>Monoton</strong>, <strong>Neonderthaw</strong> in <code>bin/fonts/</code> (Latin). <strong>Neon Tubes</strong> (FontStruct) is non-commercial — not shipped; use Tilt Neon as the tube-lettering stand-in. Cyrillic/CJK neon stacks already covered by <strong>Unbounded</strong> / <strong>Exo 2</strong>, <strong>Reggae One</strong> / <strong>Mochiy Pop One</strong> / <strong>Yusei Magic</strong>, <strong>ZCOOL KuaiLe</strong>, <strong>Gugi</strong>.</li>
+<li>Pruned <del>49 near-duplicate <code>bin/fonts/</code> faces (</del>41 MB): old workhorse twins (Roboto, JetBrains Mono, Source Code Pro, Bebas Neue, …) and creative near-clones (horror twins, Londrina/Bungee outline variants, oversized Stylish/QingKe, …); kept distinct creative/texture pack.</li>
+<li>Eight creative built-in style presets from the new pack: <strong>Titan Gothic</strong>, <strong>Dirt Grunge</strong>, <strong>Spray Street</strong>, <strong>Glitch Neon</strong>, <strong>Pixel Arcade</strong>, <strong>Brush Ink</strong>, <strong>Military Stencil</strong>, <strong>Metal Horror</strong>. Built-in catalog now loaded from <code>crates/voicesub-config/data/builtin_style_presets.json</code> via <code>include_str!</code>.</li>
+<li>Creative subtitle fonts in <code>bin/fonts/</code>: Latin (<strong>Press Start 2P</strong>, <strong>Silkscreen</strong>, <strong>Lobster</strong>, <strong>Pacifico</strong>, <strong>Righteous</strong>, <strong>Bungee</strong>, <strong>Fredoka</strong>); Latin+Cyrillic (<strong>Russo One</strong>, <strong>Caveat</strong>, <strong>Philosopher</strong>, <strong>Neucha</strong>, <strong>Yeseva One</strong>, <strong>Marck Script</strong>, <strong>Bad Script</strong>, <strong>Poetsen One</strong>, <strong>Rubik</strong>, <strong>Nunito</strong>, <strong>Manrope</strong>, <strong>Onest</strong>, <strong>Unbounded</strong>); Japanese (<strong>DotGothic16</strong>, <strong>Yusei Magic</strong>, <strong>Hachi Maru Pop</strong>, <strong>Stick</strong>); Chinese (<strong>ZCOOL KuaiLe</strong>, <strong>Ma Shan Zheng</strong>); Korean (<strong>Do Hyeon</strong>, <strong>Gaegu</strong>, <strong>Single Day</strong>, <strong>Poor Story</strong>).</li>
+<li>Dramatic / anime-title fonts (AoT-adjacent energy): JP+Cyrillic <strong>Dela Gothic One</strong>, <strong>Rampart One</strong>, <strong>Reggae One</strong>, <strong>Train One</strong>, <strong>Zen Old Mincho Black</strong>; JP <strong>New Tegomin</strong>, <strong>Potta One</strong>, <strong>Chokokutai</strong>; Latin horror/military <strong>Metal Mania</strong>, <strong>Creepster</strong>, <strong>Nosifer</strong>, <strong>Eater</strong>, <strong>Butcherman</strong>, <strong>Pirata One</strong>, <strong>Black Ops One</strong>, <strong>Germania One</strong>, <strong>Cinzel Decorative</strong>, <strong>Keania One</strong>, <strong>Limelight</strong>, <strong>Unifraktur Cook</strong>; Cyrillic display <strong>Stalinist One</strong>, <strong>Kelly Slab</strong>, <strong>Poiret One</strong>, <strong>Ruslan Display</strong>; KR <strong>Gugi</strong>, <strong>Stylish</strong>, <strong>Yeon Sung</strong>, <strong>Dokdo</strong>, <strong>Song Myung</strong>; CN brush/display <strong>Liu Jian Mao Cao</strong>, <strong>Zhi Mang Xing</strong>, <strong>Long Cang</strong>, <strong>ZCOOL QingKe HuangYou</strong>.</li>
+<li>Textured / distressed / stencil fonts: Latin+Cyrillic <strong>Rubik Dirt / Distressed / Burned / Glitch / Wet Paint / Spray Paint / Marker Hatch / Moonrocks / Beastly / Broken Fax / Vinyl / Iso / Puddles</strong>; Latin outline/stencil <strong>Londrina Sketch/Outline/Shadow</strong>, <strong>Bungee Shade/Inline/Outline</strong>, <strong>Stardos Stencil</strong>, <strong>Wallpoet</strong>, <strong>Big Shoulders Stencil</strong>, <strong>Rock Salt</strong>, <strong>Permanent Marker</strong>; JP brush <strong>Yomogi</strong>, <strong>Zen Kurenaido</strong>; KR brush/texture <strong>Nanum Brush/Pen Script</strong>, <strong>East Sea Dokdo</strong>, <strong>Bagel Fat One</strong>.</li>
+<li>OBS CC: optional <code>timing.send_translation_partials</code> — live-partial translations in <code>translation_1…4</code> modes (throttled like source); finals remain the fallback for LLM / providers without partials.</li>
+<li>OBS panel: hint for Twitch native CC languages (CEA-608/708 — Latin scripts reliable; Cyrillic/CJK → browser overlay).</li>
+<li>CJK fonts in <code>bin/fonts/</code>: <strong>Zen Maru Gothic</strong> (JP), <strong>RocknRoll One</strong> (JP display), <strong>ZCOOL XiaoWei</strong> (CN), <strong>Black Han Sans</strong> / <strong>Jua</strong> (KR); font pickers show alphabet tags with <code>·</code> (<code>Oswald Bold · Latin</code>, <code>Noto Sans Regular · Latin · Cyrillic</code>, …).</li>
+<li>Presets that already had Cyrillic stacks now include matching CJK fallbacks (soft: Zen Maru / ZCOOL / Jua; bold/HUD: RocknRoll / ZCOOL / Black Han Sans; anime: ZCOOL / Jua on top of Mochiy).</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Idle subtitle preview: translation lines show short sample phrases in every supported target language instead of tags like <code>RU</code>/<code>JA</code>, so font stacks can be judged on Cyrillic, CJK, and other scripts.</li>
+<li>Style → slot overrides: tabs only for <code>source</code> and enabled translation lines (same rule as OBS <code>translation_*</code> modes), with language in the label.</li>
+<li>OBS panel: <code>translation_*</code> modes list only enabled Translation lines (with language in the label); a selected inactive slot is marked and normalize resets it to <code>disabled</code>.</li>
+<li>OBS overlay renderer split into ESM modules under <code>bin/overlay/shared/js/subtitle-style/</code> (entry <code>index.js</code>) instead of the <code>subtitle-style.js</code> monolith. Public <code>window.SubtitleStyleRenderer</code> API and fast/slow-path behavior are unchanged.</li>
+<li>Subtitle style slots aligned with the <strong>4</strong> translation-line cap: dropped leftover <code>translation_5</code> from JS/Rust <code>LINE_SLOT_NAMES</code> and built-in presets; <code>inferStyleSlot</code> clamp is 1…4.</li>
+<li>Overlay i18n: <code>npm run i18n:bundle</code> emits a minimal CEF bundle (<code>document.title.overlay</code> only) instead of the full dashboard catalog (~193 KB → ~0.5 KB).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Overlay stacked: line background/frame hugs the text again (like <code>single</code> / <code>dual-line</code>) instead of stretching to full stage width.</li>
+<li>Idle subtitle preview: changing text alignment (or line gap) updates immediately — fast-path re-renders now refresh stage/row layout CSS vars, not only surface styles (no full page reload).</li>
+<li>Idle subtitle preview: source line uses a native-script sample for the recognition language (<code>asr.browser.recognition_language</code> / <code>source_lang</code>), not UI-locale copy — e.g. Japanese recognition no longer shows Russian “Предпросмотр исходной строки” when the UI is Russian.</li>
+<li>Browser Web Speech: suppress Chrome “Restore pages?” / unclean-shutdown bubble on every worker relaunch — add <code>--hide-crash-restore-bubble</code> and clear <code>exit_type</code>/<code>exited_cleanly</code> in the isolated profile before spawn (worker stop uses <code>taskkill /F</code>).</li>
+<li>Browser Web Speech: harden worker Chrome launch for current Stable (133+) — disable <code>AllowAggressiveThrottlingWithWebSocket</code> + <code>BatterySaverModeAvailable</code>, add <code>--disable-field-trial-config</code>, <code>--disable-hang-monitor</code>, <code>--audio-process-high-priority</code>.</li>
+<li>Browser Web Speech: <code>network</code> / <code>audio_capture</code> restart delay is fixed (<code>network_reconnect_initial_ms</code>, default 500 ms) — no exponential growth up to <code>network_reconnect_max_ms</code>.</li>
+<li>Runtime Diagnostics (Tools): translation metrics (<code>jobs started</code>, latency, provider) show again — summarized <code>translation_diagnostics</code> no longer wipes <code>translation_*</code> keys in <code>metrics</code>; for Local ASR — live decode/partial/final counters, capture/EP instead of a misleading <code>worker: Disconnected</code>.</li>
+<li>Runtime Diagnostics: <code>logging.runtime_metrics_enabled</code> (Tools, default off) — detailed translation/Local ASR metrics and high-churn <code>diagnostics_update</code> only on demand, so active recognition does not pay extra fanout cost.</li>
+<li>Local ASR: translation to Russian (and other targets) works again — ingest no longer labels Parakeet text with <code>asr.browser.recognition_language</code> (e.g. <code>ru-RU</code>), which made EN→RU look like a same-language copy of the English ASR line. With <code>source_lang=auto</code>, Local ASR keeps <code>auto</code> for MT; TTS still maps <code>auto</code>→<code>en</code>.</li>
+<li>Local ASR CUDA: <code>int8</code> / <code>int8_smoothquant</code> decode stays on CPU (no CUDA kernels for integer-quant ops) — UI/log warning; use <strong>fp16</strong> (<del>1.2 GB) or <strong>fp32</strong> (</del>2.5 GB) for GPU. ORT <code>1.24.2</code> cuda13 still registers correctly; bumping to 1.28 alone does not move int8 onto the GPU.</li>
+<li>Local ASR: catalog adds <strong>fp16</strong> (<code>grikdotnet/parakeet-tdt-0.6b-fp16</code>) — lighter floating-point analog of int8 for CUDA.</li>
+<li>Local ASR: module readiness on the main dashboard (Modules badge + Live mode selector) updates immediately after setup / window focus, without switching tabs (<code>runtime_update</code> + focus refresh).</li>
+<li>OBS Closed Captions: Live chip no longer turns red for <code>stream_not_running</code> (connected, stream not started yet); status uses <code>connection_state</code>.</li>
+<li>OBS CC: debug-mirror <code>SetInputSettings</code> failures no longer block native <code>SendStreamCaption</code>.</li>
+<li>OBS CC: <code>enabled</code> is the master gate for the debug mirror (no WS without it); hot path skips enqueue when OBS is off.</li>
+<li>OBS CC: queue overflow prefers dropping partials/payloads over <code>DelayedClear</code>; enqueue uses an atomic worker flag (no <code>try_lock</code> drops); faster stream-status poll (3s) while inactive.</li>
+<li>OBS panel: <code>connection_state</code> via i18n; partial-throttle UI in <code>source_live</code> and <code>translation_*</code>.</li>
+<li>Browser Web Speech continuous: stall with orphan partial commits without full restart; stall grace 12 s; long-segment flush ≥450 chars; faster <code>watchdog_stall</code> / flush restart delays.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1">0.6.1</a> - 2026-07-30</h2>
+<h3>Added</h3>
+<ul>
+<li>Local ASR VAD: <code>speech_pad_ms</code> is applied (extends finalize + trailing pad); <strong>text-aware silence hold</strong> (<code>text_hold_enabled</code> / <code>text_hold_extra_ms</code>) avoids cutting mid-phrase pauses when the draft looks incomplete (EN/RU/JA heuristics).</li>
+<li>Local ASR: optional <strong>Silero VAD</strong> backend (<code>vad.backend = silero</code>, <code>silero_threshold</code>); ~2 MB model via <code>deps/download</code> <code>silero_vad</code>. Missing model falls back to WebRTC.</li>
+<li>Optional <strong>live-partial</strong> translation for classic MT providers (Google/DeepL/Azure, etc.): translate growing ASR partials without waiting for the final. LLM lines always wait for final. Off by default (<code>translation.live_partial</code>).</li>
+<li>Translation provider <strong><code>microsoft_edge</code></strong> (Microsoft Edge Translate) — no API key. Fetches the anonymous JWT from <code>edge.microsoft.com/translate/auth</code> (cached 7 min in-process, refreshed once on <code>401</code>/<code>403</code>) and calls <code>api-edge.cognitive.microsofttranslator.com</code>, so quality is real Azure Translator.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>GitHub repository renamed to <a href="https://github.com/kiriuru/Kagevi-Subtitles"><code>kiriuru/Kagevi-Subtitles</code></a>. Update checks and release links use the new slug (<code>DEFAULT_GITHUB_REPO</code>); existing configs with <code>kiriuru/VoiceSub</code> migrate on load.</li>
+<li><code>free_web_translate</code> now uses <code>clients5.google.com/translate_a/t?client=dict-chrome-ex</code>. It was previously a duplicate of <code>google_web</code> hitting the identical <code>translate.googleapis.com</code> URL, so it shared one quota and could not act as a fallback when Google throttled. The three keyless providers now sit on three independent hosts.</li>
+<li>Overlay row layout: removed “Compact stacked” from the preset select (it was an alias → <code>stacked</code> + compact flag that normalize immediately rewrote, so the select snapped back). Compact spacing remains a separate checkbox.</li>
+<li>Subtitles line order: per-row ↑/↓ controls instead of a shared Move Up/Down toolbar.</li>
+<li>Visible translation line count follows enabled Translation lines; removed the separate “Maximum translated lines on screen” control (<code>subtitle_output.max_translation_languages</code> is derived on normalize).</li>
+<li>Translation lines capped at <strong>4</strong> (<code>translation_1</code>…<code>translation_4</code>).</li>
+<li>Product rebrand to <strong>Kagevi Subtitles</strong> (Kagevi = main brand, Subtitles = sub-brand): UI, installer/<code>productName</code>, bundle id <code>com.kagevi.subtitles</code>, npm <code>kagevi-subtitles</code>, cargo bin <code>kagevi-subtitles</code>, loopback header <code>x-kagevi-subtitles-token</code> (previous <code>x-kagevi-voice-token</code> and legacy <code>x-voicesub-token</code> still accepted). Internal crates remain <code>voicesub-*</code>.</li>
+<li>Clippy: enable workspace <code>clippy::pedantic = warn</code> (with curated allows for high-churn docs/API/cast/style noise so CI <code>-D warnings</code> stays green); keep deny for async hygiene + <code>redundant_clone</code>.</li>
+<li>Single version source: <code>voicesub-types::PROJECT_VERSION</code>; <code>scripts/sync-version.mjs</code> syncs Cargo / package.json / tauri.conf.json / <code>src/lib/project-version.ts</code> (<code>npm run version:sync</code> / <code>version:check</code>).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Overlay layout: <code>single</code> / <code>dual-line</code> again place multiple items on one physical row (horizontal). CSS always used <code>flex-direction: column</code>, so single, dual-line, and stacked looked identical. Preset switches no longer stick on the finalize fast-path without rebuilding the DOM.</li>
+<li>TTS: source speech works again with Local ASR — ingest no longer leaves <code>source_lang=auto</code> (Google TTS <code>tl=auto</code> failed silently); falls back to <code>asr.browser.recognition_language</code> or <code>en</code>. Web Speech was unaffected (worker already sent a concrete language).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Translation provider <code>public_libretranslate_mirror</code>. Every keyless public LibreTranslate instance is now offline or refuses API traffic — the shipped default <code>translate.fedilab.app</code> answers <code>403 Request forbidden by administrative rules</code> at the edge, regardless of headers. Existing configs migrate to <code>microsoft_edge</code> (also keyless, so no API key suddenly becomes required) on both save and legacy import.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0">0.6.0</a> - 2026-07-18</h2>
+<h3>Added</h3>
+<ul>
+<li>Fonts in <code>bin/fonts/</code>: <strong>IBM Plex Mono</strong>, <strong>IBM Plex Serif</strong>, <strong>Source Code Pro</strong> for dual-script presets and Cyrillic.</li>
+<li>Subtitle effects <code>pulse</code> and <code>reveal</code>.</li>
+<li>UI Theme: interface font picker (<code>ui.font_family</code>) applied to dashboard, Web ASR, TTS, and Local ASR via <code>ui_config_sync</code>.</li>
+<li>About VoiceSub credits dialog from the nav-rail avatar.</li>
+<li>Built-in <strong>Help</strong>: quick-start checklist and topic cards (recognition, translation, subtitles, style, OBS, tools) instead of a single prose block.</li>
+<li><strong>Local ASR</strong> module (<code>/local-asr</code>) вЂ” offline Parakeet TDT via ONNX Runtime (CPU / optional CUDA), setup wizard, Modules card with ready / CPU / CUDA badges.</li>
+<li>Live ASR mode <code>local_parakeet</code> when the module is <code>ready</code> (in-process mic + VAD + decode; no Chrome Web Speech worker).</li>
+<li>Protected HTTP API <code>/api/asr/local/*</code> for status, config, deps, model download/load, EP probe, mic list, and test bench.</li>
+<li>Module settings under <code>user-data/modules/local-asr/</code>; project <code>asr.mode</code> stays in <code>user-data/config.toml</code>.</li>
+<li><code>voicesub-partial-emit</code> crate (<code>word_growth</code> partial policy) wired into the existing subtitle / translation / overlay path.</li>
+<li>Latency presets <code>low</code> / <code>balanced</code> / <code>quality</code>, hallucination filter, emit telemetry, and setup checklist (deps в†’ model в†’ mic test в†’ final).</li>
+<li>China-market translation providers with free-tier quotas: <code>baidu_translate</code>, <code>youdao_translate</code>, <code>tencent_tmt</code>, and <code>caiyun_translator</code> (zh/en/ja); <strong>17</strong> providers total, grouped as <strong>China / Free-tier</strong> (i18n hints/status).</li>
+<li>вЂњOpen provider setup / API keysвЂќ button for cloud providers (Google, Azure, DeepL, OpenAI, OpenRouter, LibreTranslate, Baidu, Youdao, Tencent, Caiyun, etc.; local LLMs excluded).</li>
+<li>LLM: <strong>Override default subtitle prompt</strong> checkbox (hideable custom prompt) for OpenAI / OpenRouter / LM Studio / Ollama.</li>
+<li>OpenAI: <strong>Show models</strong> loads a live list via <code>POST /api/openai/models</code> (official <code>/v1/models</code>, chat-model filter); curated list updated from the 2026 OpenAI catalog (<code>gpt-5.6-*</code>, <code>gpt-5.4-*</code>, вЂ¦); <strong>Show all chat models</strong> toggle.</li>
+<li>LM Studio: <strong>Test connection</strong> probes <code>base_url</code> and loads available models.</li>
+<li>Installer artifact <code>VoiceSub_0.6.0_x64-setup.exe</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>TTS (and Local ASR) module window open: restore <code>async</code> Tauri commands for <code>WebviewWindowBuilder::build</code> вЂ” sync IPC deadlocked the whole app on Windows (WebView2).</li>
+<li>Local ASR: restore <code>max_segment_ms</code> to <strong>5500</strong> (UI / SST parity). The <strong>120000</strong> preset/default disabled force-final вЂ” partials could grow for minutes without a Final when WebRTC VAD stayed sticky; loading a config with exactly <code>120000</code> heals it back to <code>5500</code>.</li>
+<li>Local ASR / runtime idle CPU: heartbeat no longer runs a full <code>env_check</code> (CUDA/DLL scan) every tick вЂ” <code>diagnostics()</code> and <code>GET /api/asr/local/status</code> use the status cache; DLL lookup indexes each directory once; mic enumeration runs in <code>spawn_blocking</code>; Local ASR window defers mic list until after first paint; dialog open/close avoids re-entrancy spin.</li>
+<li>Local ASR: WebView2 memory/CPU blow-up on module open вЂ” <code>setLocale</code> is idempotent (stops <code>sst:locale-changed</code> + BroadcastChannel feedback loops); module no longer connects to <code>/ws/events</code> for UI sync (Tauri IPC is enough).</li>
+<li>TTS: same вЂ” disable <code>/ws/events</code> for UI sync (IPC already delivers <code>ui_config_sync</code>); locale sync uses <code>applyDashboardLocale</code> / idempotent <code>setLocale</code> (no Local-ASR-style leak thanks to the existing guard, but WS was still receiving overlay/runtime frames).</li>
+<li>Main dashboard: not affected by that leak (UI sync publisher only вЂ” no subscribe / <code>sst:locale-changed</code> loop; <code>ui_config_sync</code> ignored in the store); <code>applyUiFromConfig</code> skips re-applying theme/locale/sync when the presentation signature is unchanged.</li>
+<li>Startup/shutdown: Local ASR <code>env_check</code> no longer blocks service construction (CUDA Toolkit bin scans); DLL lookup checks direct paths first again; dashboard applies settings/theme before waiting on runtime status; last-known theme restored from localStorage before HTTP.</li>
+<li>Tools &amp; Data: clear success/error feedback correctly; confirm before load/overwrite profiles; block deleting <code>default</code>; validate profile names; warn on importing redacted config; disable import while busy; show Local ASR readiness; drop duplicate stale-dropped metric; full logging applied live after Save (no false restart hint); save/delete no longer report success if profile list refresh fails; <code>diagnostics_update</code> keeps <code>local_module</code> / <code>active_mode</code>; success/error modal explains where files were saved (Downloads / <code>user-data/exports</code> / <code>user-data/profiles</code>).</li>
+<li>Profiles: seed/upgrade sparse <code>default.json</code> from full factory defaults; reject Windows reserved names.</li>
+<li>Diagnostics export: unique <code>diagnostics-{secs}_{ms}.zip</code> names; keep newest 12 ZIPs (prune is best-effort so export still succeeds); clearer HTTP error messages for delete/export.</li>
+<li>Docs: profiles are <code>{name}.json</code> (not <code>.toml</code>); diagnostics ZIP retention documented.</li>
+<li>Dashboard: checkbox/select edits no longer reset window size and position (resize+center only when <code>ui.layout</code> changes).</li>
+<li>UI language change persists the current in-memory config (no longer overwrites import/profile via stale <code>lastSavedConfig</code>).</li>
+<li>Web Speech advanced settings no longer force <code>asr.mode = browser_google</code>.</li>
+<li>OBS overlay: stale-guard activates after the module script loads; runtime-gone timers no longer pile up.</li>
+<li>Browser worker: autostart timer and lifecycle listeners cleared in <code>destroy()</code>.</li>
+<li>Section scroll-spy uses the shell scroll container; Subtitles nav opens the panel with top tabs Subtitles/Style directly (no intermediate hub).</li>
+<li>Primary tab icons (nav rail / bottom nav) enlarged ~15%.</li>
+<li>TTS / Local ASR / Web Speech worker scroll: <code>overflow: hidden</code> scoped to the dashboard standard shell only (not global <code>html/body</code>).</li>
+<li>Local ASR: setup Close and вЂњRe-checkвЂќ buttons match the rest of the UI.</li>
+<li>Dark-theme dialogs readable again (runtime Details, credits, Local ASR status/alert/setup) вЂ” <code>color-scheme</code> plus explicit text color instead of UA <code>CanvasText</code>.</li>
+<li>UI theme hot-applies to Local ASR and TTS without Save (IPC + WS fallback); i18n for <code>style.ui_theme.font</code> / <code>font.default</code>.</li>
+<li>Browser Google ASR lifecycle:<ul>
+<li>failed Chrome launch clears <code>runtime_running</code> and stops browser speech ingest (same as Local ASR failure path);</li>
+<li>PID tracking / <code>browser-worker.pid</code> cleared only when Chrome is actually gone; a still-live process after failed <code>taskkill</code> is kept for orphan reap;</li>
+<li>IPC <code>launch_browser_worker</code> records PID in the shared orchestrator and terminates any previous worker (no second orphan Chrome);</li>
+<li>Local ASR start reaps leftover Chrome first;</li>
+<li><code>generationId</code> bumps on every controlled start; pending restart cancel uses <code>stopEpoch</code> (user/control stop);</li>
+<li>WS transport replace drops the previous outbound <strong>without</strong> sending <code>stop</code> (avoids killing recognition on reconnect).</li>
+</ul>
+</li>
+<li><strong>Word replace (pre-translation):</strong> cached Aho-Corasick/regex; CJK with default whole-words; stems; mask form <code>fuck</code>в†’<code>f*ck</code> (not <code>***</code>); already-masked <code>f*ck</code> is left alone. Subtitle lifecycle unchanged.</li>
+<li>IPC ACL: <code>get_loopback_api_token</code> allowlisted again (fallback when HTML injection is missing).</li>
+<li><code>runtime-event</code>: <code>listen</code> в†’ buffer в†’ snapshot в†’ drain (live frames are not overwritten by a stale snapshot); dashboard snapshot prefers <code>overlay_update</code>; TTS snapshot is <code>runtime_update</code> + <code>twitch_connection_update</code> only.</li>
+<li><code>tts-speech-activity</code> / <code>playback-finished</code> use <code>emit_to(tts)</code> only (not a global emit into main/local-asr).</li>
+<li>Twitch chat в†’ <code>RuntimeEventBus</code> only (no OBS <code>/ws/events</code> flood); connection updates still hit the hub for replay.</li>
+<li>Lag-resync: pending queue (last needed sync is never dropped); discard coalesced overlay on <code>Lagged</code> so a timer cannot regress UI after snapshot.</li>
+<li><code>Jet Brains Mono</code> name matches the font catalog; <code>JetBrains Mono</code> alias on normalize.</li>
+<li>OBS overlay keeps <code>style_slot</code> / <code>slot_id</code>; dashboard preview calls <code>disposeRenderContainer</code> on <code>render().empty</code>.</li>
+<li>Renderer: <code>colorToRgba</code> (named/<code>rgb()</code>/<code>#rrggbbaa</code>); emoji on code-point boundaries; whitespace-only filtered; <code>inferStyleSlot</code> + <code>slot_id</code>; fast path skips disconnected surfaces.</li>
+<li>LM Studio / Ollama: JIT model load is no longer aborted by the default 10s timeout (<code>Engine protocol startup was aborted</code> / <code>Model is unloaded</code>); local providers get a <strong>в‰Ґ120s</strong> timeout floor; LM Studio requests include <code>ttl</code>.</li>
+<li>Provider setup buttons open the system browser (<code>open_external_https_url</code> allowlist includes provider console hosts).</li>
+<li>Baidu Translate: POST form-urlencoded instead of GET; <code>sv</code> в†’ <code>swe</code> language map; Youdao parses numeric <code>errorCode</code>.</li>
+<li>Translation persistent cache no longer wiped on every runtime start; disk cache survives restart when settings are unchanged.</li>
+<li>Translation dispatcher no longer leaks <code>active_jobs</code> when the same sequence is submitted twice; queue overflow no longer holds the dispatcher lock across relevance checks.</li>
+<li>Live settings apply for translation awaits the engine lock (API keys / lines are not silently skipped) and refreshes provider concurrency limits.</li>
+<li>HTTP translation timeouts honor configured <code>timeout_ms</code> (per-request timeout wired through all providers).</li>
+<li>Local LLM readiness probe accepts hostnames such as <code>localhost</code> (DNS resolve), not only IP literals.</li>
+<li>Preview supersession is robust to generation counter edge cases; short-circuit empty/identical-lang results no longer report a false cache hit.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Rust: workspace lints + <code>clippy.toml</code> (MSRV 1.85) вЂ” deny <code>unused_async</code> / <code>await_holding_lock</code> / <code>await_holding_refcell_ref</code> / <code>redundant_clone</code> (pedantic-light); CI <code>clippy -D warnings</code> green again.</li>
+<li>Async hot paths: runtime start/stop moves Chrome kill/launch and Local ASR start/stop to <code>spawn_blocking</code>; config-save error path drops the write lock before status/broadcast; translation finals release the controller mutex before enqueue; Local ASR ORT unload/init and zip extract run off the Tokio worker.</li>
+<li>Style panel: compact numeric field grid; text align and effect on one row.</li>
+<li>Built-in style catalog rebuilt (<strong>20</strong> presets): themed dual-script stacks (Film Noir, Retro Terminal, Fallout, Anime Stream, and others); near-identical dark plates collapsed to <strong>4 materials</strong> вЂ” Max Contrast, Podcast Subtle (parchment), Glass Frost (milky ice ~44%), Twitch Lower-Third (<code>#9146FF</code> + Oswald). Removed <code>sakura_soft</code>, <code>minimal_mono</code>, <code>editorial_news</code> (migrate в†’ <code>meeting_soft</code> / <code>glass_frost</code> / <code>dark_cinema</code>).</li>
+<li><strong>Retro Terminal</strong>: Cyrillic via <strong>IBM Plex Serif Regular</strong>.</li>
+<li>Latin-only faces in <code>/project-fonts.css</code> declare <code>unicode-range</code> so Cyrillic falls through to the next stack face (Plex / Ubuntu / Noto / ComfortaaвЂ¦).</li>
+<li>Outline width: <strong>ASS/Aegisub 0вЂ“4 px</strong> scale (step 0.1).</li>
+<li>Effects: <code>fade</code> is opacity-only; <code>glow</code> follows fill color; OBS partials cheapen heavy <code>blur_in</code>/<code>glow</code> to <code>fade</code>; <code>prefers-reduced-motion</code> honored.</li>
+<li>Tauri IPC capabilities split per window: <strong>main</strong> (full shell), <strong>tts</strong> (playback/Twitch/snapshot), <strong>local-asr</strong> (token + allowlisted URLs).</li>
+<li>TTS: HTTP <code>/api/runtime/status</code> poll only when <code>runtime-event</code> is down; speech-context poll slower while IPC is healthy (focus still refreshes immediately).</li>
+<li>Browser Speech worker is <strong>Google Chrome only</strong> (<code>/google-asr</code>): removed <code>/google-asr-edge</code>; import <code>browser_google_edge</code> в†’ <code>browser_google</code>; orphan reap only for <code>chrome.exe</code>.</li>
+<li>Browser worker CPU affinity is <strong>opt-in</strong> (<code>VOICESUB_BROWSER_AFFINITY</code> / <code>VOICESUB_BROWSER_AFFINITY_MASK</code>); off by default.</li>
+<li><code>runtime-event</code> routing: <strong>local-asr</strong> window receives <code>ui_config_sync</code> (live theme/locale/font); <code>/ws/events</code> replays the last <code>ui_config_sync</code> on connect.</li>
+<li>Help copy updated for Local ASR / Modules / word replace; HelpPanel i18n reacts to locale changes.</li>
+<li>Documentation and wiki mark Local ASR as shipped; Technical Architecture В§18 documents the module.</li>
+<li>SST JSON import preserves <code>local_parakeet</code>; legacy <code>local</code> / experimental modes still map to <code>browser_google</code>.</li>
+<li>Translation <code>timeout_ms</code> / HTTP client ceiling: <strong>300s</strong> (was 60s); Settings UI and config normalize aligned.</li>
+<li>Persistent translation cache path is <code>user-data/translation-cache/</code> (legacy <code>user-data/cache/translation_cache.json</code> is copied once on upgrade).</li>
+<li>Translation cache keys hash source text; cache flushes on engine drop; LLM <code>used_default_prompt</code> / <code>override_prompt</code> settings.</li>
+<li>DeepL maps UI language codes (<code>en</code>/<code>zh-cn</code>/<code>pt</code>, вЂ¦) to API targets and auto-selects Free vs Pro URL from the API key (<code>:fx</code> в†’ free).</li>
+<li>Google Cloud Translation v3 expands short model ids to full resource names; Google v3 settings labels i18n added.</li>
+<li>Azure / LibreTranslate map Chinese UI codes (<code>zh-Hans</code>/<code>zh-Hant</code>, <code>zh</code>/<code>zt</code>); readiness surfaces soft warnings for empty Azure region and public LibreTranslate.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Tauri IPC ACL least-privilege: <code>main</code> is shell-only (token, snapshot, layout, open module windows, URL openers); TTS commands only on the <code>tts</code> window; removed dead <code>launch_browser_worker</code> / <code>voicesub_version</code> / <code>tts_play_audio</code> / <code>tts_stop_channel</code>; deny frontend <code>emit</code>/<code>emit-to</code>; no dashboard <code>create-webview-window</code>.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.4...v0.5.5">0.5.5</a> - 2026-06-26</h2>
+<h3>Added</h3>
+<ul>
+<li>Dedicated Tauri IPC pump with trailing-edge coalescing of dashboard <code>overlay_update</code> (default 90 ms; <code>VOICESUB_OVERLAY_IPC_MIN_INTERVAL_MS</code>; <code>0</code> disables). OBS <code>/ws/events</code> still receives every frame.</li>
+<li>Runtime metrics for bus lag and overlay IPC coalescing on <code>/api/runtime/status</code>.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Subtitle lifecycle runs before WS/IPC fanout; partial <code>transcript_update</code> broadcast is async so ingest is not blocked.</li>
+<li>Lock-free WS <code>global_sequence</code>; safer debounced snapshot resync after bus lag.</li>
+<li>Dashboard skips the frequent HTTP runtime poll when Tauri IPC is connected (30 s safety-net remains).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Web Speech <code>audio-capture</code> errors auto-retry with exponential backoff instead of stopping recognition permanently.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.3...v0.5.4">0.5.4</a> - 2026-06-21</h2>
+<h3>Added</h3>
+<ul>
+<li>Per-window Tauri <code>runtime-event</code> routing (dashboard vs TTS window).</li>
+<li>Leading-edge coalescing for partial <code>transcript_update</code> (default 90 ms; <code>VOICESUB_TRANSCRIPT_PARTIAL_MIN_INTERVAL_MS</code>).</li>
+<li>Browser worker: orphan PID reap on start; long-segment flush after monologues; overlap ASR handoff hardening.</li>
+<li>Advanced Web Speech settings in the dashboard; ingest latency diagnostics when full logging is on.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Live subtitle WebSocket fanout is <code>overlay_update</code> only; ASR is <code>transcript_update</code> only.</li>
+<li><code>subtitle_payload_update</code> is Tauri IPC snapshot/replay only (not published on <code>/ws/events</code>).</li>
+<li>Browser worker process priority uses <code>ABOVE_NORMAL_PRIORITY_CLASS</code>.</li>
+<li>Diagnostic timestamps use RFC 3339 strings instead of epoch seconds.</li>
+<li>TTS volume range up to 150%; Twitch chat filters (mentions, digits, links) and IRC reconnect hardening.</li>
+<li>Deprecated subtitle lifecycle timing keys cleaned up in config.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Duplicate live broadcasts: <code>transcript_segment_event</code> and <code>subtitle_payload_update</code> on <code>/ws/events</code>.</li>
+<li>TTS module JS queue pump and deprecated TTS IPC surface.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>HTTP/WS fanout path correctness; Twitch chat log in the TTS module.</li>
+<li>TTS pipeline reliability (prefetch, config I/O, audio-chunk ordering).</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.2...v0.5.3">0.5.3</a> - 2026-06-17</h2>
+<h3>Added</h3>
+<ul>
+<li>Loopback API auth completion for protected <code>/api/*</code> (<code>x-voicesub-token</code>).</li>
+<li>GitHub Releases update check (<code>POST /api/updates/check</code>) with dashboard banner.</li>
+<li>Material 3 primary navigation shell on the dashboard.</li>
+<li>Background-tasks diagnostics on the HTTP status surface.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Browser Speech worker UI polish; TTS module loopback/styling; Twitch IRC auto-reconnect.</li>
+<li>Toolchain edition <strong>Rust 2024</strong>; CI and commit-convention docs.</li>
+<li>Migration: loopback token required for protected dashboard HTTP helpers (trusted pages inject <code>window.__VOICESUB_API_TOKEN__</code>).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS overlay logging hardening (follow-up).</li>
+<li>Dead-code and unused i18n key prune.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.1...v0.5.2">0.5.2</a> - 2026-06-14</h2>
+<h3>Added</h3>
+<ul>
+<li>Loopback API auth + overlay liveness checks.</li>
+<li>Rust TTS speech pipeline on the hot path; RuntimeEventBus snapshot improvements.</li>
+<li>Browser worker launch stability and overlap / browser-trace telemetry.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>OBS Closed Captions send algorithm.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>TTS / Twitch issues on top of 0.5.1; dashboard UI polish.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.0...v0.5.1">0.5.1</a> - 2026-06-13</h2>
+<h3>Added</h3>
+<ul>
+<li>Native dual-sink TTS (speech + Twitch) via Rust/cpal; <strong>Sonic</strong> tempo mode (pitch-preserving).</li>
+<li>Twitch multi-channel (up to 5 IRC joins per OAuth) with hot-apply chat filters.</li>
+<li>Resource telemetry bar; WebView2 power/memory policy; size-based log rotation.</li>
+<li>Translation / Web Speech top-20 language lists; OBS CC stable error codes with UI i18n.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>TTS <code>playback_mode: &quot;browser&quot;</code> migrates to <code>sonic</code> on load; HTMLAudio playback path removed.</li>
+<li>Twitch legacy <code>channel</code> в†’ <code>channels[0]</code>; digit preservation in chat TTS.</li>
+<li>Compact client logging by default (TTS UI traces require full logging).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>TTS enqueue IPC when <code>dropped_ids</code> is empty; Twitch language detection for link-only lines.</li>
+<li>Mic monitor leaks and cleaner Web Speech abort on worker stop.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Browser <code>HTMLAudio</code> / <code>setSinkId</code> playback path for TTS.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.5.0">0.5.0</a> - 2026-06-10</h2>
+<p>First VoiceSub release (successor to SST Desktop <code>0.4.4</code>). Stack and delivery are new; subtitle/translation meaning preserved.</p>
+<h3>Added</h3>
+<ul>
+<li>Rust + Tauri 2 desktop app (<code>VoiceSub.exe</code>, NSIS <code>VoiceSub_{version}_x64-setup.exe</code>).</li>
+<li>Svelte 5 dashboard, vanilla OBS overlay, Svelte Web Speech worker (<code>/google-asr</code>).</li>
+<li>TTS module (<code>/tts</code>) with Twitch chat TTS; OBS Closed Captions (<code>voicesub-obs</code>).</li>
+<li>TOML config (<code>config_version</code> 8), SST <code>config.json</code> import, profiles, diagnostics ZIP.</li>
+<li>UI locales: en, ru, ja, ko, zh; GitHub Releases update check.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Product renamed to <strong>VoiceSub</strong>; default bind <code>127.0.0.1:8765</code>.</li>
+<li>Production ASR mode in core: <code>browser_google</code> (Chrome/Edge worker).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>FastAPI / pywebview / PyInstaller SST desktop stack from active core.</li>
+<li>Legacy local ASR, remote controller/worker, experimental browser routes (archived under <code>legacy/</code>).</li>
+<li>Splash startup profiles.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.3...v0.4.4">0.4.4</a> - 2026-05-31</h2>
+<blockquote>
+<p>Frozen SST Desktop line. Active development continues as VoiceSub.</p>
+</blockquote>
+<h3>Security</h3>
+<ul>
+<li>SSRF policy for OpenAI helper model routes when LAN bind is enabled.</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>Shared overlay WebSocket stale-guard; desktop context store bridge.</li>
+<li>UI locales ja / ko / zh for dashboard, worker, and overlay.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Desktop launcher split into modules; overlay reconnect preserves last frame.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Dashboard bootstrap error banner; bind/profile path safety tests.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.2...v0.4.3">0.4.3</a> - 2026-05-27</h2>
+<h3>Added</h3>
+<ul>
+<li>Desktop profile lock and related launcher hardening (SST).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Overlay and runtime stability follow-ups on the 0.4.2 line.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.1...v0.4.2">0.4.2</a> - 2026-05-25</h2>
+<h3>Added</h3>
+<ul>
+<li>Further SST desktop polish toward the 0.4.x frozen line.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Browser worker and overlay reconnect edge cases.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.0...v0.4.1">0.4.1</a> - 2026-05-20</h2>
+<h3>Added</h3>
+<ul>
+<li>SST Desktop incremental features and config migrations on the 0.4.0 base.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Dashboard and worker reliability patches.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.3.2...v0.4.0">0.4.0</a> - 2026-05-16</h2>
+<h3>Added</h3>
+<ul>
+<li>SST Desktop 0.4.0 feature set (config_version lineage toward 7).</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Architecture and packaging steps toward the frozen 0.4.4 baseline.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.3.1...v0.3.2">0.3.2</a> - 2026-05-14</h2>
+<h3>Fixed</h3>
+<ul>
+<li>SST Desktop stability patches after 0.3.1.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.3.0...v0.3.1">0.3.1</a> - 2026-05-12</h2>
+<h3>Fixed</h3>
+<ul>
+<li>SST Desktop follow-up fixes after the 0.3.0 modularization release.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.2.9.2...v0.3.0">0.3.0</a> - 2026-05-08</h2>
+<h3>Added</h3>
+<ul>
+<li>Modular FastAPI backend services and frontend module stack (SST).</li>
+<li>Browser Speech session supervisor FSM; config migrations / schema export.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Thinner API routes; shared paths, logging, redaction utilities.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>WebSocket disconnect cleanup; runtime event coalescing; client log best-effort mode.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Unsupported backend ASR experiments from the active product surface.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/releases/tag/v0.2.9.2">0.2.9.2</a> - 2026-04-30</h2>
+<p>Earlier <code>0.2.9.*</code> SST Desktop history lives in archived GitHub release notes and is not expanded here.</p>
+
+
+          </article>
+          <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
+            
+<p>Формат основан на <a href="https://keepachangelog.com/ru/1.1.0/">Keep a Changelog</a>,
+проект следует <a href="https://semver.org/lang/ru/">Semantic Versioning</a>.</p>
+<p><a href="changelog.html">English</a> • <a href="changelog.html">Русский</a></p>
+<p>Файл охватывает desktop-линию: <strong>Kagevi Subtitles</strong> (ранее VoiceSub, с <code>0.5.0</code>).</p>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.0...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...v0.7.0">0.7.0</a> - 2026-09-02</h2>
+<h3>Added</h3>
+<ul>
+<li>Модуль <strong>VRChat Chatbox OSC</strong> (<code>/vrchat</code>) — финалы пайплайна в Chatbox. Настроил → <strong>Включить вывод</strong> → окно можно закрыть. <strong>KAT нет.</strong> OSC <code>127.0.0.1:9000</code> / <code>9001</code>; лимит <strong>144</strong> символа / <strong>9</strong> строк; что отправлять — как OBS CC; пауза по MuteSelf / AFK; автоочистка Chatbox (по умолчанию <strong>5 с</strong>). <strong>Тест соединения</strong> / <strong>Отправить тест</strong>. Config: <code>user-data/modules/vrchat/config.toml</code>.</li>
+<li>Модуль <strong>SteamVR OpenVR HUD</strong> (<code>/vr-overlay</code>) — субтитры только для носителя, отдельно от Chatbox VRChat. Привязка к HMD, контроллеру (запястье ~12 см / ладонь / сверху) или миру; поза запоминается по origin; скругление панели (по умолчанию <strong>16</strong>). Что показывать — исходник и включённые линии перевода. Опциональная панель <strong>Twitch chat</strong> (портрет <strong>480×900</strong>, по умолчанию левый контроллер): бейджи, цвет ников, <code>display (login)</code>; саб / рейд / чир только у Broadcaster. <strong>Запустить/Остановить SteamVR</strong> из модуля. Включил → окно можно закрыть. Только PCVR. Config: <code>user-data/modules/vr-overlay/config.toml</code>.</li>
+<li>Модуль <strong>Twitch</strong> (<code>/twitch</code>) выделен из TTS: IRC, EventSub (фоллоу / саб / гифт / рейд / чир), OAuth стримера, фильтры, chat и event TTS независимо от озвучки субтитров. Хватает Broadcaster-токена; доп. каналы и токен бота необязательны (на доп. каналах — только чат). Пересылка сырого чата в SteamVR HUD — <code>forward_to_vr_overlay</code> (нужны оба тумблера). Включил → окно можно закрыть; автоподключение при старте. Config: <code>user-data/modules/twitch/config.toml</code>. HTTP <code>/api/twitch/*</code>.</li>
+<li>Субтитры: скорость прокрутки overflow (<code>overlay.scroll_speed_px_per_sec</code>, по умолчанию <strong>48</strong>, <strong>12–120</strong>). После обновления перезагрузите Browser Source.</li>
+<li>Настройки: <strong>Сбросить к заводским</strong> — профиль <code>default</code> и конфиги TTS / Twitch / Local ASR / VRChat / SteamVR HUD. Профили сохраняют тот же полный снимок; загрузка применяется сразу.</li>
+<li>Модули: компактные квадратные карточки (иконка / статус / Открыть) + «?»; логотипы NVIDIA (Local ASR / Parakeet), VRChat и SteamVR.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Замена слов: маска <code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code> (первая и последняя буква); формы с <code>*</code> не переписываются.</li>
+<li>С <strong>0.7.0</strong> лицензия приложения: Copyright © 2026 Kiriuru. Все права защищены. См. <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">LICENSE</a>. Релизы <strong>по 0.6.5</strong> остаются под MIT.</li>
+<li>Статус-бар Эфира закреплён на <strong>всех</strong> вкладках: полный KPI на Эфире, сжатая полоска на остальных.</li>
+<li>«Вписывать субтитры в окно OBS» → <strong>«Прокручивание субтитров»</strong>.</li>
+<li>Тема UI: галерея пресетов (применение <strong>только по клику</strong>), пресет <strong>GTA 6</strong>. Длинные подсказки — за кнопкой <strong>?</strong>.</li>
+<li>Google Web (<code>google_web</code>): шлюз <code>translate-pa.googleapis.com/v1/translateHtml</code> вместо gtx (<code>429</code>/<code>sorry</code>). Burst 429 смягчён интервалом по провайдеру; общий <strong>Максимум параллельных задач</strong> — главный лимит.</li>
+<li>Модуль <strong>TTS</strong> (<code>/tts</code>) — только озвучка субтитров (нужны Live <strong>Старт</strong> и Enable). Закрытие окна не глушит речь. Twitch OAuth redirect по-прежнему <code>/tts</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Главное окно сразу открывается с bootstrap на <code>/live</code>. Leftover <code>running</code> после kill — <strong>info</strong>, не WARN, если PID уже мёртв.</li>
+<li>Закрытие окна модуля уничтожает WebView2; сервис без окна живёт только пока модуль <strong>включён</strong>.</li>
+<li>Установщик не копирует dev-остатки из <code>bin/</code> (скрипты TTS, распакованные Google Fonts, zip-метаданные). Upgrade сначала чистит <code>bin/modules</code> и <code>bin/fonts</code>.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5">0.6.5</a> - 2026-08-20</h2>
+<h3>Added</h3>
+<ul>
+<li>OBS overlay: субтитры сидят на <strong>верхней</strong> границе Browser Source и растут <strong>вниз</strong>. Каждая линия (исходник + до 4 переводов) остаётся <strong>крупной</strong> и <strong>прокручивается отдельно</strong>, если не влезает. Галочка <strong>«Вписывать субтитры в окно OBS»</strong> на вкладке Субтитры (<code>overlay.fit_to_box</code>, по умолчанию вкл.). После обновления <strong>перезагрузите</strong> Browser Source (cache-bust <code>?v=20260820f</code>).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Провайдер перевода <code>microsoft_edge</code> (Microsoft Edge Translate без ключа). Анонимный Edge-путь Microsoft окончательно мёртв (HTTP 404). Существующие конфиги миграционно переводятся на <code>bing_translator</code> (тоже без ключа) при load/save; <code>public_libretranslate_mirror</code> теперь тоже мапится на Bing.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Local ASR: прогрев на чистой установке больше не падает после скачивания ORT/CUDA в той же сессии. ONNX Runtime теперь инициализируется при warm-load (не сразу после zip ORT), повторно пробует неудачный первый <code>init</code> и регистрирует извлечённые папки CUDA/ORT в DLL search path до загрузки.</li>
+<li>Browser Web Speech: после длинной паузы stall/hot-mic rearm больше не делает <code>stop()</code> на первых словах следующей фразы (и continuous, и overlap). Таймер stall — <strong>текущий</strong> mic-hot streak, а не время с последнего ASR-результата.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.3...v0.6.4">0.6.4</a> - 2026-08-08</h2>
+<h3>Added</h3>
+<ul>
+<li>Компактный Browser Speech worker: чекбокс на Эфире <code>asr.browser.compact_worker_ui</code> открывает <code>/google-asr-compact</code> в Chrome <code>--app=</code> (без адресной строки) с урезанным UI (статус, Старт/Стоп/Сохранить, язык, advanced-чекбоксы, только Live Partial Text).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS CC: realtime partials (<code>source_live</code> / translation live drafts) больше не отправляют весь накопленный текст — trailing window <code>timing.max_partial_caption_chars</code> (default <strong>80</strong>, <code>0</code> = без лимита) сдвигает <strong>целыми словами</strong>; final после live-partials тоже через то же окно (не дублирует полный текст); final без предшествующих partials — без обрезки. Pending <code>clear_after</code> / <code>final_replace_delay</code> больше не блокируют воркер: следующая фраза/partial отменяет sleep сразу.</li>
+<li>Browser Web Speech continuous: убраны многосекундные дыры при живом микрофоне — stall/rearm <strong>9 с</strong> (cold-start <strong>4.5 с</strong>); <code>mic_silent</code> больше не маскирует <code>web_speech_stalled</code>; recovery через <code>stop()</code> (не abort), чтобы не рвать фразы на мелкие куски.</li>
+<li>Browser Web Speech overlap: silence rearm <strong>8 с</strong> (было 2.5 с) + <code>stop()</code>, при горячем mic — <strong>3 с</strong>; forced-final floor <strong>8 с</strong>; orphan interim на active <code>onend</code>; stale soft-join partial не блокирует rearm.</li>
+<li>Browser Web Speech overlap: soft-join фразы через handoff (один <code>client_segment_id</code> до ~<strong>1.8 с</strong> тишины ASR или <strong>450</strong> символов); buddy shadow flush на handoff; soft-final не blank’ает UI; удержание display при ужимании той же interim-hypothesis.</li>
+<li>Worker settings (<code>continuous</code> / interim / force-finalization): Start/Save из dashboard больше не затирают эти поля устаревшим snapshot — deep-merge <code>asr</code> + omit worker-only keys. Язык распознавания по-прежнему сохраняется из main UI.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.2...v0.6.3">0.6.3</a> - 2026-08-05</h2>
+<h3>Added</h3>
+<ul>
+<li>In-app автообновление через официальный <code>tauri-plugin-updater</code> (бесплатная minisign-подпись, без платного Authenticode): баннер <strong>Установить обновление</strong> → скачивание/установка NSIS → relaunch; <code>latest.json</code> на GitHub Releases; ключи в <code>secrets/</code> (gitignored).</li>
+<li>Единый релизный контур updater: <code>npm run version:bump</code> → <code>npm run release</code> (<code>build-release.ps1</code> + <code>release:github</code>); GitHub-safe имена артефактов; <code>scripts/updater-release-lib.mjs</code>.</li>
+<li>Провайдер перевода <code>**bing_translator**</code> (Bing Translator, без API key) — <code>bing.com/translator</code> → <code>ttranslatev3</code>.</li>
+<li>Стиль → выбор шрифта: кастомный <code>FontFamilyPicker</code> — каждая строка списка рендерится в своём шрифте; названия на английском, метки алфавитов в родных письменностях (<code>Latin</code>, <code>Кириллица</code>, <code>日本語</code>, <code>中文</code>, <code>한국어</code>).</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Browser worker: idle watchdog rearm при видимом окне — <strong>15 с</strong> без transcript (было 30 с), быстрее восстановление после «тихого» stall Web Speech.</li>
+<li>Стиль → выбор шрифта: метки алфавитов больше не переводятся через UI-локаль — всегда в соответствующем скрипте, чтобы было видно покрытие CJK/latin-only шрифтов.</li>
+<li>Desktop updater: NSIS-установщик кладётся в корень install/project (не в <code>%TEMP%</code>); хвосты удаляются при следующем запуске после успешного обновления (или сразу при неудачной попытке).</li>
+<li>NSIS upgrade: перед копированием ресурсов сносятся shipped-деревья <code>$INSTDIR\bin\{dashboard,worker,tts,local-asr,vrchat,vr-overlay,overlay,fonts,modules}</code> (и то же под <code>resources\bin</code>), чтобы сиротские Vite content-hash файлы и прочий мусор прошлых сборок не копились при обновлении; <code>user-data/</code> и <code>logs/</code> не трогаются.</li>
+<li>TTS sidecar: <code>build_runtime.py</code> собирает Nuitka во work-tree и в runtime кладёт только <code>google_tts_fetch.exe</code>; <code>npm run scrub:shipped-bin</code> (в <code>build-release.ps1</code>) не даёт упаковать <code>*.build</code> / <code>runtime/build</code>.</li>
+<li>Docs / UI: <code>microsoft_edge</code> помечен как ненадёжный — анонимный Edge-путь Microsoft может отвечать <strong>HTTP 404</strong>; при сбое предпочтительны Bing / Google Web.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS overlay: entrance-эффекты снова читаются — старт opacity снижен с ≥0.85; первый (длинный) ASR-partial больше не теряет <code>fade</code>/<code>blur_in</code>/<code>glow</code> из‑за лимита 12 символов (лимит только на mid-phrase burst); glow усилен + <code>text-shadow</code> fallback для CEF; cache-bust <code>?v=20260805c</code>.</li>
+<li>OBS overlay: финальный перевод после live-draft больше не переигрывает entrance (в т.ч. при смене текста draft→final / дубле final) — иначе fade/glow с opacity 0 «ломали» уже нарисованный шрифт; cache-bust <code>?v=20260805d</code>.</li>
+<li>Loopback API: session token больше не вшивается в HTML <code>/</code>, <code>/tts</code>, <code>/local-asr</code>, <code>/vrchat</code>, <code>/vr-overlay</code>, <code>/google-asr</code>, <code>/google-asr-compact</code> (раньше любой локальный браузер мог управлять <code>/api/*</code>). Сам HTML теперь тоже требует bootstrap/cookie (иначе 401); без сессии <code>/tts</code> отдаёт только минимальный Twitch OAuth shell. Launch URL Tauri/Chrome несут одноразовый <code>bootstrap</code>; Twitch <code>oauth-complete</code> требует CSRF <code>state</code>. Не-loopback WebSocket нужны с <code>loopback_token</code> (localhost OBS/worker без изменений).</li>
+<li>TTS: настройки применяются надёжнее — flush debounce при <code>pagehide</code>/blur, Twitch rate/volume debounce на <code>oninput</code>, очистка очереди+prefetch при смене provider/playback mode; в UI — <code>speech.max_queue_items</code> и <code>speak_chat</code>.</li>
+<li>Twitch emotes: IRC <code>emotes</code> индексы применяются до trim; lexical strip снимает эмоуты с пунктуацией (<code>Kappa!</code>, <code>(OMEGALUL)</code>); добавлен источник <strong>FFZ</strong> (FrankerFaceZ); Clear queue останавливает playback и сбрасывает prefetch.</li>
+<li>Twitch OAuth: при отмене авторизации в браузере (<code>?error=access_denied</code>) показывается минимальная страница, ошибка уходит в TTS-модуль приложения через bridge — полный UI <code>/tts</code> в браузере не монтируется.</li>
+<li>OBS CC (<code>send_translation_partials</code>): финальный перевод больше не теряется в <code>CompletedWithPartial</code> (раньше live-draft следующей фразы перехватывал payload); pending <code>clear_after</code> отменяется при появлении следующего draft, чтобы не стирать растущий текст.</li>
+<li>OBS CC: режимы <code>translation_1…4</code> выбирают слот по <code>slot_id</code>, а не N-ю видимую линию — иначе при <code>translation_1</code>+<code>translation_3</code> и output <code>translation_3</code> финалы не уходили (особенно с выключенными live-partials).</li>
+<li>OBS CC: dedupe финалов по <code>completed_sequence</code> (не по sequence активного partial) — иначе sticky completed при keep_completed засорял очередь и дропал фразы; sticky republish того же текста после <code>clear_after</code> не обходит <code>avoid_duplicate_text</code>; payload-очередь коалесцирует только sticky/draft-кадры и сохраняет разные completed finals (важно при realtime-переводе с выключенным OBS live-partial).</li>
+<li>Установщик / релизный пакет: промежуточная папка Nuitka <code>google_tts_fetch.build</code> (~13 MB) больше не попадает рядом с sidecar и не остаётся после апдейта; сиротские hashed-ассеты worker/dashboard/tts/local-asr вычищаются при upgrade.</li>
+<li>OBS overlay: мерцание линий live-partial перевода — <code>is_live_draft</code> прокидывается в renderer, draft MT идёт по transient/fast-path (как source); смена completed-текста патчится in-place без remount; entrance-эффекты стартуют с opacity ≥0.85; preview дашборда использует ту же OBS paint-policy (<code>obsPaintPolicy</code>); coalesce ~40 ms при видимых drafts; glow без <code>color-mix</code> для старого OBS CEF.</li>
+<li>UI-локаль: подписи слотов стиля («Translation 1 · Russian») и опции OBS Output mode обновляются сразу при смене языка интерфейса, без перезагрузки страницы; то же для бейджей Modules и лейблов полей провайдера в Translation.</li>
+<li>Проверка обновлений: dashboard больше не дублирует force-опрос GitHub при старте (использует результат runtime startup check).</li>
+<li>Стиль → выбор шрифта: выпадающий список с непрозрачным фоном (glass-токены просвечивали поля под списком).</li>
+<li>Стиль (базовый и оверрайд слота): все поля (шрифт, цвета, выравнивание, эффект, метрики) снова обновляются в UI сразу после изменения — без перезагрузки dashboard (Svelte 5 + реактивный <code>resolveStyleFields</code>).</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.1...v0.6.2">0.6.2</a> - 2026-08-02</h2>
+<h3>Added</h3>
+<ul>
+<li>Neon-стиль (OFL) в <code>bin/fonts/</code>: <strong>Tilt Neon</strong>, <strong>Audiowide</strong>, <strong>Monoton</strong>, <strong>Neonderthaw</strong> (латиница). <strong>Neon Tubes</strong> (FontStruct) — non-commercial, в продукт не кладём; трубчатый аналог — Tilt Neon. Для кириллицы/CJK neon-стеки уже закрывают <strong>Unbounded</strong> / <strong>Exo 2</strong>, <strong>Reggae One</strong> / <strong>Mochiy Pop One</strong> / <strong>Yusei Magic</strong>, <strong>ZCOOL KuaiLe</strong>, <strong>Gugi</strong>.</li>
+<li>Почищен каталог <code>bin/fonts/</code>: убрано <del>49 почти-дубликатов (</del>41 MB) — старые workhorse-близнецы (Roboto, JetBrains Mono, Source Code Pro, Bebas Neue, …) и creative-клоны (horror twins, Londrina/Bungee outline, огромные Stylish/QingKe, …); оставлен различимый creative/texture pack.</li>
+<li>Восемь креативных built-in пресетов из нового пака: <strong>Titan Gothic</strong>, <strong>Dirt Grunge</strong>, <strong>Spray Street</strong>, <strong>Glitch Neon</strong>, <strong>Pixel Arcade</strong>, <strong>Brush Ink</strong>, <strong>Military Stencil</strong>, <strong>Metal Horror</strong>. Каталог пресетов теперь из <code>crates/voicesub-config/data/builtin_style_presets.json</code> через <code>include_str!</code>.</li>
+<li>Креативные шрифты субтитров в <code>bin/fonts/</code>: латиница (<strong>Press Start 2P</strong>, <strong>Silkscreen</strong>, <strong>Lobster</strong>, <strong>Pacifico</strong>, <strong>Righteous</strong>, <strong>Bungee</strong>, <strong>Fredoka</strong>); латиница+кириллица (<strong>Russo One</strong>, <strong>Caveat</strong>, <strong>Philosopher</strong>, <strong>Neucha</strong>, <strong>Yeseva One</strong>, <strong>Marck Script</strong>, <strong>Bad Script</strong>, <strong>Poetsen One</strong>, <strong>Rubik</strong>, <strong>Nunito</strong>, <strong>Manrope</strong>, <strong>Onest</strong>, <strong>Unbounded</strong>); японский (<strong>DotGothic16</strong>, <strong>Yusei Magic</strong>, <strong>Hachi Maru Pop</strong>, <strong>Stick</strong>); китайский (<strong>ZCOOL KuaiLe</strong>, <strong>Ma Shan Zheng</strong>); корейский (<strong>Do Hyeon</strong>, <strong>Gaegu</strong>, <strong>Single Day</strong>, <strong>Poor Story</strong>).</li>
+<li>Драматичные / anime-title шрифты (энергия «Атаки титанов»): JP+кириллица <strong>Dela Gothic One</strong>, <strong>Rampart One</strong>, <strong>Reggae One</strong>, <strong>Train One</strong>, <strong>Zen Old Mincho Black</strong>; JP <strong>New Tegomin</strong>, <strong>Potta One</strong>, <strong>Chokokutai</strong>; латиница horror/military <strong>Metal Mania</strong>, <strong>Creepster</strong>, <strong>Nosifer</strong>, <strong>Eater</strong>, <strong>Butcherman</strong>, <strong>Pirata One</strong>, <strong>Black Ops One</strong>, <strong>Germania One</strong>, <strong>Cinzel Decorative</strong>, <strong>Keania One</strong>, <strong>Limelight</strong>, <strong>Unifraktur Cook</strong>; кириллица display <strong>Stalinist One</strong>, <strong>Kelly Slab</strong>, <strong>Poiret One</strong>, <strong>Ruslan Display</strong>; KR <strong>Gugi</strong>, <strong>Stylish</strong>, <strong>Yeon Sung</strong>, <strong>Dokdo</strong>, <strong>Song Myung</strong>; CN кисть/display <strong>Liu Jian Mao Cao</strong>, <strong>Zhi Mang Xing</strong>, <strong>Long Cang</strong>, <strong>ZCOOL QingKe HuangYou</strong>.</li>
+<li>Текстурные / distressed / stencil шрифты: латиница+кириллица <strong>Rubik Dirt / Distressed / Burned / Glitch / Wet Paint / Spray Paint / Marker Hatch / Moonrocks / Beastly / Broken Fax / Vinyl / Iso / Puddles</strong>; латиница outline/stencil <strong>Londrina Sketch/Outline/Shadow</strong>, <strong>Bungee Shade/Inline/Outline</strong>, <strong>Stardos Stencil</strong>, <strong>Wallpoet</strong>, <strong>Big Shoulders Stencil</strong>, <strong>Rock Salt</strong>, <strong>Permanent Marker</strong>; JP кисть <strong>Yomogi</strong>, <strong>Zen Kurenaido</strong>; KR кисть/текстура <strong>Nanum Brush/Pen Script</strong>, <strong>East Sea Dokdo</strong>, <strong>Bagel Fat One</strong>.</li>
+<li>OBS CC: optional <code>timing.send_translation_partials</code> — live-partial переводы в режимах <code>translation_1…4</code> (throttle как у source); finals остаются fallback для LLM / провайдеров без partials.</li>
+<li>OBS панель: хинт о языках Twitch native CC (CEA-608/708 — надёжна латиница; кириллица/CJK → browser overlay).</li>
+<li>Шрифты CJK в <code>bin/fonts/</code>: <strong>Zen Maru Gothic</strong> (JP), <strong>RocknRoll One</strong> (JP display), <strong>ZCOOL XiaoWei</strong> (CN), <strong>Black Han Sans</strong> / <strong>Jua</strong> (KR); в списках шрифтов подписи алфавитов через <code>·</code> (<code>Oswald Bold · Latin</code>, <code>Noto Sans Regular · Latin · Cyrillic</code>, …).</li>
+<li>Пресеты со стеком под кириллицу получили CJK-фолбеки (soft: Zen Maru / ZCOOL / Jua; bold/HUD: RocknRoll / ZCOOL / Black Han Sans; anime: ZCOOL / Jua поверх Mochiy).</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Idle-превью субтитров: вместо тегов <code>RU</code>/<code>JA</code>/… на линиях перевода показываются короткие фразы на всех поддерживаемых языках перевода — чтобы было видно, как шрифты ложатся на кириллицу, CJK и остальные скрипты.</li>
+<li>Стиль → оверрайды слотов: вкладки только для <code>source</code> и реально включённых линий перевода (как режимы <code>translation_*</code> в OBS), с языком в подписи.</li>
+<li>OBS панель: режимы <code>translation_*</code> показывают только активные линии Translation (с языком в подписи); неактивный выбранный слот помечается и при normalize сбрасывается в <code>disabled</code>.</li>
+<li>OBS overlay renderer разбит на ESM-модули: <code>bin/overlay/shared/js/subtitle-style/</code> (entry <code>index.js</code>) вместо монолита <code>subtitle-style.js</code>. Публичный API <code>window.SubtitleStyleRenderer</code> и fast/slow path без изменений поведения.</li>
+<li>Слоты стиля субтитров выровнены с лимитом <strong>4</strong> линии перевода: убран мёртвый <code>translation_5</code> из JS/Rust <code>LINE_SLOT_NAMES</code> и built-in presets; clamp <code>inferStyleSlot</code> → 1…4.</li>
+<li>Overlay i18n: <code>npm run i18n:bundle</code> пишет минимальный CEF-бандл (только <code>document.title.overlay</code>) вместо полного каталога dashboard (~193 KB → ~0.5 KB).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Overlay stacked: фон/рамка строки снова обтягивает текст (как в <code>single</code> / <code>dual-line</code>), а не растягивается на всю ширину сцены.</li>
+<li>Idle-превью субтитров: смена выравнивания текста (и line gap) применяется сразу — fast-path обновляет CSS-переменные stage/row, а не только surface (без полной перезагрузки страницы).</li>
+<li>Idle-превью субтитров: исходная строка берёт образец в письме языка распознавания (<code>asr.browser.recognition_language</code> / <code>source_lang</code>), а не UI-локали — при Japanese + русском UI больше не показывается «Предпросмотр исходной строки».</li>
+<li>Browser Web Speech: убрано уведомление Chrome «Восстановить страницы?» / «Работа Chrome была завершена некорректно» на каждый перезапуск воркера — флаг <code>--hide-crash-restore-bubble</code> и сброс <code>exit_type</code>/<code>exited_cleanly</code> в изолированном профиле перед spawn (остановка воркера идёт через <code>taskkill /F</code>).</li>
+<li>Browser Web Speech: усилен launch Chrome под актуальный Stable (133+) — отключены <code>AllowAggressiveThrottlingWithWebSocket</code> + <code>BatterySaverModeAvailable</code>, добавлены <code>--disable-field-trial-config</code>, <code>--disable-hang-monitor</code>, <code>--audio-process-high-priority</code>.</li>
+<li>Browser Web Speech: задержка restart при <code>network</code> / <code>audio_capture</code> фиксированная (<code>network_reconnect_initial_ms</code>, по умолчанию 500 ms) — без экспоненциального роста до <code>network_reconnect_max_ms</code>.</li>
+<li>Runtime Diagnostics (Tools): снова показывает метрики перевода (<code>jobs started</code>, latency, provider) — summarized <code>translation_diagnostics</code> больше не затирает ключи <code>translation_*</code> в <code>metrics</code>; для Local ASR — live decode/partial/final counters, capture/EP вместо ложного <code>worker: Disconnected</code>.</li>
+<li>Runtime Diagnostics: опция <code>logging.runtime_metrics_enabled</code> (Tools, по умолчанию выкл.) — подробные метрики перевода/Local ASR и high-churn <code>diagnostics_update</code> только по запросу, чтобы не нагружать runtime при активном распознавании.</li>
+<li>Local ASR: снова работает перевод на русский (и другие языки) — ingest больше не помечает текст Parakeet языком <code>asr.browser.recognition_language</code> (например <code>ru-RU</code>), из‑за чего EN→RU выглядел как копия английской строки. При <code>source_lang=auto</code> Local ASR оставляет <code>auto</code> для MT; TTS по-прежнему мапит <code>auto</code>→<code>en</code>.</li>
+<li>Local ASR CUDA: при <code>int8</code> / <code>int8_smoothquant</code> decode остаётся на CPU (нет CUDA-ядер для integer-quant ops) — предупреждение в UI/логах; для GPU — <strong>fp16</strong> (<del>1.2 GB) или <strong>fp32</strong> (</del>2.5 GB). ORT <code>1.24.2</code> cuda13 при этом регистрируется нормально; обновление до 1.28 само по себе int8 на GPU не переносит.</li>
+<li>Local ASR: в каталог добавлен вариант <strong>fp16</strong> (<code>grikdotnet/parakeet-tdt-0.6b-fp16</code>) — лёгкий floating-point аналог int8 для CUDA.</li>
+<li>Local ASR: статус готовности модуля на главном дашборде (Modules badge + селектор на Эфире) обновляется сразу после setup / focus, без смены вкладки (<code>runtime_update</code> + refresh при фокусе).</li>
+<li>OBS Closed Captions: чип Live больше не краснеет при <code>stream_not_running</code> (OBS подключён, стрим ещё не начат); статус учитывает <code>connection_state</code>.</li>
+<li>OBS CC: сбой debug mirror (<code>SetInputSettings</code>) больше не блокирует native <code>SendStreamCaption</code>.</li>
+<li>OBS CC: <code>enabled</code> — master-gate для debug mirror (без него WS не открывается); hot path не ставит в очередь события при выключенном OBS.</li>
+<li>OBS CC: очередь не теряет <code>DelayedClear</code> при overflow; enqueue без гонки <code>try_lock</code>; быстрее опрос stream status (3 с), пока стрим неактивен.</li>
+<li>OBS панель: <code>connection_state</code> через i18n; partial-throttle UI в <code>source_live</code> и <code>translation_*</code>.</li>
+<li>Browser Web Speech continuous: при stall с orphan partial — commit без полного restart; grace stall 12 с; long-segment flush ≥450 символов; быстрее <code>watchdog_stall</code> / flush restart.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.0...v0.6.1">0.6.1</a> - 2026-07-30</h2>
+<h3>Added</h3>
+<ul>
+<li>Local ASR VAD: <code>speech_pad_ms</code> теперь реально применяется (удлиняет finalize + trailing pad); <strong>text-aware silence hold</strong> (<code>text_hold_enabled</code> / <code>text_hold_extra_ms</code>) не рвёт реплику на короткой паузе, если draft выглядит незавершённым (EN/RU/JA).</li>
+<li>Local ASR: опциональный backend <strong>Silero VAD</strong> (<code>vad.backend = silero</code>, порог <code>silero_threshold</code>); модель ~2 MB качается через <code>deps/download</code> <code>silero_vad</code>. Без модели — fallback на WebRTC.</li>
+<li>Опциональный <strong>live-partial</strong> перевод для классических MT (Google/DeepL/Azure и т.п.): перевод растущих ASR-partials без ожидания финала. LLM-линии всегда на final. По умолчанию выкл. (<code>translation.live_partial</code>).</li>
+<li>Провайдер перевода <code>**microsoft_edge**</code> (Microsoft Edge Translate) — без API key. Берёт анонимный JWT из <code>edge.microsoft.com/translate/auth</code> (кэш 7 мин в процессе, один refresh на <code>401</code>/<code>403</code>) и обращается к <code>api-edge.cognitive.microsofttranslator.com</code>, поэтому качество — настоящий Azure Translator.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Репозиторий на GitHub переименован в <code>[kiriuru/Kagevi-Subtitles](https://github.com/kiriuru/Kagevi-Subtitles)</code>. Проверка обновлений и ссылки на релизы используют новый slug (<code>DEFAULT_GITHUB_REPO</code>); конфиги с <code>kiriuru/VoiceSub</code> мигрируют при загрузке.</li>
+<li><code>free_web_translate</code> переведён на <code>clients5.google.com/translate_a/t?client=dict-chrome-ex</code>. Раньше он был копией <code>google_web</code> с тем же URL <code>translate.googleapis.com</code>, то есть делил одну квоту и не мог служить fallback при throttle со стороны Google. Теперь три провайдера без ключа живут на трёх независимых хостах.</li>
+<li>Схема строк overlay: пункт «Компактный стек» убран из селекта пресетов (это был алиас → <code>stacked</code> + флаг compact, из‑за нормализации селект сразу откатывался). Компактность — отдельный чекбокс.</li>
+<li>Порядок строк субтитров: стрелки ↑/↓ у каждой строки вместо общей панели «Выше/Ниже».</li>
+<li>Число видимых строк перевода задаётся включёнными линиями в модуле Перевод; отдельная настройка «Максимум строк перевода на экране» убрана (<code>subtitle_output.max_translation_languages</code> выводится при normalize).</li>
+<li>Линии перевода ограничены <strong>4</strong> (<code>translation_1</code>…<code>translation_4</code>).</li>
+<li>Product rebrand to <strong>Kagevi Subtitles</strong> (Kagevi = main brand, Subtitles = sub-brand): UI, installer/<code>productName</code>, bundle id <code>com.kagevi.subtitles</code>, npm <code>kagevi-subtitles</code>, cargo bin <code>kagevi-subtitles</code>, loopback header <code>x-kagevi-subtitles-token</code> (previous <code>x-kagevi-voice-token</code> and legacy <code>x-voicesub-token</code> still accepted). Internal crates remain <code>voicesub-</code>*.</li>
+<li>Clippy: в workspace включён <code>clippy::pedantic = warn</code> (точечные allow на шумный docs/API/cast/style, чтобы CI <code>-D warnings</code> оставался зелёным); deny для async hygiene + <code>redundant_clone</code> сохранён.</li>
+<li>Единый источник версии: <code>voicesub-types::PROJECT_VERSION</code>; <code>scripts/sync-version.mjs</code> синхронизирует Cargo / package.json / tauri.conf.json / <code>src/lib/project-version.ts</code> (<code>npm run version:sync</code> / <code>version:check</code>).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Overlay layout: пресеты <code>single</code> / <code>dual-line</code> снова кладут несколько элементов в один физический ряд (горизонтально). CSS раньше всегда ставил <code>flex-direction: column</code>, поэтому «одна строка», «две строки» и «стек» выглядели одинаково. Смена пресета больше не застревает в fast-path без перестройки DOM.</li>
+<li>TTS: исходный текст снова озвучивается в режиме Local ASR — ingest больше не оставляет <code>source_lang=auto</code> (Google TTS <code>tl=auto</code> молчал); берётся <code>asr.browser.recognition_language</code> или <code>en</code>. Web Speech не затрагивался (worker уже слал конкретный язык).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Провайдер перевода <code>public_libretranslate_mirror</code>. Все публичные инстансы LibreTranslate без ключа сейчас офлайн или отклоняют API-трафик — поставляемый по умолчанию <code>translate.fedilab.app</code> отвечает <code>403 Request forbidden by administrative rules</code> на уровне edge, независимо от заголовков. Существующие конфиги миграционно переводятся на <code>microsoft_edge</code> (тоже без ключа, поэтому API key внезапно не требуется) и при save, и при legacy import.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.5...v0.6.0">0.6.0</a> - 2026-07-18</h2>
+<h3>Added</h3>
+<ul>
+<li>Шрифты в <code>bin/fonts/</code>: <strong>IBM Plex Mono</strong>, <strong>IBM Plex Serif</strong>, <strong>Source Code Pro</strong> — для dual-script пресетов и кириллицы.</li>
+<li>Эффекты субтитров <code>pulse</code> и <code>reveal</code>.</li>
+<li>Тема UI: выбор шрифта интерфейса (<code>ui.font_family</code>) — применяется к dashboard, Web ASR, TTS и Local ASR через <code>ui_config_sync</code>.</li>
+<li>Диалог «О VoiceSub» (credits) из аватара в nav rail.</li>
+<li>Встроенная <strong>Помощь</strong>: quick-start чеклист и тематические карточки (распознавание, перевод, субтитры, стиль, OBS, инструменты) вместо сплошного prose.</li>
+<li>Модуль <strong>Local ASR</strong> (<code>/local-asr</code>) — офлайн Parakeet TDT через ONNX Runtime (CPU / опционально CUDA), wizard установки, карточка Modules с badge ready / CPU / CUDA.</li>
+<li>Режим Live <code>local_parakeet</code> при <code>ready</code> модуля (in-process mic + VAD + decode; без Chrome Web Speech worker).</li>
+<li>Protected HTTP API <code>/api/asr/local/*</code> — status, config, deps, загрузка модели, EP probe, список mic, test bench.</li>
+<li>Настройки модуля в <code>user-data/modules/local-asr/</code>; <code>asr.mode</code> проекта — в <code>user-data/config.toml</code>.</li>
+<li>Crate <code>voicesub-partial-emit</code> (политика partial <code>word_growth</code>) в существующий путь subtitle / translation / overlay.</li>
+<li>Пресеты latency <code>low</code> / <code>balanced</code> / <code>quality</code>, hallucination filter, emit telemetry, checklist setup (deps → model → mic test → final).</li>
+<li>Китайские провайдеры перевода с бесплатными квотами: <code>baidu_translate</code>, <code>youdao_translate</code>, <code>tencent_tmt</code> и <code>caiyun_translator</code> (zh/en/ja); всего <strong>17</strong> провайдеров, группа <strong>China / Free-tier</strong> в dashboard (i18n hints/status).</li>
+<li>Кнопка «Открыть сайт провайдера / API-ключи» у облачных провайдеров (Google, Azure, DeepL, OpenAI, OpenRouter, LibreTranslate, Baidu, Youdao, Tencent, Caiyun и др.; локальные LLM без ссылки).</li>
+<li>LLM: галочка <strong>Override default subtitle prompt</strong> (скрываемый custom prompt) для OpenAI / OpenRouter / LM Studio / Ollama.</li>
+<li>OpenAI: кнопка <strong>Show models</strong> — живой список через <code>POST /api/openai/models</code> (официальный <code>/v1/models</code>, фильтр chat-моделей); curated list обновлён по каталогу OpenAI 2026 (<code>gpt-5.6-</code>*, <code>gpt-5.4-*</code>, …); галочка <strong>Show all chat models</strong>.</li>
+<li>LM Studio: кнопка <strong>Test connection</strong> — проверка <code>base_url</code> и загрузка списка моделей.</li>
+<li>Installer <code>VoiceSub_0.6.0_x64-setup.exe</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Окно TTS (и Local ASR): снова <code>async</code> Tauri-команды для <code>WebviewWindowBuilder::build</code> — sync IPC вешал всё приложение на Windows (WebView2).</li>
+<li>Local ASR: <code>max_segment_ms</code> снова <strong>5500</strong> (как в UI / SST). Значение <strong>120000</strong> из пресетов/дефолта не давало force-final — партиклы росли минутами без Final при «липком» WebRTC VAD; при загрузке конфига ровно <code>120000</code> лечится обратно в <code>5500</code>.</li>
+<li>Local ASR / runtime idle CPU: heartbeat больше не гоняет полный <code>env_check</code> (скан CUDA/DLL) на каждом тике — <code>diagnostics()</code> и <code>GET /api/asr/local/status</code> используют кэш статуса; поиск DLL индексирует каталог один раз; перечисление микрофонов в <code>spawn_blocking</code>; окно Local ASR откладывает mic list до первой отрисовки; dialog open/close без re-entrancy spin.</li>
+<li>Local ASR: утечка памяти/CPU WebView2 при открытии модуля — <code>setLocale</code> стал идемпотентным (иначе <code>sst:locale-changed</code> + BroadcastChannel зацикливались); модуль больше не подключается к <code>/ws/events</code> для UI sync (хватит Tauri IPC).</li>
+<li>TTS: то же — отключён <code>/ws/events</code> для UI sync (IPC уже шлёт <code>ui_config_sync</code>); locale sync идёт через <code>applyDashboardLocale</code> / идемпотентный <code>setLocale</code> (утечки как у Local ASR не было за счёт guard, но WS зря принимал overlay/runtime).</li>
+<li>Main dashboard: той же утечки нет (publisher UI sync, без subscribe/<code>sst:locale-changed</code> loop; <code>ui_config_sync</code> в store игнорируется); <code>applyUiFromConfig</code> пропускает повторное применение theme/locale/sync, если presentation signature не менялась.</li>
+<li>Старт/выход: <code>env_check</code> больше не блокирует создание Local ASR service (CUDA Toolkit bin scan); DLL lookup снова сначала проверяет прямой путь; dashboard применяет settings/theme до ожидания runtime status; last-known theme из localStorage до HTTP.</li>
+<li>Инструменты и данные: корректный сброс success/error; подтверждение load/overwrite профилей; запрет удаления <code>default</code>; валидация имён; предупреждение при импорте redacted config; disable import при busy; статус Local ASR; убран дубль stale-dropped; полное логирование применяется live после Save (без ложного «нужен перезапуск»); save/delete не показывают success, если не удалось обновить список профилей; <code>diagnostics_update</code> сохраняет <code>local_module</code> / <code>active_mode</code>; модальное окно success/error объясняет, куда сохранился файл (Downloads / <code>user-data/exports</code> / <code>user-data/profiles</code>).</li>
+<li>Профили: seed/upgrade sparse <code>default.json</code> из полных factory defaults; отклонение зарезервированных имён Windows.</li>
+<li>Экспорт diagnostics: уникальные имена <code>diagnostics-{secs}_{ms}.zip</code>; хранение последних 12 ZIP (prune best-effort, экспорт не падает из‑за очистки); понятные HTTP-ошибки delete/export.</li>
+<li>Docs: профили — <code>{name}.json</code> (не <code>.toml</code>); retention diagnostics ZIP задокументирован.</li>
+<li>Dashboard: смена чекбоксов/селектов больше не сбрасывает размер и позицию окна (resize+center только при смене <code>ui.layout</code>).</li>
+<li>Смена языка UI сохраняет текущий in-memory конфиг (не затирает импорт/профиль через <code>lastSavedConfig</code>).</li>
+<li>Web Speech advanced settings больше не форсят <code>asr.mode = browser_google</code>.</li>
+<li>OBS overlay: stale-guard активируется после загрузки module-скрипта; таймеры runtime-gone не копятся.</li>
+<li>Browser worker: autostart timer и lifecycle listeners очищаются в <code>destroy()</code>.</li>
+<li>Scroll-spy секций использует scroll-контейнер shell; вкладка Subtitles сразу открывает панель с верхними вкладками Субтитры/Стиль (без промежуточного hub).</li>
+<li>Иконки основных вкладок (nav rail / bottom nav) увеличены ~15%.</li>
+<li>Скролл TTS / Local ASR / Web Speech worker: <code>overflow: hidden</code> только у dashboard standard shell (не глобально на <code>html/body</code>).</li>
+<li>Local ASR: кнопки «Закрыть» (setup) и «Проверить снова» в стиле остального UI.</li>
+<li>Диалоги на тёмной теме: читаемый контраст (runtime «Подробнее», credits, Local ASR status/alert/setup) — <code>color-scheme</code> + явный цвет текста вместо UA <code>CanvasText</code>.</li>
+<li>Тема UI в Local ASR и TTS применяется сразу без «Сохранить» (IPC + WS fallback); i18n для <code>style.ui_theme.font</code> / <code>font.default</code>.</li>
+<li>Browser Google ASR lifecycle:<ul>
+<li>ошибка launch Chrome сбрасывает <code>runtime_running</code> и останавливает browser speech ingest (как у Local ASR);</li>
+<li>PID tracking / <code>browser-worker.pid</code> очищаются только если Chrome реально мёртв; живой процесс после failed <code>taskkill</code> сохраняется для orphan reap;</li>
+<li>IPC <code>launch_browser_worker</code> пишет PID в общий оркестратор и убивает предыдущий worker (без второго orphan Chrome);</li>
+<li>старт Local ASR сначала reap leftover Chrome;</li>
+<li><code>generationId</code> бампается на каждом controlled start; отмена pending restart — через <code>stopEpoch</code> (user/control stop);</li>
+<li>при замене WS-транспорта outbound предыдущего соединения дропается <strong>без</strong> <code>stop</code> (не убивает recognition на reconnect).</li>
+</ul>
+</li>
+<li><strong>Замена слов (до перевода):</strong> кэш Aho-Corasick/regex; CJK при дефолтном whole-words; корни; маска вида <code>fuck</code>→<code>f*ck</code> (не <code>***</code>); <code>f*ck</code> не разворачивается обратно. Субтитры/lifecycle без изменений.</li>
+<li>IPC ACL: <code>get_loopback_api_token</code> снова allowlisted (fallback без HTML injection).</li>
+<li><code>runtime-event</code>: <code>listen</code> → buffer → snapshot → drain (live не затирается stale snapshot); dashboard snapshot предпочитает <code>overlay_update</code>; TTS snapshot только <code>runtime_update</code> + <code>twitch_connection_update</code>.</li>
+<li><code>tts-speech-activity</code> / <code>playback-finished</code> — только <code>emit_to(tts)</code> (не global emit в main/local-asr).</li>
+<li>Twitch chat → <code>RuntimeEventBus</code> only (не флудит OBS <code>/ws/events</code>); connection updates по-прежнему в hub для replay.</li>
+<li>Lag-resync: pending-очередь (последний sync не дропается); coalesced overlay discard на <code>Lagged</code>, чтобы таймер не откатил UI после snapshot.</li>
+<li>Имя <code>Jet Brains Mono</code> выровнено с каталогом шрифтов; алиас <code>JetBrains Mono</code> при нормализации.</li>
+<li>OBS overlay сохраняет <code>style_slot</code> / <code>slot_id</code>; dashboard preview вызывает <code>disposeRenderContainer</code> при <code>render().empty</code>.</li>
+<li>Рендерер: <code>colorToRgba</code> (named/<code>rgb()</code>/<code>#rrggbbaa</code>); emoji по code-point; whitespace-only отфильтрованы; <code>inferStyleSlot</code> + <code>slot_id</code>; fast path не трогает disconnected surface.</li>
+<li>LM Studio / Ollama: JIT-загрузка модели больше не обрывается дефолтными 10s (<code>Engine protocol startup was aborted</code> / <code>Model is unloaded</code>); для local providers floor таймаута <strong>≥120s</strong>, в запрос LM Studio добавлен <code>ttl</code>.</li>
+<li>Кнопки setup-ссылок открывают системный браузер (allowlist <code>open_external_https_url</code> расширен хостами консолей провайдеров).</li>
+<li>Baidu Translate: POST form-urlencoded вместо GET; маппинг <code>sv</code> → <code>swe</code>; Youdao корректно читает числовой <code>errorCode</code>.</li>
+<li>Persistent-кэш перевода больше не затирается при каждом старте runtime; при неизменённых настройках переживает рестарт.</li>
+<li>Диспетчер перевода не утекает по <code>active_jobs</code> при повторном submit того же sequence; overflow очереди не держит dispatcher lock через relevance-проверки.</li>
+<li>Live apply настроек перевода ждёт engine lock (API keys / lines не пропускаются молча) и обновляет лимиты concurrency провайдеров.</li>
+<li>HTTP-таймауты перевода уважают <code>timeout_ms</code> (per-request timeout проведён через все провайдеры).</li>
+<li>Readiness-проба local LLM принимает hostname вроде <code>localhost</code> (DNS), а не только IP.</li>
+<li>Preview supersession устойчив к edge-case со счётчиками generation; short-circuit empty/identical-lang больше не помечается ложным cache hit.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Rust: workspace lints + <code>clippy.toml</code> (MSRV 1.85) — deny <code>unused_async</code> / <code>await_holding_lock</code> / <code>await_holding_refcell_ref</code> / <code>redundant_clone</code> (pedantic-light); CI <code>clippy -D warnings</code> снова зелёный.</li>
+<li>Async hot paths: start/stop runtime — Chrome kill/launch и Local ASR start/stop через <code>spawn_blocking</code>; ошибка save config отпускает write-lock до status/broadcast; translation final отпускает mutex контроллера до enqueue; Local ASR unload/init ORT и zip extract — вне Tokio worker.</li>
+<li>Панель стилей: компактная сетка числовых полей; выравнивание и эффект в одной строке.</li>
+<li>Каталог built-in стилей пересобран (<strong>20</strong> пресетов): тематические dual-script стеки (Film Noir, Retro Terminal, Fallout, Anime Stream и др.); однотипные тёмные плашки сведены к <strong>4 материалам</strong> — Max Contrast, Podcast Subtle (пергамент), Glass Frost (молочный лёд ~44%), Twitch Lower-Third (<code>#9146FF</code> + Oswald). Удалены <code>sakura_soft</code>, <code>minimal_mono</code>, <code>editorial_news</code> (миграция → <code>meeting_soft</code> / <code>glass_frost</code> / <code>dark_cinema</code>).</li>
+<li><strong>Retro Terminal</strong>: кириллица через <strong>IBM Plex Serif Regular</strong>.</li>
+<li>Latin-only лица в <code>/project-fonts.css</code> объявляют <code>unicode-range</code>, чтобы кириллица шла в следующий face стека (Plex / Ubuntu / Noto / Comfortaa…).</li>
+<li>Толщина обводки: шкала <strong>ASS/Aegisub 0–4 px</strong> (шаг 0.1).</li>
+<li>Эффекты: <code>fade</code> только opacity; <code>glow</code> из цвета заливки; на OBS partials тяжёлые <code>blur_in</code>/<code>glow</code> упрощаются до <code>fade</code>; учёт <code>prefers-reduced-motion</code>.</li>
+<li>Tauri IPC capabilities разделены по окнам: <strong>main</strong> (полный shell), <strong>tts</strong> (playback/Twitch/snapshot), <strong>local-asr</strong> (token + allowlisted URLs).</li>
+<li>TTS: HTTP poll <code>/api/runtime/status</code> только при мёртвом <code>runtime-event</code>; speech-context poll реже при живом IPC (focus по-прежнему обновляет сразу).</li>
+<li>Browser Speech worker — <strong>только Google Chrome</strong> (<code>/google-asr</code>): удалён маршрут <code>/google-asr-edge</code>; import <code>browser_google_edge</code> → <code>browser_google</code>; orphan reap только для <code>chrome.exe</code>.</li>
+<li>CPU affinity browser worker — <strong>opt-in</strong> (<code>VOICESUB_BROWSER_AFFINITY</code> / <code>VOICESUB_BROWSER_AFFINITY_MASK</code>), по умолчанию выкл.</li>
+<li><code>runtime-event</code> routing: окно <strong>local-asr</strong> получает <code>ui_config_sync</code> (живая тема/локаль/шрифт); <code>/ws/events</code> реплеит последний <code>ui_config_sync</code> при подключении.</li>
+<li>Тексты Помощи обновлены под Local ASR / Modules / замену слов; i18n HelpPanel реактивен к смене локали.</li>
+<li>Документация и wiki: Local ASR отмечен как shipped; Technical Architecture §18 описывает модуль.</li>
+<li>Импорт SST JSON сохраняет <code>local_parakeet</code>; legacy <code>local</code> / experimental по-прежнему → <code>browser_google</code>.</li>
+<li>Потолок <code>timeout_ms</code> / HTTP client для перевода: <strong>300s</strong> (было 60s); UI Settings и config normalize синхронизированы.</li>
+<li>Путь persistent-кэша перевода — <code>user-data/translation-cache/</code> (legacy <code>user-data/cache/translation_cache.json</code> копируется один раз при апгрейде).</li>
+<li>Ключи кэша хешируют исходный текст; flush кэша при drop engine; <code>used_default_prompt</code> / <code>override_prompt</code> для LLM-провайдеров.</li>
+<li>DeepL мапит UI-коды языков (<code>en</code>/<code>zh-cn</code>/<code>pt</code>, …) в API targets и выбирает Free vs Pro URL по ключу (<code>:fx</code> → free).</li>
+<li>Google Cloud Translation v3 раскрывает короткие model id в full resource names; добавлены i18n-лейблы настроек Google v3.</li>
+<li>Azure / LibreTranslate мапят китайские UI-коды (<code>zh-Hans</code>/<code>zh-Hant</code>, <code>zh</code>/<code>zt</code>); readiness показывает soft-warnings для пустого Azure region и публичного LibreTranslate.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Tauri IPC ACL least-privilege: <code>main</code> — только shell (token, snapshot, layout, open module windows, URL openers); TTS-команды только у окна <code>tts</code>; убраны мёртвые <code>launch_browser_worker</code> / <code>voicesub_version</code> / <code>tts_play_audio</code> / <code>tts_stop_channel</code>; deny frontend <code>emit</code>/<code>emit-to</code>; без <code>create-webview-window</code> на dashboard.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.4...v0.5.5">0.5.5</a> - 2026-06-26</h2>
+<h3>Added</h3>
+<ul>
+<li>Отдельный Tauri IPC pump с trailing-edge коалесингом dashboard <code>overlay_update</code> (по умолчанию 90 ms; <code>VOICESUB_OVERLAY_IPC_MIN_INTERVAL_MS</code>; <code>0</code> — выкл.). OBS <code>/ws/events</code> по-прежнему получает каждый кадр.</li>
+<li>Метрики bus lag и overlay IPC coalescing в <code>/api/runtime/status</code>.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Lifecycle субтитров выполняется до WS/IPC fanout; broadcast partial <code>transcript_update</code> — async, ingest не блокируется.</li>
+<li>Lock-free WS <code>global_sequence</code>; более безопасный debounced snapshot resync после bus lag.</li>
+<li>Dashboard пропускает частый HTTP poll runtime при активном Tauri IPC (остаётся safety-net 30 s).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Ошибки Web Speech <code>audio-capture</code> — автоповтор с экспоненциальным backoff вместо полной остановки распознавания.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.3...v0.5.4">0.5.4</a> - 2026-06-21</h2>
+<h3>Added</h3>
+<ul>
+<li>Per-window маршрутизация Tauri <code>runtime-event</code> (dashboard vs окно TTS).</li>
+<li>Leading-edge коалесинг partial <code>transcript_update</code> (по умолчанию 90 ms; <code>VOICESUB_TRANSCRIPT_PARTIAL_MIN_INTERVAL_MS</code>).</li>
+<li>Browser worker: reap осиротевшего PID при старте; flush длинных сегментов после монологов; hardening overlap ASR handoff.</li>
+<li>Расширенные настройки Web Speech в dashboard; диагностика ingest latency при полном логировании.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Live subtitle WebSocket fanout — только <code>overlay_update</code>; ASR — только <code>transcript_update</code>.</li>
+<li><code>subtitle_payload_update</code> — только Tauri IPC snapshot/replay (не публикуется на <code>/ws/events</code>).</li>
+<li>Приоритет процесса browser worker — <code>ABOVE_NORMAL_PRIORITY_CLASS</code>.</li>
+<li>Диагностические timestamps — строки RFC 3339 вместо epoch seconds.</li>
+<li>Громкость TTS до 150%; фильтры Twitch-чата (mentions, digits, links) и hardening IRC reconnect.</li>
+<li>Очистка deprecated ключей timing lifecycle субтитров в config.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Дублирующие live broadcast: <code>transcript_segment_event</code> и <code>subtitle_payload_update</code> на <code>/ws/events</code>.</li>
+<li>JS queue pump TTS-модуля и deprecated TTS IPC.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Корректность HTTP/WS fanout; лог Twitch-чата в модуле TTS.</li>
+<li>Надёжность TTS pipeline (prefetch, config I/O, порядок audio-chunks).</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.2...v0.5.3">0.5.3</a> - 2026-06-17</h2>
+<h3>Added</h3>
+<ul>
+<li>Завершение loopback API auth для protected <code>/api/*</code> (<code>x-voicesub-token</code>).</li>
+<li>Проверка обновлений через GitHub Releases (<code>POST /api/updates/check</code>) и баннер в dashboard.</li>
+<li>Навигация Material 3 на dashboard.</li>
+<li>Диагностика background-tasks на HTTP status.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>UI Browser Speech worker; loopback/стили TTS-модуля; автопереподключение Twitch IRC.</li>
+<li>Toolchain edition <strong>Rust 2024</strong>; CI и commit-convention docs.</li>
+<li>Миграция: для protected HTTP helpers dashboard нужен loopback token (trusted pages инжектят <code>window.__VOICESUB_API_TOKEN__</code>).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Hardening логирования OBS overlay (follow-up).</li>
+<li>Чистка мёртвого кода и неиспользуемых i18n-ключей.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.1...v0.5.2">0.5.2</a> - 2026-06-14</h2>
+<h3>Added</h3>
+<ul>
+<li>Loopback API auth + проверки overlay liveness.</li>
+<li>Rust TTS speech pipeline на hot path; улучшения RuntimeEventBus snapshot.</li>
+<li>Стабильность запуска browser worker и telemetry overlap / browser-trace.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Алгоритм отправки OBS Closed Captions.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>TTS / Twitch поверх 0.5.1; polish UI dashboard.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.5.0...v0.5.1">0.5.1</a> - 2026-06-13</h2>
+<h3>Added</h3>
+<ul>
+<li>Native dual-sink TTS (speech + Twitch) через Rust/cpal; режим <strong>Sonic</strong> (tempo без смены pitch).</li>
+<li>Twitch multi-channel (до 5 IRC JOIN на одно OAuth) с hot-apply фильтрами чата.</li>
+<li>Resource telemetry bar; политика power/memory WebView2; ротация логов по размеру.</li>
+<li>Списки top-20 языков для перевода / Web Speech; стабильные error codes OBS CC с i18n в UI.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>TTS <code>playback_mode: &quot;browser&quot;</code> мигрирует в <code>sonic</code> при загрузке; путь HTMLAudio удалён.</li>
+<li>Twitch legacy <code>channel</code> → <code>channels[0]</code>; сохранение цифр в chat TTS.</li>
+<li>По умолчанию compact client logging (TTS UI traces — только при full logging).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>TTS enqueue IPC при пустом <code>dropped_ids</code>; детект языка Twitch на link-only строках.</li>
+<li>Утечки mic monitor и более чистый abort Web Speech при stop worker.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Путь TTS через browser <code>HTMLAudio</code> / <code>setSinkId</code>.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/releases/tag/v0.5.0">0.5.0</a> - 2026-06-10</h2>
+<p>Первый релиз VoiceSub (преемник SST Desktop <code>0.4.4</code>). Стек и поставка новые; смысл subtitle/translation сохранён.</p>
+<h3>Added</h3>
+<ul>
+<li>Desktop-приложение Rust + Tauri 2 (<code>VoiceSub.exe</code>, NSIS <code>VoiceSub_{version}_x64-setup.exe</code>).</li>
+<li>Svelte 5 dashboard, vanilla OBS overlay, Svelte Web Speech worker (<code>/google-asr</code>).</li>
+<li>TTS-модуль (<code>/tts</code>) с Twitch chat TTS; OBS Closed Captions (<code>voicesub-obs</code>).</li>
+<li>TOML config (<code>config_version</code> 8), импорт SST <code>config.json</code>, профили, diagnostics ZIP.</li>
+<li>Локали UI: en, ru, ja, ko, zh; проверка обновлений через GitHub Releases.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Продукт переименован в <strong>VoiceSub</strong>; bind по умолчанию <code>127.0.0.1:8765</code>.</li>
+<li>Production ASR в core: <code>browser_google</code> (Chrome/Edge worker).</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>FastAPI / pywebview / PyInstaller SST desktop stack из активного core.</li>
+<li>Legacy local ASR, remote controller/worker, experimental browser routes (архив в <code>legacy/</code>).</li>
+<li>Splash-профили запуска.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.3...v0.4.4">0.4.4</a> - 2026-05-31</h2>
+<blockquote>
+<p>Замороженная линия SST Desktop. Активная разработка продолжается как VoiceSub.</p>
+</blockquote>
+<h3>Security</h3>
+<ul>
+<li>SSRF-политика для OpenAI helper model routes при LAN bind.</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>Общий stale-guard overlay WebSocket; bridge desktop context в store.</li>
+<li>Локали ja / ko / zh для dashboard, worker и overlay.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Launcher desktop разделён на модули; reconnect overlay сохраняет последний кадр.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Баннер ошибок bootstrap в dashboard; тесты безопасности bind/profile paths.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.2...v0.4.3">0.4.3</a> - 2026-05-27</h2>
+<h3>Added</h3>
+<ul>
+<li>Desktop profile lock и hardening launcher (SST).</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Follow-up стабильности overlay и runtime на линии 0.4.2.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.1...v0.4.2">0.4.2</a> - 2026-05-25</h2>
+<h3>Added</h3>
+<ul>
+<li>Дальнейший polish SST desktop к замороженной линии 0.4.x.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Крайние случаи reconnect browser worker и overlay.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.4.0...v0.4.1">0.4.1</a> - 2026-05-20</h2>
+<h3>Added</h3>
+<ul>
+<li>Инкрементальные возможности SST Desktop и миграции config поверх 0.4.0.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Патчи надёжности dashboard и worker.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.3.2...v0.4.0">0.4.0</a> - 2026-05-16</h2>
+<h3>Added</h3>
+<ul>
+<li>Feature set SST Desktop 0.4.0 (линия config_version к 7).</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Шаги архитектуры и упаковки к baseline 0.4.4.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.3.1...v0.3.2">0.3.2</a> - 2026-05-14</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Патчи стабильности SST Desktop после 0.3.1.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.3.0...v0.3.1">0.3.1</a> - 2026-05-12</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Follow-up фиксы SST Desktop после модульного релиза 0.3.0.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/compare/v0.2.9.2...v0.3.0">0.3.0</a> - 2026-05-08</h2>
+<h3>Added</h3>
+<ul>
+<li>Модульные FastAPI backend services и frontend module stack (SST).</li>
+<li>Supervisor FSM сессии Browser Speech; миграции config / export schema.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Более тонкие API routes; общие utilities paths, logging, redaction.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Cleanup disconnect WebSocket; coalescing runtime events; best-effort client log.</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Неподдерживаемые backend ASR experiments с активной поверхности продукта.</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/stream_sub_translator/releases/tag/v0.2.9.2">0.2.9.2</a> - 2026-04-30</h2>
+<p>Более ранняя история <code>0.2.9.*</code> SST Desktop остаётся в архивных GitHub release notes и здесь не развёрнута.</p>
+
+
+          </article>
+        </div>
+      </main>
+    </div>
+
+    <footer class="footer doc-footer">
+      <div class="footer__brand">
+        <img src="assets/kagevi-icon.png" alt="" width="36" height="36" />
+        <div>
+          <strong>Kagevi Subtitles</strong>
+          <p data-i18n="footerTag">Local-first live subtitles for streamers.</p>
+        </div>
+      </div>
+      <div class="footer__links">
+        <a href="index.html" data-i18n="navHome">Home</a>
+        <a href="wiki.html" data-i18n="navWiki">Wiki</a>
+        <a href="changelog.html" data-i18n="navChangelog">Changelog</a>
+        <a
+          href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/THIRD_PARTY_NOTICES.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-i18n="navLicenses"
+          >Licenses</a
+        >
+      </div>
+      <p class="footer__copy">© 2026 Kiriuru</p>
+    </footer>
+
+    <script src="doc.js" defer></script>
+  </body>
+</html>
