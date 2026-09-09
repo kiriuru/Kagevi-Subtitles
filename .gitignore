@@ -1,0 +1,8 @@
+# Public branch — ignore only local/editor noise.
+# site/images and site/assets are committed on this branch (prebuilt Pages export).
+
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.public-branch-staging/

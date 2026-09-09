@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: User guide (Wiki)
+    url: https://kiriuru.github.io/Kagevi-Subtitles/wiki.html
+    about: Setup, OBS overlay, troubleshooting — check here before filing a bug.
+  - name: Security vulnerability
+    url: https://github.com/kiriuru/Kagevi-Subtitles/security/advisories/new
+    about: Privately report a security issue (do not open a public issue).
+  - name: Support / donations
+    url: https://www.donationalerts.com/r/kiriuru
+    about: Optional support for the project maintainer.

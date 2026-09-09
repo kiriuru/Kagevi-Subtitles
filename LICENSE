@@ -1,0 +1,163 @@
+Kagevi Subtitles Proprietary License
+Version 1.0 — 1 September 2026
+
+Copyright © 2026 Kiriuru. All rights reserved.
+
+SPDX-License-Identifier: LicenseRef-Proprietary
+
+This is a proprietary end-user license. Source code is not published and is
+not licensed. This is NOT an OSI-approved Open Source license.
+
+
+Plain-language summary (NOT a substitute for the License):
+
+  FREE TO USE the Kagevi Subtitles application as an end-user tool,
+  including while you stream or create content that is monetized
+  (ads, subscriptions, donations, sponsorships of YOUR content).
+
+  You may not copy, redistribute, sell, or commercialize the Software,
+  publish its source, or claim official status.
+
+  Prior product releases that shipped under the MIT License remain
+  under MIT for those releases.
+
+
+1. Definitions
+
+  "License" means this Kagevi Subtitles Proprietary License version 1.0.
+
+  "Licensor" means Kiriuru.
+
+  "Software" means the Kagevi Subtitles application as Licensor distributes
+  it (including installers, binaries, and accompanying materials), excluding
+  Third-Party Components.
+
+  "You" means the individual or legal entity exercising rights under this
+  License.
+
+  "Third-Party Components" means software, model weights, fonts, or other
+  materials included with or downloaded by the Software that are licensed by
+  parties other than Licensor. Those materials remain under their own licenses.
+
+
+2. License grant
+
+Subject to this License, Licensor grants You a personal, non-exclusive,
+non-transferable, revocable license to install and run the Software on
+devices you control, solely as an end-user tool, free of charge.
+
+No other rights are granted. In particular, this License does not grant
+rights to source code, to create derivative works for distribution, or to
+sublicense the Software.
+
+
+3. Permitted end-user use
+
+The following are permitted:
+
+  (a) Personal use of the Software.
+
+  (b) Use of the Software as an end-user tool during livestreaming,
+      recording, translation, accessibility captioning, or other content
+      creation, including where YOUR stream, channel, VOD, or content is
+      monetized through advertising, channel subscriptions, bits, donations,
+      sponsorships of Your content, or similar platform monetization.
+
+  (c) Use of the Software as an unpaid tool by an individual, organization,
+      or business in the course of their own activities, so long as they are
+      end users and are not distributing or commercializing the Software
+      itself.
+
+Voluntary donations to Licensor are permitted if they are not required in
+exchange for the Software, copies, access, features, updates, or support.
+
+
+4. Restrictions
+
+You may not:
+
+  (a) copy, publish, redistribute, sublicense, rent, lease, or otherwise
+      provide the Software to a third party, except for a reasonable number
+      of backup copies for Your own use;
+  (b) sell the Software, charge for copies or access, offer it as SaaS,
+      bundle it in a paid product, or otherwise commercialize the Software;
+  (c) reverse engineer, decompile, or attempt to extract source from the
+      Software, except to the extent that applicable law prohibits this
+      restriction;
+  (d) remove or alter copyright, trademark, or proprietary notices;
+  (e) represent the Software, or a modified copy, as official, endorsed, or
+      affiliated with Licensor, except with Licensor's prior written
+      permission.
+
+All rights not expressly granted are reserved by Licensor.
+
+
+5. Trademarks and brand
+
+This License grants copyright permissions in the Software only. It does not
+grant permission to use the trade names, trademarks, product names, logos,
+icons, or trade dress of Licensor.
+
+"Kagevi", "Kagevi Subtitles", and the Kagevi Subtitles logos and icons are
+marks of Kiriuru (whether registered or unregistered). This notice states
+branding intent and does not itself create a registered trademark.
+
+
+6. Third-Party Components
+
+Third-Party Components (including NVIDIA Parakeet ASR models under CC-BY-4.0,
+Microsoft ONNX Runtime, Silero VAD, Sonic/libsonic, and other items listed in
+THIRD_PARTY_NOTICES.md) remain under their own licenses. This License does
+not modify those terms. If a Third-Party Component prohibits a use that this
+License would otherwise allow, that component's license controls for that
+component.
+
+
+7. Termination
+
+If You violate this License, Your rights under this License terminate
+automatically. Upon termination You must cease use of the Software and
+destroy copies in Your possession, except that copies already lawfully
+obtained by third parties under a prior MIT release of the Software remain
+licensed to those third parties under MIT.
+
+Sections 1, 5, 6, 8, 9, 10, and 11 survive termination.
+
+
+8. Disclaimer of warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. YOU BEAR THE ENTIRE
+RISK OF USING THE SOFTWARE.
+
+
+9. Limitation of liability
+
+IN NO EVENT SHALL LICENSOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE, INCLUDING WITHOUT LIMITATION ANY
+INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, TO THE
+MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW.
+
+
+10. Interpretation
+
+If a provision of this License is held unenforceable, the remaining
+provisions remain in effect. Failure by Licensor to enforce a provision is
+not a waiver. Headings are for convenience only. The English text of this
+License is the authoritative text. The plain-language summary is not a
+substitute for the operative terms.
+
+
+11. Prior MIT releases
+
+Releases of Kagevi Subtitles that Licensor previously distributed under the
+MIT License remain available under MIT for those releases. This License
+applies to the Software as distributed by Licensor from version 0.7.0
+onward, and to subsequent distributions by Licensor that include this
+License.
+
+This License does not revoke rights already granted under MIT in those prior
+releases.
