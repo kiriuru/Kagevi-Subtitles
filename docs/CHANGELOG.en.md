@@ -20,7 +20,7 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 - **Twitch** module (`/twitch`): window **960×675** (main window −25%), horizontal layout. Module enable/disable via button like VR modules; **Speak chat** and **SteamVR HUD** stay checkboxes. Removed the long header blurb and OAuth/channel hint paragraphs. Audio output sits above the TTS engine; fallback language and min length stay in the speech column. Filters + Advanced sit in a full-width spoiler with two columns.
 - Twitch TTS: chat speak filter — **all messages** or **highlighted only** (Channel Points «Highlight My Message», IRC `msg-id=highlighted-message`; `chat:read` on the IRC token is enough).
 - TTS / Twitch: engines **gTTS (browser)**, **gTTS (Python)**, and **WinRT** with voice pickers; per-language remaps (`lang_voices`) as a full-width spoiler (language | engine | voice | ×), not inside Filters.
-  
+
 ### Added
 
 - UI locale **German (de)** for dashboard, worker, overlay, TTS, Twitch, Local ASR / VR modules, and NSIS installer (Windows de-DE auto-select).
