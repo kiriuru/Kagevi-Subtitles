@@ -1,10 +1,10 @@
 {
   "version": "0.7.2",
   "notes": "Kagevi Subtitles 0.7.2. See the GitHub release notes for details.",
-  "pub_date": "2026-10-07T12:49:54.572Z",
+  "pub_date": "2026-10-07T14:24:53.180Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUWU2bVUxQ3IvZ2lBY1pHN2pOVzlWSEpuQ01Wd2RwNzJuVGhVZ1ZUc0hTV2c0OG1MZkRrK0tXaC9tOHp1Nms1Y3RWSElmTFBRQ2E0RjdXU2VDbmtoYjJqZWh4Z2UxZ3dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMzc3MzkzCWZpbGU6S2FnZXZpIFN1YnRpdGxlc18wLjcuMl94NjQtc2V0dXAuZXhlCklsM2YyR0cxMG16VVdsTGdmMmVqSTBEcW5Sb1o5dnlwMlZpMWlYMDJRVEM0MDk4cHowQW12SEhuK1o4TWgzWE93bkpXQklEWG9aanhWNlNOTlNiZUJBPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSUWU2bVUxQ3IvZ3BwVXdVU21ub2dob2FXL1hiOWxNMC81Z2RPaE5IK3BlUmZVL0gvY1VWaUdzMC8vcGpTMFhBYmtqWXByRVlvWmNCOGVzK3k3Z21OTWNaVUFOdnNFcGdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkxMzgzMDkyCWZpbGU6S2FnZXZpIFN1YnRpdGxlc18wLjcuMl94NjQtc2V0dXAuZXhlClUvWFRXZ2x4aW02NE1ZZTR5S1I4UDEzWkp6cXJWMWtEY205UldGaG44bVA0WlFqL3p4Lzdvck5IV1Z0ZEZGS2hJRUdhcEtQeEFjVGRZajRDdHVhdUNBPT0K",
       "url": "https://github.com/kiriuru/Kagevi-Subtitles/releases/download/v0.7.2/Kagevi.Subtitles_0.7.2_x64-setup.exe"
     }
   }
