@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.7.1 — Technical Architecture Document
+# Kagevi Subtitles 0.7.2 — Technical Architecture Document
 
-Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.7.1"`.
+Valid for the codebase where `voicesub-types::PROJECT_VERSION = "0.7.2"`.
 
 This document describes the Kagevi Subtitles project layout, HTTP/WebSocket/Tauri IPC contracts, configuration schema, data flow through the Rust runtime, and frontend surfaces. It is the **canonical technical reference** for active development. README is a short product overview; CHANGELOG is release history; agent policy is `AGENTS.md`.
 
@@ -383,7 +383,7 @@ Embedded HTTP server: dedicated Tokio runtime in Tauri process; bind from `AppCo
 | `translation` | Provider, lines (up to 4), cache, limits, `live_partial`, `provider_settings` |
 | `subtitle_output` | Source/translation display order |
 | `subtitle_lifecycle` | TTL, sync flags; deprecated timing keys normalized only |
-| `source_text_replacement` | Find/replace for ASR text (custom pairs + builtin stems/obfuscation normalize; applied in `TranscriptController` before subtitle/translation). Builtin Latin/Cyrillic always token-bounded (custom pairs honour `whole_words`); Hangul space-bounded; short katakana / single-char Han isolated; multi-char Han/hiragana substring. Builtin / empty target mask keeps first and last letter (`fuck`→`f**k`, `whore`→`w***e`); spans that already contain `*` are left alone |
+| `source_text_replacement` | Find/replace for ASR text (custom pairs + builtin bad-word dictionary / obfuscation normalize; applied in `TranscriptController` before subtitle/translation). Builtin = whole-entry dictionary only for all languages (`data/source_text_builtin_pairs.json`; no infix letter stems). Latin/Cyrillic/Hangul = Unicode word edges; Han/kana = CJK-isolated full entries (add full phrases to the dictionary — never match inside compounds). Custom pairs honour `whole_words`. Mask by length: 4+ → first+last; under 4 → first only; spans with `*` left alone |
 | `transcript_format` | Post-ASR phrase format pipeline (currently **forced off / UI hidden**) |
 | `logging` | `full_enabled` — master switch for deep diagnostics; `runtime_metrics_enabled` — detailed Tools runtime metrics / Local ASR decode counters (default off; avoids high-churn `diagnostics_update` while recognition is active) |
 | `updates` | GitHub Releases check (`enabled`, `github_repo`, `check_interval_hours`, `latest_known_version`, …) |
@@ -484,6 +484,7 @@ Global middleware: CSP header, `Cache-Control: no-store`.
 | GET | `/api/tts/google` | Google Translate TTS proxy |
 | GET | `/api/tts/python` | TTS via embedded Python module |
 | GET | `/api/tts/python/status` | Python runtime probe |
+| GET | `/api/tts/voices?provider=` | Voice catalog for engine (`browser_google` / `python_stdlib` → gTTS language codes; `winrt` → installed system voices) |
 | GET | `/api/twitch/status` | Twitch module connection + `speakChat` |
 | GET | `/api/twitch/config` | Load Twitch config |
 | POST | `/api/twitch/config/save` | Save Twitch config (hot-applies filters/TTS; does not reconnect IRC/EventSub) |
@@ -550,6 +551,16 @@ Protected like other `/api/*`. Full table in [§18 Local ASR Module](#18-local-a
 - On connect: `hello` (`type: "hello"`, `message: "connected"`)
 - Replay last: `runtime_update`, `overlay_update`, `ui_config_sync`
 - Bounded per-socket queue (default 128), dedupe by `type`
+- **Idle seed on listen:** `RuntimeService::start` calls `subtitle.reset()` after bind so the hub always has an idle `overlay_update` for OBS reconnect after an app restart (clears a previous session’s last caption without refreshing the Browser Source)
+
+**OBS overlay client (`bin/overlay/overlay.js`) — no manual refresh for live use:**
+
+| Event | Behavior |
+| --- | --- |
+| WS disconnect | Probe `GET /live`; if runtime is gone → clear captions immediately; keep last frame only for brief blips while `/live` is still ok |
+| While disconnected | Poll `/live` (~1 s); clear when dead; reconnect ASAP when the app returns (bypass long backoff) |
+| WS reconnect with no replay | If no `overlay_update` arrives within ~400 ms → clear stuck DOM (fresh hub / race before idle seed) |
+| Graceful Stop / app close | Server already flushes idle overlay via `subtitle.reset` + `flush_overlay_presentations_to_clients` before HTTP teardown |
 
 **Envelope:** `{ "type": "<channel>", "payload": {…} }`  
 Payload enrichment: `event_sequence`, `created_at_ms`, `event_type` (`WsEventPublisher`).
@@ -562,7 +573,7 @@ Payload enrichment: `event_sequence`, `created_at_ms`, `event_type` (`WsEventPub
 | `diagnostics_update` | WS + EventBus | ASR diagnostics snapshot |
 | `model_status_update` | WS + EventBus | Model/ASR readiness |
 | `transcript_update` | WS + EventBus | ASR partial/final events (sole live ASR text channel since 0.5.4; partials coalesced) |
-| `overlay_update` | WS + EventBus | Overlay render body (live + **replay on connect**) |
+| `overlay_update` | WS + EventBus | Overlay render body (live + **replay on connect**; idle seeded at listen) |
 | `translation_update` | WS + EventBus | Per-sequence translation results |
 | `twitch_connection_update` | WS + EventBus | Twitch connection state (also snapshot replay) |
 | `ui_config_sync` | WS + EventBus | `{ ui: … }` theme/locale/`font_family` (via `/api/ui/sync`; **replay on connect**) |
@@ -570,7 +581,7 @@ Payload enrichment: `event_sequence`, `created_at_ms`, `event_type` (`WsEventPub
 | `twitch_chat_message` | **EventBus only** | Twitch chat log + chat TTS pipeline — `publish_event_bus_only` (no `/ws/events` fanout) |
 | `twitch_channel_event` | **EventBus only** | Twitch channel alerts (follow / sub / resub / gift / raid / cheer) + event TTS — `publish_event_bus_only` |
 
-**Stale guard:** overlay (`overlay.js` + `ws-stale-guard-logic.js`) drops stale events after stop/start (timestamp-first on sequence reset).
+**Stale guard:** overlay (`overlay.js` + `ws-stale-guard-logic.js`) drops stale events after stop/start (timestamp-first on sequence reset). Guard is reset when the overlay detects runtime gone so a new process’s sequences are not blocked.
 
 ### In-process runtime events — Tauri dashboard + TTS (0.5.2+)
 
@@ -662,7 +673,7 @@ Webview ACL: `get_loopback_api_token` only. Open/focus are **main**-shell comman
 
 **Transcript text formatting (`transcript_format`):** rule-based layer in `voicesub-transcript-text` is **disabled and hidden** in the dashboard (More hub / command palette). Config normalize and runtime settings force `enabled = false` so legacy configs cannot activate it. Pipeline code remains for a future re-enable.
 
-**Word replacement (`source_text_replacement`):** custom pairs plus optional builtin profanity/stems (`voicesub-twitch::source_text_replacement`, applied in `TranscriptController`). Builtin Latin/Cyrillic literals always require Unicode word boundaries even when `whole_words` is false (that flag only gates custom pairs and still allows CJK substring policies). Stem matching uses overlapping AC + leftmost-longest among *accepted* hits, with context guards for ambiguous RU roots (`ебл` in `потреблять`, `блят` in `оскорблять`). Empty / `***` target and builtin hits use first+last-letter mask (`fuck`→`f**k`, `whore`→`w***e`); matched spans that already contain `*` are left alone. Twitch chat TTS uses the same mask via `include_builtin_profanity` (pairs are not shared with the dashboard list).
+**Word replacement (`source_text_replacement`):** custom pairs plus optional builtin bad-word dictionary with variants (`data/source_text_builtin_pairs.json`: en/de/ru/ja/ko/zh full-word forms, applied in `TranscriptController` via `voicesub-twitch::source_text_replacement`). Matching is dictionary-only for every language — no letter-stem / infix search. Latin/Cyrillic/Hangul: Unicode word edges after light obfuscation normalize (`sh1t`, `х у й`, elongated letters). Han/kana: the whole dictionary entry must be CJK-isolated (put full phrases in the list; do not match inside compounds like `ゴミ収集`). `whole_words` only gates custom pairs. Mask by length: 4+ → first+last; under 4 → first only; spans with `*` left alone. Twitch chat TTS uses the same mask via `include_builtin_profanity` (pairs are not shared with the dashboard list).
 
 **Lifecycle:** main webview is created hidden, then `navigate()` to `http://{bind_addr}/?bootstrap=…` (Tauri `devUrl` is public `/live` so CLI/webview probes do not 401 on gated `/`); on close → TTS shutdown → runtime stop. `RunEvent::Exit` also marks `session-lifecycle.json` graceful so Ctrl+C / process exit do not leave a stale `running` marker.
 
@@ -795,7 +806,7 @@ After a **committed** segment (natural or forced final) whose peak partial or fi
 
 ### Advanced Web Speech settings (dashboard)
 
-**UI:** Settings → More → Recognition → «Advanced Web Speech settings» (`WebSpeechAdvancedSettings.svelte`). Each numeric field has an **`!` help button** (`FieldHelpButton.svelte`) with a localized description (en, ru, ja, ko, zh); click opens a popover, hover shows `title`.
+**UI:** Settings → More → Recognition → «Advanced Web Speech settings» (`WebSpeechAdvancedSettings.svelte`). Each numeric field has an **`!` help button** (`FieldHelpButton.svelte`) with a localized description (en, de, ru, ja, ko, zh); click opens a popover, hover shows `title`.
 
 **Config mapping:**
 
@@ -1020,7 +1031,17 @@ One process-wide `PlaybackHub` with two named workers. Subtitle TTS and Twitch c
 | `speech` | `subtitle_payload` → `TtsSpeechPipeline` | TTS module | `user-data/modules/tts/config.toml` root `audio_output_device_*` |
 | `twitch` | IRC → `TwitchModuleService` | Twitch module | `user-data/modules/twitch/config.toml` `chat.audio_output_device_*` |
 
-Live path: plan → **`google_fetch.rs`** (HTTP + **`upstream_retry.rs`** 3× retry on transport/5xx/429/408) → enqueue → prefetch → in-process `PlaybackHub` (no webview IPC for audio bytes). Long text: `assemble_ordered_chunks` preserves chunk order after parallel fetch. TTS WebView — settings UI + manual sample test via `POST /api/tts/speak-sample` (Rust orchestrator; no JS queue pump).
+Live path: plan → resolve voice (`voice_resolve.rs`: `lang_voices` remap + default `voice_id`) → **`google_fetch.rs`** (gTTS HTTP/Python + **`upstream_retry.rs`**) **or** **`winrt_synth.rs`** (WinRT → WAV) → enqueue → prefetch → in-process `PlaybackHub` (MP3 or WAV → PCM). Long gTTS lines: `assemble_ordered_chunks` preserves chunk order after parallel fetch. TTS WebView — settings UI + manual sample test via `POST /api/tts/speak-sample` (Rust orchestrator; no JS queue pump).
+
+**Engines (`tts_provider`):**
+
+| Id | UI label | Audio | Voice selection |
+| --- | --- | --- | --- |
+| `browser_google` | gTTS (browser) | MP3 via Google Translate TTS HTTP proxy | `tl` = message language; `lang_voices` remaps to another `tl` |
+| `python_stdlib` | gTTS (Python) | MP3 via embedded `google_tts_fetch` | same as browser gTTS |
+| `winrt` | WinRT | WAV via `SpeechSynthesizer` (`AllVoices`) | `voice_id` default + per-lang overrides (voice ids) |
+
+Config fields (TTS + Twitch roots): `voice_id` (WinRT), `lang_voices` map (`message_lang` → `{ provider?, voice? }`; legacy string values still load as voice-only). Per-language `provider` can override the module engine (e.g. Russian → gTTS, English → `winrt`). Legacy `windows_natural` normalizes to `winrt`.
 
 **0.5.4 pipeline hardening:**
 
@@ -1056,7 +1077,7 @@ Devices: **label-first** (WASAPI friendly name → `cpal::Device`). List via `GE
 
 Normalization on every config save/load (`normalize_tts_config`). UI: `src-tts/lib/playback-format.ts` — `formatSpeechVolume` (`85%`, `150%`), `formatPlaybackRate` (`1.25×`); live values next to range sliders.
 
-**Playback implementation:** MP3 is decoded to `f32` PCM; `apply_speech_volume_to_pcm` applies linear gain ≤100%. Above 100%: gentle compression + makeup gain + brick-wall limit at 0 dBFS (standard limiter/input-gain pattern — Web Audio / mastering docs). Browser sample path uses the same algorithm on decoded `AudioBuffer` samples.
+**Playback implementation:** MP3 or WAV is decoded to `f32` PCM; `apply_speech_volume_to_pcm` applies linear gain ≤100%. Above 100%: gentle compression + makeup gain + brick-wall limit at 0 dBFS (standard limiter/input-gain pattern — Web Audio / mastering docs). Browser sample path uses the same algorithm on decoded `AudioBuffer` samples.
 
 ### Legacy audio routing
 
@@ -1066,7 +1087,7 @@ Normalization on every config save/load (`normalize_tts_config`). UI: `src-tts/l
 
 Independent module (`id = "twitch"`) under `bin/modules/twitch/` + Svelte UI at `/twitch` (`src-twitch/` → `bin/twitch/`). Enable-without-window: closing the webview does **not** disconnect IRC/EventSub or mute chat/event TTS. Chat TTS (`speak_chat`) and event TTS (`events.speak_events`) do **not** require subtitle TTS `enabled`. On app start, if the module is enabled and bot/broadcaster credentials exist, IRC **and EventSub auto-connect**. Saving filters, alert templates, or other UI settings hot-applies live state and **does not** reconnect. Explicit Connect / module enable / profile apply still establish a session.
 
-Config: `user-data/modules/twitch/config.toml`. First start copies a legacy `[twitch]` section from the TTS config (if present) then strips it. Profiles snapshot `modules.twitch`; old `modules.tts.twitch` is lifted on apply. Chat TTS engine is **independent** of subtitle TTS: `tts_provider` (`browser_google` Google HTTP proxy vs `python_stdlib` embedded `google_tts_fetch` sidecar) and `playback_mode` live on the Twitch config; UI: engine + playback selects, **rate/volume sliders** (module-local, no inherit from subtitle TTS; native playback ignores rate), and `POST /api/twitch/speak-sample`. Optional `forward_to_vr_overlay` (default `false`) fans raw chat + channel events (ignores TTS `speakable` filters) into the SteamVR HUD Twitch panel via a second `TwitchModuleService` listener in `RuntimeService`.
+Config: `user-data/modules/twitch/config.toml`. First start copies a legacy `[twitch]` section from the TTS config (if present) then strips it. Profiles snapshot `modules.twitch`; old `modules.tts.twitch` is lifted on apply. Chat TTS engine is **independent** of subtitle TTS: same `tts_provider` set (`browser_google` / `python_stdlib` gTTS, `winrt`), plus `voice_id` / `lang_voices` and `playback_mode` on the Twitch config; UI: engine + voice pickers + playback selects, **rate/volume sliders** (module-local, no inherit from subtitle TTS; native playback ignores rate), and `POST /api/twitch/speak-sample`. Optional `forward_to_vr_overlay` (default `false`) fans raw chat + channel events (ignores TTS `speakable` filters) into the SteamVR HUD Twitch panel via a second `TwitchModuleService` listener in `RuntimeService`.
 
 OAuth redirect URI remains `http://localhost:{port}/tts` (Twitch Console). Two implicit-grant accounts (Streamer.bot-style): **bot** `chat:read` for extra-channel IRC (optional), **broadcaster** `chat:read moderator:read:followers channel:read:subscriptions bits:read channel:read:redemptions` for the streamer's own chat JOIN + EventSub on **that streamer's channel only**. Connect works with Broadcaster alone (auto-JOIN `#<token owner>`, marked Broadcaster); extra `chat.channels` are optional. Unauthenticated `GET /tts` is the public OAuth shell. Canonical HTTP is `/api/twitch/oauth-*` with aliases `/api/tts/twitch/oauth-*`.
 
@@ -1096,7 +1117,7 @@ Semantic dedupe (15 s) on `kind|channel|user|extra` prevents EventSub + IRC doub
 | Mentions | TTS path: `normalize_twitch_mentions` (`@user` → `user`, message text kept). Clean/detection path: `strip_twitch_mentions` |
 | Symbols | `strip_symbols` — comma-separated tokens (default `@, &, $, _`); `&`/`$` between digits → space only (URL query `&` preserved); digit groups (`500&100`) stay speakable; optional `replace_underscore_with_space` |
 | Lang | Lingua 1.8 subset + Unicode heuristics + whatlang; `strip_leading_speaker_label` (does not treat `https:` as speaker label) |
-| Profanity | Optional builtin list (`include_builtin_profanity`); independent from dashboard word replace. Default mask: first + last letter (`fuck`→`f**k`); forms with `*` left alone |
+| Profanity | Optional builtin list (`include_builtin_profanity`); independent from dashboard word replace. Default mask: 4+ → first+last (`fuck`→`f**k`); under 4 → first only (`бля`→`б**`); forms with `*` left alone |
 | UI | `src-twitch/components/TwitchPanel.svelte`: connection card, EventSub badge, `speak_chat` / `speak_events`, per-event templates, **TTS engine** + playback + rate/volume sliders, sample speak, save queue (`saveNow` / debounce + `pagehide` flush), “Settings applied” badge |
 | Chat log UI | `src-twitch/lib/twitch-chat-log.ts` — dedupe by Twitch `id` / `event_sequence` before prepend |
 
@@ -1371,7 +1392,7 @@ UI texture presets (default / tall / large / compact) are client-side. Wrist pre
 - `identifier`: `com.kagevi.subtitles`
 - `frontendDist`: `../bin/dashboard`
 - `beforeBuildCommand`: `npm run build && npm run scrub:shipped-bin`
-- Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, languages en/ru/ja/ko/zh)
+- Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, languages en/de/ru/ja/ko/zh)
 - `createUpdaterArtifacts: true` + `plugins.updater` (GitHub `latest.json` endpoint, minisign pubkey, Windows `installMode: passive`)
 - NSIS template: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh` (wired via `bundle.windows.nsis.template` / `installerHooks`)
 - **Upgrade wipe:** `NSIS_HOOK_PREINSTALL` removes shipped `$INSTDIR\bin\{dashboard,worker,tts,local-asr,vrchat,vr-overlay,overlay,fonts,modules}` (and the same under `resources\bin`) before copying new resources, so Vite content-hash orphans and Nuitka `*.build` leftovers cannot survive updates. `user-data/` and `logs/` are never deleted.
@@ -1508,7 +1529,7 @@ Autostart: `?autostart=1` query param.
 
 ## 24. UI Localization (i18n)
 
-**Locales:** `en`, `ru`, `ja`, `ko`, `zh`
+**Locales:** `en`, `de`, `ru`, `ja`, `ko`, `zh`
 
 | Surface | Catalog / source of truth |
 | --- | --- |

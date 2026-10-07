@@ -75,7 +75,36 @@
           <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
             
 <p>This file covers the desktop line: <strong>Kagevi Subtitles</strong> (formerly VoiceSub, from <code>0.5.0</code>).</p>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.2...HEAD">Unreleased</a></h2>
+<h3>Changed</h3>
+<ul>
+<li>README localized for all UI languages (<code>en</code> / <code>de</code> / <code>ru</code> / <code>ja</code> / <code>ko</code> / <code>zh</code>); removed the Local URLs table.</li>
+<li>LICENSE: dropped the prior-MIT release carve-out wording (application remains proprietary All rights reserved).</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...v0.7.2">0.7.2</a> - 2026-10-07</h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>TTS</strong> module (<code>/tts</code>): UI aligned with Twitch TTS — status hero + enable/disable button, audio/engine/playback/voice grid, test phrase in the same section, language remaps and activity as separate blocks; window <strong>960×675</strong>.</li>
+<li><strong>Twitch</strong> module (<code>/twitch</code>): window <strong>960×675</strong> (main window −25%), horizontal layout. Module enable/disable via button like VR modules; <strong>Speak chat</strong> and <strong>SteamVR HUD</strong> stay checkboxes. Removed the long header blurb and OAuth/channel hint paragraphs. Audio output sits above the TTS engine; fallback language and min length stay in the speech column. Filters + Advanced sit in a full-width spoiler with two columns.</li>
+<li>Twitch TTS: chat speak filter — <strong>all messages</strong> or <strong>highlighted only</strong> (Channel Points «Highlight My Message», IRC <code>msg-id=highlighted-message</code>; <code>chat:read</code> on the IRC token is enough).</li>
+<li>TTS / Twitch: engines <strong>gTTS (browser)</strong>, <strong>gTTS (Python)</strong>, and <strong>WinRT</strong> with voice pickers; per-language remaps (<code>lang_voices</code>) as a full-width spoiler (language | engine | voice | ×), not inside Filters.</li>
+<li>Removed <strong>Windows 11 Natural</strong> engine (Narrator Natural is not available to apps via WinRT); saved <code>windows_natural</code> configs migrate to <code>winrt</code>.</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>UI locale <strong>German (de)</strong> for dashboard, worker, overlay, TTS, Twitch, Local ASR / VR modules, and NSIS installer (Windows de-DE auto-select).</li>
+<li><code>GET /api/tts/voices?provider=</code> — voice/language catalog for the selected TTS engine.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS overlay: closing/killing the app clears captions without refreshing the Browser Source (<code>/live</code> probe + idle seed on listen); after restart, text appears again over WebSocket without a manual source refresh.</li>
+<li>Profanity filter: shared whole-word dictionary with EN/RU/JA/KO/ZH variants (<code>source_text_builtin_pairs.json</code>) — dictionary lookup only, no letter-stem / infix search (including CJK compounds).</li>
+<li>Profanity mask (all languages) by length: <strong>4+</strong> letters → first and last (<code>fuck</code>→<code>f**k</code>); <strong>under 4</strong> → first only (<code>бля</code>→<code>б**</code>, <code>くそ</code>→<code>く*</code>).</li>
+<li>Twitch: sample speak works with “Speak chat messages” off and no longer queues samples until that toggle is turned on.</li>
+<li>Modules dashboard: TTS / Twitch / VRChat / SteamVR HUD badges update in realtime on enable/disable and connection changes (live <code>runtime_update</code> no longer lost under a stale <code>/status</code> snapshot; module fields added to runtime status coalescing).</li>
+<li>Navigation: long labels (including DE <strong>Übersetzung</strong>) wrap to two lines instead of truncating with “…”.</li>
+<li>TTS: “What to speak” translation rows use localized language and slot labels instead of raw <code>translation_N · tl=xx</code>.</li>
+</ul>
 <h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.0...v0.7.1">0.7.1</a> - 2026-09-09</h2>
 <h3>Fixed</h3>
 <ul>
@@ -98,7 +127,7 @@
 <h3>Changed</h3>
 <ul>
 <li>Word replace: mask <code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code> (first and last letter); forms that already contain <code>*</code> are left alone.</li>
-<li>Application license from <strong>0.7.0</strong>: Copyright © 2026 Kiriuru. All rights reserved. See <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">LICENSE</a>. Releases through <strong>0.6.5</strong> stay under MIT.</li>
+<li>Application license from <strong>0.7.0</strong>: Copyright © 2026 Kiriuru. All rights reserved. See <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">LICENSE</a>.</li>
 <li>Live runtime status bar is pinned on <strong>all</strong> tabs: full KPI on Live, collapsed strip elsewhere.</li>
 <li><strong>Keep captions inside the OBS box</strong> renamed to <strong>Subtitle scrolling</strong>.</li>
 <li>UI Theme: preset gallery (<strong>click only</strong>), <strong>GTA 6</strong> preset. Long hints sit behind a <strong>?</strong> popover.</li>
@@ -565,7 +594,36 @@
 проект следует <a href="https://semver.org/lang/ru/">Semantic Versioning</a>.</p>
 <p><a href="changelog.html">English</a> • <a href="changelog.html">Русский</a></p>
 <p>Файл охватывает desktop-линию: <strong>Kagevi Subtitles</strong> (ранее VoiceSub, с <code>0.5.0</code>).</p>
-<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...HEAD">Unreleased</a></h2>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.2...HEAD">Unreleased</a></h2>
+<h3>Changed</h3>
+<ul>
+<li>README на все UI-локали (<code>en</code> / <code>de</code> / <code>ru</code> / <code>ja</code> / <code>ko</code> / <code>zh</code>); убрана таблица Local URLs.</li>
+<li>LICENSE: убрана оговорка про прежние MIT-релизы (приложение по-прежнему proprietary, All rights reserved).</li>
+</ul>
+<h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...v0.7.2">0.7.2</a> - 2026-10-07</h2>
+<h3>Changed</h3>
+<ul>
+<li>Модуль <strong>TTS</strong> (<code>/tts</code>): UI как у Twitch TTS — hero со статусом и кнопкой вкл/выкл, сетка аудио/движок/playback/голос, тест-фраза в той же секции, переназначение голосов и активность отдельными блоками; окно <strong>960×675</strong>.</li>
+<li>Модуль <strong>Twitch</strong> (<code>/twitch</code>): окно <strong>960×675</strong> (как главное −25%), горизонтальная вёрстка. Включение модуля кнопкой как у VR; <strong>Озвучивать чат</strong> и <strong>SteamVR HUD</strong> — галочки. Убран длинный подзаголовок и подсказки OAuth/каналов под полями. Аудиовыход над движком TTS; язык и мин. длина — в колонке озвучки. Фильтры и «Дополнительно» — спойлер на всю ширину в две колонки.</li>
+<li>Twitch TTS: фильтр озвучки чата — <strong>все сообщения</strong> или <strong>только выделенные</strong> (награда Channel Points «Highlight My Message», IRC <code>msg-id=highlighted-message</code>; достаточно <code>chat:read</code> у токена, читающего чат).</li>
+<li>TTS / Twitch: движки <strong>gTTS (браузер)</strong>, <strong>gTTS (Python)</strong> и <strong>WinRT</strong> с выбором голоса; <strong>переназначение по языкам</strong> (<code>lang_voices</code>) — отдельный спойлер на всю ширину (язык | движок | голос | ×), не внутри «Фильтры».</li>
+<li>Удалён движок <strong>Windows 11 Natural</strong> (Narrator Natural недоступен приложениям через WinRT); сохранённые <code>windows_natural</code> мигрируют в <code>winrt</code>.</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>UI-локаль <strong>немецкий (de)</strong> для dashboard, worker, overlay, TTS, Twitch, Local ASR / VR-модулей и NSIS-установщика (автовыбор при Windows de-DE).</li>
+<li><code>GET /api/tts/voices?provider=</code> — каталог голосов/языков для выбранного движка TTS.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>OBS overlay: при закрытии/убийстве приложения субтитры очищаются без обновления Browser Source (<code>/live</code> + idle seed при старте); после рестарта приложения текст снова появляется по WebSocket без ручного refresh источника.</li>
+<li>Фильтр мата: единый словарь целых слов и вариантов EN/RU/JA/KO/ZH (<code>source_text_builtin_pairs.json</code>), сверка только по ним — без побуквенных/stem-корней внутри слов (в т.ч. CJK-композиты).</li>
+<li>Фильтр мата (все языки): маска по длине — <strong>4+</strong> букв → первая и последняя (<code>fuck</code>→<code>f**k</code>); короче 4 → только первая (<code>бля</code>→<code>б**</code>, <code>くそ</code>→<code>く*</code>).</li>
+<li>Twitch: тестовая фраза озвучивается при выключенной галочке «Озвучивать сообщения чата» и больше не копит очередь до её включения.</li>
+<li>Модули (дашборд): бейджи TTS / Twitch / VRChat / SteamVR HUD обновляются в realtime при включении/выключении и смене состояния (живой <code>runtime_update</code> больше не перекрывался устаревшим <code>/status</code>; в коалесцинг статуса добавлены поля модулей).</li>
+<li>Навигация: длинные подписи (в т.ч. DE <strong>Übersetzung</strong>) переносятся на две строки вместо обрезки «…».</li>
+<li>TTS: строки перевода в «Что озвучивать» — локализованные названия языков и слотов вместо сырого <code>translation_N · tl=xx</code>.</li>
+</ul>
 <h2><a href="https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.0...v0.7.1">0.7.1</a> - 2026-09-09</h2>
 <h3>Fixed</h3>
 <ul>
@@ -588,7 +646,7 @@
 <h3>Changed</h3>
 <ul>
 <li>Замена слов: маска <code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code> (первая и последняя буква); формы с <code>*</code> не переписываются.</li>
-<li>С <strong>0.7.0</strong> лицензия приложения: Copyright © 2026 Kiriuru. Все права защищены. См. <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">LICENSE</a>. Релизы <strong>по 0.6.5</strong> остаются под MIT.</li>
+<li>С <strong>0.7.0</strong> лицензия приложения: Copyright © 2026 Kiriuru. Все права защищены. См. <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">LICENSE</a>.</li>
 <li>Статус-бар Эфира закреплён на <strong>всех</strong> вкладках: полный KPI на Эфире, сжатая полоска на остальных.</li>
 <li>«Вписывать субтитры в окно OBS» → <strong>«Прокручивание субтитров»</strong>.</li>
 <li>Тема UI: галерея пресетов (применение <strong>только по клику</strong>), пресет <strong>GTA 6</strong>. Длинные подсказки — за кнопкой <strong>?</strong>.</li>

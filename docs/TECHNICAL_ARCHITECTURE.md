@@ -1,6 +1,6 @@
-# Kagevi Subtitles 0.7.1 — Технический документ
+# Kagevi Subtitles 0.7.2 — Технический документ
 
-Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.7.1"`.
+Актуально для линии кода, где `voicesub-types::PROJECT_VERSION = "0.7.2"`.
 
 Этот документ описывает layout проекта Kagevi Subtitles, контракт HTTP/WebSocket/Tauri IPC, схему конфигурации, поток данных через Rust runtime и поверхности frontend. Документ — **канонический технический справочник** для активной разработки. README — обзор продукта; CHANGELOG — история релизов; политика агентов — `AGENTS.md`.
 
@@ -378,7 +378,7 @@ src-tauri (Layer 4: IPC, window, bundle only)
 | `translation` | Провайдер, линии (до 4), cache, limits, `live_partial`, `provider_settings` |
 | `subtitle_output` | Порядок отображения source/translation |
 | `subtitle_lifecycle` | TTL, sync-флаги; deprecated timing-ключи только normalize |
-| `source_text_replacement` | Find/replace для ASR текста (кастомные пары + builtin-корни/нормализация обходов; в `TranscriptController` до subtitle/translation). Builtin латиница/кириллица всегда по границам токена (флаг `whole_words` — только для своих пар); Hangul — по пробелам; короткая катакана / одиночный Han — изолированно; multi-char Han/hiragana — substring. Маска builtin / пустой target: первая и последняя буква (`fuck`→`f**k`, `whore`→`w***e`); уже замаскированные формы с `*` не переписываются |
+| `source_text_replacement` | Find/replace для ASR текста (кастомные пары + builtin-словарь плохих слов / нормализация обходов; в `TranscriptController` до subtitle/translation). Builtin — только словарь целых слов/вариантов для всех языков (`data/source_text_builtin_pairs.json`; без infix-стемов). Латиница/кириллица/Hangul — границы слова; Han/kana — изолированная запись целиком (полные фразы в словарь, не внутри композитов). `whole_words` — только для своих пар. Маска по длине: 4+ → первая+последняя; короче 4 → только первая; формы с `*` не трогаются |
 | `transcript_format` | Пайплайн нарезки фраз после ASR (сейчас **принудительно выкл. / UI скрыт**) |
 | `logging` | `full_enabled` — главный переключатель deep diagnostics; `runtime_metrics_enabled` — подробные runtime-метрики Tools / счётчики decode Local ASR (по умолчанию выкл.; без high-churn `diagnostics_update` при активном распознавании) |
 | `updates` | Проверка GitHub Releases (`enabled`, `github_repo`, `check_interval_hours`, `latest_known_version`, …) |
@@ -476,6 +476,7 @@ Ready для `local_parakeet` — runtime gate (`asr.local_module.ready`), не 
 | GET | `/api/tts/google` | Google Translate TTS proxy |
 | GET | `/api/tts/python` | TTS via embedded Python module |
 | GET | `/api/tts/python/status` | Python runtime probe |
+| GET | `/api/tts/voices?provider=` | Каталог голосов/языков движка (`browser_google` / `python_stdlib` → коды gTTS; `winrt` → системные голоса) |
 | POST | `/api/tts/twitch/oauth-open` | Open Twitch OAuth in system browser |
 | GET | `/api/tts/twitch/oauth-pending` | Poll pending token **или** OAuth error (`status`: `token` \| `error` \| `none`) |
 | POST | `/api/tts/twitch/oauth-complete` | **Публичный** bridge: store OAuth token **или** cancel/deny из браузера (`error` + `message`) |
@@ -530,6 +531,16 @@ Protected like other `/api/*`. Полная таблица в [§18 Модуль
 - При connect: `hello` (`type: "hello"`, `message: "connected"`)
 - Replay последних: `runtime_update`, `overlay_update`, `ui_config_sync`
 - Ограниченная очередь на сокет (по умолчанию 128), dedupe по `type`
+- **Idle seed при listen:** `RuntimeService::start` вызывает `subtitle.reset()` после bind, чтобы в hub всегда был idle `overlay_update` для OBS reconnect после рестарта приложения (очищает последний кадр прошлой сессии без обновления Browser Source)
+
+**OBS overlay клиент (`bin/overlay/overlay.js`) — без ручного refresh в обычной работе:**
+
+| Событие | Поведение |
+| --- | --- |
+| Обрыв WS | Probe `GET /live`; если runtime мёртв → сразу очистить субтитры; последний кадр держим только при кратком blip, пока `/live` ещё отвечает |
+| Пока disconnected | Poll `/live` (~1 с); очистка при смерти приложения; быстрый reconnect, когда приложение снова поднялось (без длинного backoff) |
+| Reconnect без replay | Если за ~400 ms нет `overlay_update` → очистить застрявший DOM (пустой hub / гонка до idle seed) |
+| Graceful Stop / закрытие | Сервер уже шлёт idle overlay через `subtitle.reset` + `flush_overlay_presentations_to_clients` до остановки HTTP |
 
 **Envelope:** `{ "type": "<channel>", "payload": {…} }`  
 Обогащение payload: `event_sequence`, `created_at_ms`, `event_type` (`WsEventPublisher`).
@@ -542,7 +553,7 @@ Protected like other `/api/*`. Полная таблица в [§18 Модуль
 | `diagnostics_update` | WS + EventBus | Снимок ASR diagnostics |
 | `model_status_update` | WS + EventBus | Готовность модели/ASR |
 | `transcript_update` | WS + EventBus | События ASR partial/final (единственный live ASR text channel с 0.5.4; partials коалесятся) |
-| `overlay_update` | WS + EventBus | Тело кадра overlay (live + **replay при connect**) |
+| `overlay_update` | WS + EventBus | Тело кадра overlay (live + **replay при connect**; idle seed при listen) |
 | `translation_update` | WS + EventBus | Результаты перевода по sequence |
 | `twitch_connection_update` | WS + EventBus | Состояние подключения Twitch (также snapshot replay) |
 | `ui_config_sync` | WS + EventBus | `{ ui: … }` sync theme/locale/`font_family` (через `/api/ui/sync`; **replay при connect**) |
@@ -550,7 +561,7 @@ Protected like other `/api/*`. Полная таблица в [§18 Модуль
 | `twitch_chat_message` | **только EventBus** | Twitch chat для TTS — `publish_event_bus_only` (без fanout на `/ws/events`) |
 | `twitch_channel_event` | **только EventBus** | Алерты канала (фоллоу / саб / ресаб / гифт / рейд / чир) + TTS событий — `publish_event_bus_only` |
 
-**Stale guard:** overlay (`overlay.js` + `ws-stale-guard-logic.js`) отбрасывает устаревшие события после stop/start (timestamp-first при reset sequence).
+**Stale guard:** overlay (`overlay.js` + `ws-stale-guard-logic.js`) отбрасывает устаревшие события после stop/start (timestamp-first при reset sequence). Guard сбрасывается, когда overlay видит, что runtime недоступен, чтобы sequences нового процесса не блокировались.
 
 ### In-process runtime events — Tauri dashboard + TTS (0.5.2+)
 
@@ -642,7 +653,7 @@ ACL webview: только `get_loopback_api_token`. Open/focus — shell-ком�
 
 **Форматирование текста (`transcript_format`):** rule-based слой в `voicesub-transcript-text` **выключен и скрыт** в dashboard (Ещё / command palette). Normalize и runtime settings принудительно ставят `enabled = false`, чтобы legacy-конфиг не включал его. Код пайплайна сохранён для возможного возврата.
 
-**Замена слов (`source_text_replacement`):** кастомные пары + опциональный builtin мат/стемы (`voicesub-twitch::source_text_replacement`, в `TranscriptController`). Builtin латиница/кириллица всегда с границами слова, даже при `whole_words = false` (флаг влияет только на свои пары; для CJK свои политики substring/isolation). Стемы: overlapping AC + leftmost-longest среди *принятых* хитов, плюс контекстные отсечения ложных RU-корней (`ебл` в `потреблять`, `блят` в `оскорблять`). Пустой / `***` target и builtin-хиты маскируются первой+последней буквой (`fuck`→`f**k`, `whore`→`w***e`); матчи с уже существующим `*` не переписываются. Twitch chat TTS — та же маска через `include_builtin_profanity` (пары с dashboard не шарятся).
+**Замена слов (`source_text_replacement`):** кастомные пары + опциональный builtin-словарь плохих слов и их вариантов (`data/source_text_builtin_pairs.json`: en/de/ru/ja/ko/zh целые формы, в `TranscriptController` через `voicesub-twitch::source_text_replacement`). Для всех языков — только сверка со словарём, без побуквенных/stem-корней. Латиница/кириллица/Hangul: границы слова после лёгкой нормализации обходов (`sh1t`, `х у й`, растянутые буквы). Han/kana: вся запись словаря должна быть CJK-изолирована (полные фразы в список; не внутри композитов вроде `ゴミ収集`). `whole_words` — только для своих пар. Маска по длине: 4+ → первая+последняя; короче 4 → только первая; формы с `*` не трогаются. Twitch chat TTS — та же маска через `include_builtin_profanity` (пары с dashboard не шарятся).
 
 **Lifecycle:** главный webview создаётся скрытым, затем `navigate()` на `http://{bind_addr}/?bootstrap=…` (Tauri `devUrl` — публичный `/live`, чтобы CLI/webview probe не ловил 401 на закрытом `/`); при close → shutdown TTS → stop runtime. `RunEvent::Exit` тоже ставит `session-lifecycle.json` в graceful, чтобы Ctrl+C / выход процесса не оставляли stale `running`.
 
@@ -775,7 +786,7 @@ ZIP пишутся в `user-data/exports/` как `diagnostics-{unix}_{ms}.zip`.
 
 ### Расширенные настройки Web Speech (dashboard)
 
-**UI:** Settings → More → Recognition → «Расширенные настройки Web Speech» (`WebSpeechAdvancedSettings.svelte`). У каждого числового поля — кнопка **`!`** (`FieldHelpButton.svelte`) с локализованным описанием (en, ru, ja, ko, zh); клик — popover, hover — `title`.
+**UI:** Settings → More → Recognition → «Расширенные настройки Web Speech» (`WebSpeechAdvancedSettings.svelte`). У каждого числового поля — кнопка **`!`** (`FieldHelpButton.svelte`) с локализованным описанием (en, de, ru, ja, ko, zh); клик — popover, hover — `title`.
 
 **Маппинг config:**
 
@@ -1000,7 +1011,9 @@ http://127.0.0.1:8765/overlay
 | `speech` | `subtitle_payload` → `TtsSpeechPipeline` | `ChannelOrchestrator` (speech) | root `audio_output_device_*` |
 | `twitch` | IRC → `TwitchModuleService` | `ChannelOrchestrator` (twitch) | `user-data/modules/twitch/config.toml` `chat.audio_output_device_*` |
 
-Live path: plan → **`google_fetch.rs`** (HTTP + **`upstream_retry.rs`** 3× retry на transport/5xx/429/408) → enqueue → prefetch → in-process `PlaybackHub` (без webview IPC для audio bytes). Длинный текст: `assemble_ordered_chunks` сохраняет порядок чанков после parallel fetch. TTS WebView — настройки + ручной sample test через `tts_speak_sample` (Rust orchestrator; без JS pump).
+Live path: plan → resolve голоса (`voice_resolve.rs`: remap `lang_voices` + default `voice_id`) → **`google_fetch.rs`** (gTTS HTTP/Python + **`upstream_retry.rs`**) **или** **`winrt_synth.rs`** (WinRT → WAV) → enqueue → prefetch → in-process `PlaybackHub` (MP3 или WAV → PCM). Длинный gTTS-текст: `assemble_ordered_chunks` сохраняет порядок чанков. TTS WebView — настройки + ручной sample test через `tts_speak_sample` (Rust orchestrator; без JS pump).
+
+**Движки (`tts_provider`):** `browser_google` / `python_stdlib` = gTTS; `winrt` = WinRT `SpeechSynthesizer::AllVoices`. Legacy `windows_natural` нормализуется в `winrt`. Поля `voice_id` и `lang_voices` (`язык` → `{ provider?, voice? }`, legacy-строка = только голос) — в корне конфигов TTS и Twitch; `provider` в remap может переопределить движок модуля. UI remap — отдельный спойлер (язык | движок | голос | ×), не внутри «Фильтры».
 
 **0.5.4 pipeline hardening:**
 
@@ -1047,7 +1060,7 @@ Live path: plan → **`google_fetch.rs`** (HTTP + **`upstream_retry.rs`** 3× re
 
 Независимый модуль (`id = "twitch"`) в `bin/modules/twitch/` + Svelte UI на `/twitch` (`src-twitch/` → `bin/twitch/`). Enable-without-window: закрытие webview **не** рвёт IRC/EventSub и не глушит TTS чата/событий. Chat TTS (`speak_chat`) и event TTS (`events.speak_events`) **не** зависят от `tts.enabled`. При старте приложения, если модуль включён и есть bot/broadcaster credentials, IRC **и EventSub подключаются сами**. Сохранение фильтров, шаблонов алертов и прочих UI-настроек hot-apply в live state и **не** переподключает сессию. Явный Connect / включение модуля / apply профиля по-прежнему поднимают соединение.
 
-Config: `user-data/modules/twitch/config.toml`. При первом старте копируется legacy-секция `[twitch]` из TTS-конфига (если есть), затем она удаляется. Профили пишут `modules.twitch`; старый `modules.tts.twitch` поднимается при apply. Движок озвучки чата **независим** от субтитрового TTS: `tts_provider` (`browser_google` HTTP-прокси Google vs `python_stdlib` встроенный `google_tts_fetch`) и `playback_mode` живут в конфиге Twitch; в UI — селекты движка/playback, **ползунки скорости/громкости** (только модуль Twitch, без наследования от TTS субтитров; native не меняет скорость) и `POST /api/twitch/speak-sample`. Опциональный `forward_to_vr_overlay` (по умолчанию `false`) передаёт сырой чат и события канала (без TTS-фильтров `speakable`) во вторую панель SteamVR HUD через listener в `RuntimeService`.
+Config: `user-data/modules/twitch/config.toml`. При первом старте копируется legacy-секция `[twitch]` из TTS-конфига (если есть), затем она удаляется. Профили пишут `modules.twitch`; старый `modules.tts.twitch` поднимается при apply. Движок озвучки чата **независим** от субтитрового TTS: тот же набор `tts_provider` (gTTS browser/Python, `winrt`) плюс `voice_id` / `lang_voices` и `playback_mode` в конфиге Twitch; в UI — селекты движка/голоса/playback, **ползунки скорости/громкости** (только модуль Twitch, без наследования от TTS субтитров; native не меняет скорость) и `POST /api/twitch/speak-sample`. Опциональный `forward_to_vr_overlay` (по умолчанию `false`) передаёт сырой чат и события канала (без TTS-фильтров `speakable`) во вторую панель SteamVR HUD через listener в `RuntimeService`.
 
 OAuth redirect URI остаётся `http://localhost:{port}/tts` (Twitch Console). Два implicit-аккаунта (как в Streamer.bot): **бот** `chat:read` для доп. каналов IRC (необязательно), **стример (broadcaster)** `chat:read moderator:read:followers channel:read:subscriptions bits:read channel:read:redemptions` для JOIN своего чата + EventSub **только своего канала**. Connect работает с одним Broadcaster (авто-JOIN `#<владелец токена>`, пометка Broadcaster); доп. `chat.channels` необязательны. Неаутентифицированный `GET /tts` — public OAuth shell. Канон HTTP: `/api/twitch/oauth-*`, алиасы `/api/tts/twitch/oauth-*`.
 
@@ -1077,7 +1090,7 @@ OAuth redirect URI остаётся `http://localhost:{port}/tts` (Twitch Consol
 | Mentions | TTS path: `normalize_twitch_mentions` (`@user` → `user`, текст сообщения сохраняется). Clean/detection path: `strip_twitch_mentions` |
 | Symbols | `strip_symbols` — comma-separated токены (default `@, &, $, _`); `&`/`$` между цифрами → пробел (URL query `&` сохраняется); digit groups (`500&100`) озвучиваются; optional `replace_underscore_with_space` |
 | Lang | Lingua 1.8 subset + Unicode heuristics + whatlang; `strip_leading_speaker_label` (не трактует `https:` как метку спикера) |
-| Мат | Опциональный builtin-список (`include_builtin_profanity`); независимо от замены слов в dashboard. Маска: первая + последняя буква (`fuck`→`f**k`); формы с `*` не трогаются |
+| Мат | Опциональный builtin-список (`include_builtin_profanity`); независимо от замены слов в dashboard. Маска: 4+ → первая+последняя (`fuck`→`f**k`); короче 4 → только первая (`бля`→`б**`); формы с `*` не трогаются |
 | UI | `src-twitch/components/TwitchPanel.svelte`: connection card, бейдж EventSub, `speak_chat` / `speak_events`, шаблоны событий, **движок TTS** + playback + ползунки скорости/громкости, тестовая фраза, save queue (`saveNow` / debounce + flush на `pagehide`), бейдж «Настройки применены» |
 | Chat log UI | `src-twitch/lib/twitch-chat-log.ts` — дедуп по Twitch `id` / `event_sequence` перед prepend |
 
@@ -1350,7 +1363,7 @@ Tauri `subtitle_payload_listener` (`src-tauri/src/lib.rs`) пересылает 
 - `identifier`: `com.kagevi.subtitles`
 - `frontendDist`: `../bin/dashboard`
 - `beforeBuildCommand`: `npm run build && npm run scrub:shipped-bin`
-- Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, языки en/ru/ja/ko/zh)
+- Bundle: **NSIS** (`targets: ["nsis"]`, `installMode: currentUser`, языки en/de/ru/ja/ko/zh)
 - `createUpdaterArtifacts: true` + `plugins.updater` (endpoint GitHub `latest.json`, minisign pubkey, Windows `installMode: passive`)
 - Шаблон NSIS: `src-tauri/windows/installer.nsi`, hooks: `src-tauri/windows/hooks.nsh` (через `bundle.windows.nsis.template` / `installerHooks`)
 - **Очистка при обновлении:** `NSIS_HOOK_PREINSTALL` удаляет shipped `$INSTDIR\bin\{dashboard,worker,tts,local-asr,vrchat,vr-overlay,overlay,fonts,modules}` (и то же под `resources\bin`) перед копированием новых ресурсов, чтобы сиротские Vite content-hash файлы и Nuitka `*.build` не переживали апдейт. `user-data/` и `logs/` не трогаются.
@@ -1487,7 +1500,7 @@ Autostart: query-параметр `?autostart=1`.
 
 ## 24. Локализация UI (i18n)
 
-**Локали:** `en`, `ru`, `ja`, `ko`, `zh`
+**Локали:** `en`, `de`, `ru`, `ja`, `ko`, `zh`
 
 | Поверхность | Каталог / источник правды |
 | --- | --- |

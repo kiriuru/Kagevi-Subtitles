@@ -2,7 +2,7 @@
 
 **Live translated subtitles for streamers — local-first, privacy-first, OBS-ready.**
 
-[![Version](https://img.shields.io/badge/version-0.7.1-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
+[![Version](https://img.shields.io/badge/version-0.7.2-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#system-requirements)
 [![License](https://img.shields.io/badge/license-All%20rights%20reserved-lightgrey.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
@@ -11,7 +11,11 @@
 <p align="center">
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/">Website</a> ·
   <a href="./README.md">English</a> ·
+  <a href="./README.de.md">Deutsch</a> ·
   <a href="./README.ru.md">Русский</a> ·
+  <a href="./README.ja.md">日本語</a> ·
+  <a href="./README.ko.md">한국어</a> ·
+  <a href="./README.zh.md">中文</a> ·
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/wiki.html">Wiki</a> ·
   <a href="./docs/TECHNICAL_ARCHITECTURE.en.md">Architecture</a> ·
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/changelog.html">Changelog</a>
@@ -19,7 +23,7 @@
 
 Kagevi Subtitles is a Windows desktop app that turns speech into real-time subtitles with optional translation. Recognition runs through **Google Chrome Web Speech** or optional offline **Local ASR** (Parakeet / ONNX). Everything stays on your machine — default bind `127.0.0.1:8765`, no cloud backend, no accounts.
 
-First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.7.1`**.
+First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.7.2`**.
 
 <p align="center">
   <img src="./Images/kagevi_live.png" alt="Kagevi Subtitles Live tab" width="860">
@@ -33,7 +37,6 @@ First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.7.1`**.
 - [Screenshots](#screenshots)
 - [System requirements](#system-requirements)
 - [Quick start](#quick-start)
-- [Local URLs](#local-urls)
 - [Data paths](#data-paths)
 - [Troubleshooting](#troubleshooting)
 - [Documentation](#documentation)
@@ -54,7 +57,7 @@ First Kagevi Subtitles release: **`0.5.0`**. Current line: **`0.7.1`**.
 | **Local ASR** | Setup wizard at `/local-asr`; Live mode `local_parakeet` when ready |
 | **VRChat** | Chatbox OSC output (`/vrchat`) — finals to VRChat social chatbox (144 chars) |
 | **SteamVR HUD** | OpenVR overlay (`/vr-overlay`) — wearer-only subtitles in PCVR; separate from OBS and VRChat |
-| **Ops** | Diagnostics ZIP; factory reset and profiles (dashboard + TTS / Twitch / Local ASR / VRChat / SteamVR HUD); UI locales en / ru / ja / ko / zh |
+| **Ops** | Diagnostics ZIP; factory reset and profiles (dashboard + TTS / Twitch / Local ASR / VRChat / SteamVR HUD); UI locales en / de / ru / ja / ko / zh |
 
 Compact phone-style layout is available for secondary monitors.
 
@@ -209,7 +212,7 @@ No Python, Node.js, or CUDA in the core installer. CUDA is an optional Local ASR
 
 ## Quick start
 
-1. Install from `Kagevi Subtitles_0.7.1_x64-setup.exe` (or the latest build in your release folder).
+1. Install from `Kagevi Subtitles_0.7.2_x64-setup.exe` (or the latest build in your release folder).
 2. Launch **Kagevi Subtitles.exe** — the dashboard opens at `http://127.0.0.1:8765/`.
 3. In OBS, add a **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. Configure translation and subtitle style if needed, then click **Start**.
@@ -223,22 +226,6 @@ No Python, Node.js, or CUDA in the core installer. CUDA is an optional Local ASR
 A status bar (ASR / WebSocket / Worker / OBS CC + Start/Stop) stays pinned on every tab — full on Live, compact elsewhere.
 
 Step-by-step UI guide: [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html)
-
-## Local URLs
-
-| URL | Purpose |
-| --- | --- |
-| `http://127.0.0.1:8765/` | Dashboard |
-| `http://127.0.0.1:8765/overlay` | OBS Browser Source |
-| `http://127.0.0.1:8765/google-asr?autostart=1` | Browser Speech worker |
-| `http://127.0.0.1:8765/google-asr-compact?autostart=1` | Compact Browser Speech worker (`--app=`) |
-| `http://127.0.0.1:8765/tts` | TTS module |
-| `http://127.0.0.1:8765/twitch` | Twitch module |
-| `http://127.0.0.1:8765/local-asr` | Local ASR module |
-| `http://127.0.0.1:8765/vrchat` | VRChat Chatbox OSC module |
-| `http://127.0.0.1:8765/vr-overlay` | SteamVR HUD overlay module |
-
-Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default` · `?fit=0` (turn off Subtitle scrolling for that source)
 
 ## Data paths
 
@@ -261,10 +248,10 @@ Overlay query examples: `?preset=single` · `?compact=1` · `?profile=default` �
 | --- | --- |
 | No subtitles | **Start** pressed; Chrome worker not minimized (Web Speech) **or** Local ASR ready + mic selected |
 | Source text, no translation | Translation on; at least one line active; provider credentials |
-| Empty OBS | Browser Source URL is `/overlay`; visibility on Subtitles tab; reload source after updates |
-| Text clipped in OBS | Subtitles tab: **Subtitle scrolling** (on by default) plus **Scroll speed**; reload the Browser Source after updating |
+| Empty OBS | URL must be `/overlay`; app running + **Start** on Live. If OBS was open *before* the app, **right-click Browser Source → Refresh** once (OBS does not reload a failed page by itself). After that, Start/Stop/restart auto-reconnect |
+| Text clipped in OBS | Subtitles tab: **Subtitle scrolling** (on by default) plus **Scroll speed**; reload the Browser Source after *app updates* that change overlay JS/CSS |
 | Google Web / keyless MT 429 | Wait, fewer translation lines, or change the interval in Settings; Free Web Translate and Bing are separate buckets |
-| Text stuck after TTL / Stop | Update build; reload Browser Source |
+| Text stuck after app close | Overlay clears via `/live` probe + idle replay on reconnect; update build if an old Browser Source still keeps the last frame |
 | Port in use | Free `8765` or change bind (dev builds) |
 | Local ASR missing on Live | Modules → Local ASR: finish wizard until `ready` |
 | SteamVR HUD not visible | PCVR only; press **Start SteamVR** in the module hero card; **Enable subtitle overlay** and/or **Enable chat overlay** + **Start** on Live (captions); SteamVR running |
@@ -342,8 +329,6 @@ Full reference: [Technical Architecture](./docs/TECHNICAL_ARCHITECTURE.en.md).
 Copyright © 2026 Kiriuru. All rights reserved. See the **[Kagevi Subtitles License](./LICENSE)** for terms of use.
 
 You may use the app **free of charge** as an end-user tool, including on a stream or channel that is monetized (ads, subscriptions, donations). **Selling the app, redistributing it, or otherwise commercializing the software** (paid builds, paid features, SaaS, bundled paid products, and similar) is not allowed.
-
-Releases through **0.6.5** that shipped under MIT remain under MIT.
 
 **Trademarks:** “Kagevi”, “Kagevi Subtitles”, and the project logos/icons are marks of Kiriuru. This license covers copyright in the software — it does **not** grant rights to those names or branding. See the Trademarks section in [LICENSE](./LICENSE).
 

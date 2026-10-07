@@ -2,7 +2,7 @@
 
 **Живые переводимые субтитры для стримеров — локально, privacy-first, готово для OBS.**
 
-[![Version](https://img.shields.io/badge/version-0.7.1-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
+[![Version](https://img.shields.io/badge/version-0.7.2-blue.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey.svg)](#системные-требования)
 [![License](https://img.shields.io/badge/license-All%20rights%20reserved-lightgrey.svg)](./LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-E05735.svg)](https://kiriuru.github.io/Kagevi-Subtitles/changelog.html)
@@ -11,7 +11,11 @@
 <p align="center">
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/">Сайт</a> ·
   <a href="./README.md">English</a> ·
+  <a href="./README.de.md">Deutsch</a> ·
   <a href="./README.ru.md">Русский</a> ·
+  <a href="./README.ja.md">日本語</a> ·
+  <a href="./README.ko.md">한국어</a> ·
+  <a href="./README.zh.md">中文</a> ·
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/wiki.html">Wiki</a> ·
   <a href="./docs/TECHNICAL_ARCHITECTURE.md">Архитектура</a> ·
   <a href="https://kiriuru.github.io/Kagevi-Subtitles/changelog.html">Список изменений</a>
@@ -19,7 +23,7 @@
 
 Kagevi Subtitles — Windows desktop-приложение, которое превращает речь в субтитры в реальном времени с опциональным переводом. Распознавание — через **Google Chrome Web Speech** или опциональный офлайн **Local ASR** (Parakeet / ONNX). Всё работает локально: bind по умолчанию `127.0.0.1:8765`, без cloud backend и аккаунтов.
 
-Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.7.1`**.
+Первый релиз Kagevi Subtitles: **`0.5.0`**. Текущая линия: **`0.7.2`**.
 
 <p align="center">
   <img src="./Images/kagevi_live.png" alt="Вкладка Live в Kagevi Subtitles" width="860">
@@ -33,7 +37,6 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
 - [Скриншоты](#скриншоты)
 - [Системные требования](#системные-требования)
 - [Быстрый старт](#быстрый-старт)
-- [Локальные URL](#локальные-url)
 - [Пути данных](#пути-данных)
 - [Troubleshooting](#troubleshooting)
 - [Документация](#документация)
@@ -50,11 +53,11 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
 | **OBS** | Browser Source overlay (**Прокручивание субтитров** + скорость) + опциональные Closed Captions через OBS WebSocket (в основном для Twitch) |
 | **Стиль** | Анимированные пресеты субтитров, стили по слотам; галерея темы UI с предпросмотром |
 | **TTS** | Native / Sonic playback; озвучка субтитров (без окна; нужен Эфир) |
-| **Twitch** | IRC (Broadcaster сам подключается к чату стримера; доп. каналы необязательны, только чат, до 5 JOIN), EventSub-алерты на канале стримера (фоллоу / саб / рейд / чир), фильтры, опциональная озвучка чата и событий независимо от TTS субтитров |
+| **Twitch** | IRC (Broadcaster сам подключается к чату стримера; доп. каналы необязательны, только чат, до 5 JOIN), EventSub-алерты на канале стримера (фоллоу / саб / рейд / чир / channel-point rewards), фильтры, опциональная озвучка чата и событий независимо от TTS субтитров |
 | **Local ASR** | Wizard на `/local-asr`; режим `local_parakeet` на Эфире при `ready` |
 | **VRChat** | Chatbox OSC (`/vrchat`) — финалы в социальный Chatbox VRChat (144 символа) |
 | **SteamVR HUD** | OpenVR overlay (`/vr-overlay`) — субтитры только для носителя в PCVR; отдельно от OBS и VRChat |
-| **Ops** | Diagnostics ZIP; сброс к заводским и профили (dashboard + TTS / Twitch / Local ASR / VRChat / SteamVR HUD); локали UI en / ru / ja / ko / zh |
+| **Ops** | Diagnostics ZIP; сброс к заводским и профили (dashboard + TTS / Twitch / Local ASR / VRChat / SteamVR HUD); локали UI en / de / ru / ja / ko / zh |
 
 Компактный макет под второй монитор / узкое окно.
 
@@ -209,7 +212,7 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 
 ## Быстрый старт
 
-1. Установите из `Kagevi Subtitles_0.7.1_x64-setup.exe` (или последней сборки в папке релиза).
+1. Установите из `Kagevi Subtitles_0.7.2_x64-setup.exe` (или последней сборки в папке релиза).
 2. Запустите **Kagevi Subtitles.exe** — dashboard откроется на `http://127.0.0.1:8765/`.
 3. В OBS добавьте **Browser Source** → `http://127.0.0.1:8765/overlay`.
 4. При необходимости настройте перевод и стиль субтитров, нажмите **Start**.
@@ -223,22 +226,6 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 Статус-бар (ASR / WebSocket / Worker / OBS CC + Старт / Стоп) закреплён на всех вкладках — полный на Эфире, сжатый на остальных.
 
 Пошаговый гайд: [Wiki](https://kiriuru.github.io/Kagevi-Subtitles/wiki.html)
-
-## Локальные URL
-
-| URL | Назначение |
-| --- | --- |
-| `http://127.0.0.1:8765/` | Dashboard |
-| `http://127.0.0.1:8765/overlay` | OBS Browser Source |
-| `http://127.0.0.1:8765/google-asr?autostart=1` | Browser Speech worker |
-| `http://127.0.0.1:8765/google-asr-compact?autostart=1` | Компактный Browser Speech worker (`--app=`) |
-| `http://127.0.0.1:8765/tts` | TTS-модуль |
-| `http://127.0.0.1:8765/twitch` | Модуль Twitch |
-| `http://127.0.0.1:8765/local-asr` | Модуль Local ASR |
-| `http://127.0.0.1:8765/vrchat` | Модуль VRChat Chatbox OSC |
-| `http://127.0.0.1:8765/vr-overlay` | Модуль SteamVR HUD overlay |
-
-Примеры query для overlay: `?preset=single` · `?compact=1` · `?profile=default` · `?fit=0` (выключить **Прокручивание субтитров** для этого источника)
 
 ## Пути данных
 
@@ -261,10 +248,10 @@ Python, Node.js и CUDA **не входят** в core-установщик. CUDA
 | --- | --- |
 | Нет субтитров | Нажат **Start**; Chrome worker не свёрнут (Web Speech) **или** Local ASR ready + выбран mic |
 | Есть исходник, нет перевода | Перевод включён; активна хотя бы одна линия; credentials провайдера |
-| Пустой OBS | Browser Source на `/overlay`; видимость во вкладке «Субтитры»; после обновления — reload source |
-| Текст обрезается в OBS | Вкладка Субтитры: **«Прокручивание субтитров»** (по умолчанию вкл.) и **скорость прокрутки**; после обновления перезагрузите Browser Source |
+| Пустой OBS | URL должен быть `/overlay`; приложение запущено + **Start** на Эфире. Если OBS был открыт *до* приложения, один раз **ПКМ по Browser Source → Refresh** (OBS сам не перезагружает упавшую страницу). После этого Start/Stop/перезапуск переподключаются автоматически |
+| Текст обрезается в OBS | Вкладка Субтитры: **«Прокручивание субтитров»** (по умолчанию вкл.) и **скорость прокрутки**; после *обновлений приложения*, меняющих overlay JS/CSS, перезагрузите Browser Source |
 | Google Web / keyless MT 429 | Подождите, меньше линий перевода или измените интервал в Настройках; Free Web Translate и Bing — отдельные корзины |
-| Текст не исчезает после TTL / Stop | Обновите сборку; перезагрузите Browser Source |
+| Текст застрял после закрытия приложения | Overlay очищается через `/live` probe + idle replay при reconnect; обновите сборку, если старый Browser Source всё ещё держит последний кадр |
 | Порт занят | Освободите `8765` или смените bind (dev-сборки) |
 | Нет Local ASR на Эфире | Модули → Local ASR: завершите wizard до `ready` |
 | HUD SteamVR не виден | Только PCVR; нажмите **Запустить SteamVR** в верхней карточке модуля; **Включить оверлей субтитров** и/или **Включить чат-оверлей** + **Start** на Эфире (субтитры); SteamVR запущен |
@@ -327,7 +314,7 @@ Tauri `beforeBuildCommand`: `npm run build && npm run scrub:shipped-bin`. В bun
 
 ### Ключевые crates
 
-`voicesub-runtime` · `voicesub-subtitle` · `voicesub-translation` · `voicesub-browser` · `voicesub-ws` · `voicesub-tts` · `voicesub-asr-local` · `voicesub-vrchat` · `voicesub-vr-overlay` · `voicesub-partial-emit` · `voicesub-obs`
+`voicesub-runtime` · `voicesub-subtitle` · `voicesub-translation` · `voicesub-browser` · `voicesub-ws` · `voicesub-tts` · `voicesub-twitch` · `voicesub-asr-local` · `voicesub-vrchat` · `voicesub-vr-overlay` · `voicesub-partial-emit` · `voicesub-obs`
 
 `src-tauri/` — тонкая IPC-оболочка, без domain logic.
 
@@ -342,8 +329,6 @@ Tauri `beforeBuildCommand`: `npm run build && npm run scrub:shipped-bin`. В bun
 Copyright © 2026 Kiriuru. Все права защищены. Условия использования — в **[лицензии Kagevi Subtitles](./LICENSE)**.
 
 Программой можно **бесплатно пользоваться** как инструментом, в том числе на стриме или канале с монетизацией (реклама, подписки, донаты). **Продавать приложение, распространять его или иначе коммерциализировать само ПО** (платные сборки, платные функции, SaaS, платные бандлы и т.п.) нельзя.
-
-Релизы **по 0.6.5 включительно**, вышедшие под MIT, остаются под MIT.
 
 **Товарные знаки / бренд:** «Kagevi», «Kagevi Subtitles» и логотипы/иконки проекта — обозначения Kiriuru. Лицензия покрывает авторские права на ПО и **не** даёт права на эти имена и брендинг. См. раздел Trademarks в [LICENSE](./LICENSE).
 

@@ -71,7 +71,7 @@
         <div class="doc-panels">
           <article class="doc-prose is-active" data-lang-panel="en" id="doc-en">
             
-<p>User guide for <strong>Kagevi Subtitles <code>0.7.1</code></strong> — how to get live subtitles on stream, what each screen does, and how to fix common problems.</p>
+<p>User guide for <strong>Kagevi Subtitles <code>0.7.2</code></strong> — how to get live subtitles on stream, what each screen does, and how to fix common problems.</p>
 <p align="center">
   <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/README.md" target="_blank" rel="noopener noreferrer">README</a> ·
   <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.en.md" target="_blank" rel="noopener noreferrer">Architecture</a> ·
@@ -123,7 +123,7 @@
 <td><strong>SteamVR HUD</strong> module (wearer only)</td>
 </tr>
 </tbody></table>
-<p>Current version line: <strong><code>0.7.1</code></strong> (first Kagevi release was <code>0.5.0</code>). In this line: <strong>VRChat Chatbox OSC</strong> (long phrases split across packets), <strong>SteamVR HUD</strong>, Twitch <strong>Channel Points</strong> alerts, subtitle scroll speed, factory reset, full-snapshot profiles, and a Live status bar on every tab. Details: <a href="changelog.html">Changelog</a>.</p>
+<p>Current version line: <strong><code>0.7.2</code></strong> (first Kagevi release was <code>0.5.0</code>). In this line: <strong>VRChat Chatbox OSC</strong> (long phrases split across packets), <strong>SteamVR HUD</strong>, Twitch <strong>Channel Points</strong> alerts, subtitle scroll speed, factory reset, full-snapshot profiles, and a Live status bar on every tab. Details: <a href="changelog.html">Changelog</a>.</p>
 <p>The app is free to use. Copyright © 2026 Kiriuru. All rights reserved. See the <strong><a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">Kagevi Subtitles License</a></strong> for terms of use.</p>
 <blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
 In OBS, use exactly: <code>http://127.0.0.1:8765/overlay</code><br>After updating the app, <strong>reload</strong> that Browser Source if the overlay looks stuck or blank.</p>
@@ -160,7 +160,7 @@ In OBS, use exactly: <code>http://127.0.0.1:8765/overlay</code><br>After updatin
 <p>No Python or Node.js is required to run the installed app.</p>
 <h3>Install and update</h3>
 <ol>
-<li>Run <code>Kagevi Subtitles_0.7.1_x64-setup.exe</code> (or the latest setup from the <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">releases page</a>).</li>
+<li>Run <code>Kagevi Subtitles_0.7.2_x64-setup.exe</code> (or the latest setup from the <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">releases page</a>).</li>
 <li>Open <strong>Kagevi Subtitles.exe</strong>.</li>
 <li>Later updates: the dashboard can show an <strong>update banner</strong>. <strong>Install update</strong> downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in <code>user-data/</code> stay put.</li>
 </ol>
@@ -369,7 +369,7 @@ Check in this order: <strong>Start pressed?</strong> → <strong>recognition wor
 <h3>Squares instead of commas / letters in the SteamVR HUD</h3>
 <p>The HUD draws its own pixels (it is not a browser). Empty boxes used to appear for Japanese <code>、。</code>, Polish / Turkish / Vietnamese letters, and digits next to Thai. Current builds use full Noto Sans plus CJK / Arabic / Hindi / Thai faces, and fall back to Segoe UI on Windows.</p>
 <ul>
-<li>Update to the latest <code>0.7.1</code> (or newer) build.</li>
+<li>Update to the latest <code>0.7.2</code> (or newer) build.</li>
 <li><strong>Send test</strong> with a line that includes those characters.</li>
 <li>OBS <code>/overlay</code> is unrelated — Chrome already falls back to system fonts there.</li>
 </ul>
@@ -763,7 +763,8 @@ While you start a new sentence, the previous finished translation can stay until
 <ul>
 <li>Custom find/replace pairs.</li>
 <li>Optional built-in lists / stem rules (en/ru/ja/ko/zh) and light obfuscation cleanup.</li>
-<li>Builtin / empty replacement mask keeps the <strong>first and last</strong> letter (<code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code>); already-masked forms with <code>*</code> are left alone.</li>
+<li>Builtin dictionary of whole words and variants (EN/RU/JA/KO/ZH) — dictionary lookup only, no letter-stem matching inside words.</li>
+<li>Mask (all languages): <strong>4+</strong> letters → first and last (<code>fuck</code>→<code>f**k</code>); <strong>under 4</strong> → first only (<code>бля</code>→<code>б**</code>, <code>くそ</code>→<code>く*</code>); already-masked forms with <code>*</code> are left alone.</li>
 <li>Case; <strong>whole-word</strong> for custom pairs. Builtin Latin/Cyrillic always matches whole tokens (so <code>бля</code> does not break <code>кораблями</code>); Hangul uses spaces; multi-char CJK is substring; single Han characters and short katakana only match when isolated.</li>
 </ul>
 <p>Twitch chat TTS has its <strong>own</strong> filter switches in the <strong>Twitch</strong> module window (same builtin mask rule); dashboard word-replace pairs do not automatically apply there.</p>
@@ -1314,7 +1315,7 @@ While you start a new sentence, the previous finished translation can stay until
           </article>
           <article class="doc-prose" data-lang-panel="ru" id="doc-ru" hidden>
             
-<p>Руководство пользователя для <strong>Kagevi Subtitles <code>0.7.1</code></strong> — как получить живые субтитры на стриме, что делает каждый экран и как чинить типичные проблемы.</p>
+<p>Руководство пользователя для <strong>Kagevi Subtitles <code>0.7.2</code></strong> — как получить живые субтитры на стриме, что делает каждый экран и как чинить типичные проблемы.</p>
 <p align="center">
   <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/README.ru.md" target="_blank" rel="noopener noreferrer">README</a> ·
   <a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/docs/TECHNICAL_ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Архитектура</a> ·
@@ -1366,7 +1367,7 @@ While you start a new sentence, the previous finished translation can stay until
 <td>модуль <strong>SteamVR HUD</strong> (только для носителя)</td>
 </tr>
 </tbody></table>
-<p>Текущая линия: <strong><code>0.7.1</code></strong> (первый релиз Kagevi — <code>0.5.0</code>). В этой линии: <strong>VRChat Chatbox OSC</strong> (длинные фразы режутся на пакеты), <strong>SteamVR HUD</strong>, алерты Twitch <strong>Channel Points</strong>, скорость прокрутки субтитров, сброс к заводским, полные снимки профилей и статус-бар Эфира на всех вкладках. Подробности: <a href="changelog.html">список изменений</a>.</p>
+<p>Текущая линия: <strong><code>0.7.2</code></strong> (первый релиз Kagevi — <code>0.5.0</code>). В этой линии: <strong>VRChat Chatbox OSC</strong> (длинные фразы режутся на пакеты), <strong>SteamVR HUD</strong>, алерты Twitch <strong>Channel Points</strong>, скорость прокрутки субтитров, сброс к заводским, полные снимки профилей и статус-бар Эфира на всех вкладках. Подробности: <a href="changelog.html">список изменений</a>.</p>
 <p>Программой можно пользоваться бесплатно. Copyright © 2026 Kiriuru. Все права защищены. Условия использования — в <strong><a href="https://github.com/kiriuru/Kagevi-Subtitles/blob/main/LICENSE">лицензии Kagevi Subtitles</a></strong>.</p>
 <blockquote class="doc-callout--important"><p><strong>IMPORTANT</strong>
 В OBS нужен именно: <code>http://127.0.0.1:8765/overlay</code><br>После обновления приложения <strong>перезагрузите</strong> Browser Source, если overlay пустой или «залип».</p>
@@ -1403,7 +1404,7 @@ While you start a new sentence, the previous finished translation can stay until
 <p>Для запуска установленного приложения Python и Node.js не нужны.</p>
 <h3>Установка и обновление</h3>
 <ol>
-<li>Запустите <code>Kagevi Subtitles_0.7.1_x64-setup.exe</code> (или свежий setup со <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">страницы релизов</a>).</li>
+<li>Запустите <code>Kagevi Subtitles_0.7.2_x64-setup.exe</code> (или свежий setup со <a href="https://github.com/kiriuru/Kagevi-Subtitles/releases">страницы релизов</a>).</li>
 <li>Откройте <strong>Kagevi Subtitles.exe</strong>.</li>
 <li>Позже: на dashboard может появиться <strong>баннер обновления</strong>. <strong>Установить обновление</strong> скачивает подписанный NSIS (minisign), ставит его и перезапускает приложение. По-прежнему можно закрыть приложение и поставить новый setup поверх со страницы GitHub. Настройки в <code>user-data/</code> сохраняются.</li>
 </ol>
@@ -1612,7 +1613,7 @@ While you start a new sentence, the previous finished translation can stay until
 <h3>Квадраты вместо запятых / букв в SteamVR HUD</h3>
 <p>HUD рисует свои пиксели (это не браузер). Пустые рамки раньше были у японских <code>、。</code>, польских / турецких / вьетнамских букв и цифр рядом с тайским. В текущих сборках — полный Noto Sans, CJK / арабица / хинди / тайский и фолбэк на Segoe UI в Windows.</p>
 <ul>
-<li>Обновитесь до актуального <code>0.7.1</code> (или новее).</li>
+<li>Обновитесь до актуального <code>0.7.2</code> (или новее).</li>
 <li><strong>Отправить тест</strong> со строкой, где есть эти символы.</li>
 <li>OBS <code>/overlay</code> здесь ни при чём — Chrome и так подставляет системные шрифты.</li>
 </ul>
@@ -2006,7 +2007,8 @@ While you start a new sentence, the previous finished translation can stay until
 <ul>
 <li>Свои пары find/replace.</li>
 <li>Опциональные builtin-списки / стемы (en/ru/ja/ko/zh) и лёгкая нормализация обходов.</li>
-<li>Маска builtin / пустой замены: видны <strong>первая и последняя</strong> буква (<code>fuck</code>→<code>f**k</code>, <code>whore</code>→<code>w***e</code>); уже замаскированные формы с <code>*</code> не переписываются.</li>
+<li>Builtin-словарь целых слов и вариантов (EN/RU/JA/KO/ZH) — сверка только по списку, без побуквенных корней внутри слов.</li>
+<li>Маска (все языки): <strong>4+</strong> букв → первая и последняя (<code>fuck</code>→<code>f**k</code>); <strong>короче 4</strong> → только первая (<code>бля</code>→<code>б**</code>, <code>くそ</code>→<code>く*</code>); уже замаскированные формы с <code>*</code> не переписываются.</li>
 <li>Регистр; <strong>whole-word</strong> для своих пар. Builtin латиница/кириллица всегда по целому слову (чтобы <code>бля</code> не портил <code>кораблями</code>); Hangul — по пробелам; CJK multi-char — substring, одиночные иероглифы и короткая катакана — только изолированно.</li>
 </ul>
 <p>У Twitch chat TTS в окне модуля <strong>Twitch</strong> свои фильтры (то же правило маски); пары замены слов с dashboard туда сами не применяются.</p>

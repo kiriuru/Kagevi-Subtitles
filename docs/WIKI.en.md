@@ -1,6 +1,6 @@
 # Kagevi Subtitles Wiki
 
-User guide for **Kagevi Subtitles `0.7.1`** — how to get live subtitles on stream, what each screen does, and how to fix common problems.
+User guide for **Kagevi Subtitles `0.7.2`** — how to get live subtitles on stream, what each screen does, and how to fix common problems.
 
 <p align="center">
   <a href="../README.md">README</a> ·
@@ -82,7 +82,7 @@ Everything runs on **your PC**. There is no account and no Kagevi cloud. The app
 | Subtitles in VRChat social chatbox | **VRChat** module (OSC Chatbox) |
 | Subtitles inside your PCVR headset | **SteamVR HUD** module (wearer only) |
 
-Current version line: **`0.7.1`** (first Kagevi release was `0.5.0`). In this line: **VRChat Chatbox OSC** (long phrases split across packets), **SteamVR HUD**, Twitch **Channel Points** alerts, subtitle scroll speed, factory reset, full-snapshot profiles, and a Live status bar on every tab. Details: [Changelog](./CHANGELOG.en.md).
+Current version line: **`0.7.2`** (first Kagevi release was `0.5.0`). In this line: **VRChat Chatbox OSC** (long phrases split across packets), **SteamVR HUD**, Twitch **Channel Points** alerts, subtitle scroll speed, factory reset, full-snapshot profiles, and a Live status bar on every tab. Details: [Changelog](./CHANGELOG.en.md).
 
 The app is free to use. Copyright © 2026 Kiriuru. All rights reserved. See the **[Kagevi Subtitles License](../LICENSE)** for terms of use.
 
@@ -104,7 +104,7 @@ No Python or Node.js is required to run the installed app.
 
 ### Install and update
 
-1. Run `Kagevi Subtitles_0.7.1_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
+1. Run `Kagevi Subtitles_0.7.2_x64-setup.exe` (or the latest setup from the [releases page](https://github.com/kiriuru/Kagevi-Subtitles/releases)).
 2. Open **Kagevi Subtitles.exe**.
 3. Later updates: the dashboard can show an **update banner**. **Install update** downloads the signed NSIS installer (minisign), runs it, and relaunches the app. You can still close the app and install a new setup over the old one from GitHub. Settings in `user-data/` stay put.
 
@@ -267,7 +267,7 @@ Laptop / two GPUs: leave SteamVR on the GPU that drives the headset. The HUD fol
 
 The HUD draws its own pixels (it is not a browser). Empty boxes used to appear for Japanese `、。`, Polish / Turkish / Vietnamese letters, and digits next to Thai. Current builds use full Noto Sans plus CJK / Arabic / Hindi / Thai faces, and fall back to Segoe UI on Windows.
 
-- Update to the latest `0.7.1` (or newer) build.
+- Update to the latest `0.7.2` (or newer) build.
 - **Send test** with a line that includes those characters.
 - OBS `/overlay` is unrelated — Chrome already falls back to system fonts there.
 
@@ -631,7 +631,8 @@ Use this to clean names, slang, or misheard words **before** they hit translatio
 
 - Custom find/replace pairs.
 - Optional built-in lists / stem rules (en/ru/ja/ko/zh) and light obfuscation cleanup.
-- Builtin / empty replacement mask keeps the **first and last** letter (`fuck`→`f**k`, `whore`→`w***e`); already-masked forms with `*` are left alone.
+- Builtin dictionary of whole words and variants (EN/RU/JA/KO/ZH) — dictionary lookup only, no letter-stem matching inside words.
+- Mask (all languages): **4+** letters → first and last (`fuck`→`f**k`); **under 4** → first only (`бля`→`б**`, `くそ`→`く*`); already-masked forms with `*` are left alone.
 - Case; **whole-word** for custom pairs. Builtin Latin/Cyrillic always matches whole tokens (so `бля` does not break `кораблями`); Hangul uses spaces; multi-char CJK is substring; single Han characters and short katakana only match when isolated.
 
 Twitch chat TTS has its **own** filter switches in the **Twitch** module window (same builtin mask rule); dashboard word-replace pairs do not automatically apply there.

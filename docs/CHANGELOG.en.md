@@ -14,6 +14,36 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 
 ## [Unreleased]
 
+### Changed
+
+- README localized for all UI languages (`en` / `de` / `ru` / `ja` / `ko` / `zh`); removed the Local URLs table.
+- LICENSE: dropped the prior-MIT release carve-out wording (application remains proprietary All rights reserved).
+
+## [0.7.2] - 2026-10-07
+
+### Changed
+
+- **TTS** module (`/tts`): UI aligned with Twitch TTS — status hero + enable/disable button, audio/engine/playback/voice grid, test phrase in the same section, language remaps and activity as separate blocks; window **960×675**.
+- **Twitch** module (`/twitch`): window **960×675** (main window −25%), horizontal layout. Module enable/disable via button like VR modules; **Speak chat** and **SteamVR HUD** stay checkboxes. Removed the long header blurb and OAuth/channel hint paragraphs. Audio output sits above the TTS engine; fallback language and min length stay in the speech column. Filters + Advanced sit in a full-width spoiler with two columns.
+- Twitch TTS: chat speak filter — **all messages** or **highlighted only** (Channel Points «Highlight My Message», IRC `msg-id=highlighted-message`; `chat:read` on the IRC token is enough).
+- TTS / Twitch: engines **gTTS (browser)**, **gTTS (Python)**, and **WinRT** with voice pickers; per-language remaps (`lang_voices`) as a full-width spoiler (language | engine | voice | ×), not inside Filters.
+- Removed **Windows 11 Natural** engine (Narrator Natural is not available to apps via WinRT); saved `windows_natural` configs migrate to `winrt`.
+
+### Added
+
+- UI locale **German (de)** for dashboard, worker, overlay, TTS, Twitch, Local ASR / VR modules, and NSIS installer (Windows de-DE auto-select).
+- `GET /api/tts/voices?provider=` — voice/language catalog for the selected TTS engine.
+
+### Fixed
+
+- OBS overlay: closing/killing the app clears captions without refreshing the Browser Source (`/live` probe + idle seed on listen); after restart, text appears again over WebSocket without a manual source refresh.
+- Profanity filter: shared whole-word dictionary with EN/RU/JA/KO/ZH variants (`source_text_builtin_pairs.json`) — dictionary lookup only, no letter-stem / infix search (including CJK compounds).
+- Profanity mask (all languages) by length: **4+** letters → first and last (`fuck`→`f**k`); **under 4** → first only (`бля`→`б**`, `くそ`→`く*`).
+- Twitch: sample speak works with “Speak chat messages” off and no longer queues samples until that toggle is turned on.
+- Modules dashboard: TTS / Twitch / VRChat / SteamVR HUD badges update in realtime on enable/disable and connection changes (live `runtime_update` no longer lost under a stale `/status` snapshot; module fields added to runtime status coalescing).
+- Navigation: long labels (including DE **Übersetzung**) wrap to two lines instead of truncating with “…”.
+- TTS: “What to speak” translation rows use localized language and slot labels instead of raw `translation_N · tl=xx`.
+
 ## [0.7.1] - 2026-09-09
 
 ### Fixed
@@ -38,7 +68,7 @@ This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from
 ### Changed
 
 - Word replace: mask `fuck`→`f**k`, `whore`→`w***e` (first and last letter); forms that already contain `*` are left alone.
-- Application license from **0.7.0**: Copyright © 2026 Kiriuru. All rights reserved. See [LICENSE](../LICENSE). Releases through **0.6.5** stay under MIT.
+- Application license from **0.7.0**: Copyright © 2026 Kiriuru. All rights reserved. See [LICENSE](../LICENSE).
 - Live runtime status bar is pinned on **all** tabs: full KPI on Live, collapsed strip elsewhere.
 - **Keep captions inside the OBS box** renamed to **Subtitle scrolling**.
 - UI Theme: preset gallery (**click only**), **GTA 6** preset. Long hints sit behind a **?** popover.
@@ -516,7 +546,8 @@ First VoiceSub release (successor to SST Desktop `0.4.4`). Stack and delivery ar
 
 Earlier `0.2.9.*` SST Desktop history lives in archived GitHub release notes and is not expanded here.
 
-[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...HEAD
+[unreleased]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.5...v0.7.0
 [0.6.5]: https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.6.4...v0.6.5

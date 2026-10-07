@@ -18,9 +18,6 @@ Plain-language summary (NOT a substitute for the License):
   You may not copy, redistribute, sell, or commercialize the Software,
   publish its source, or claim official status.
 
-  Prior product releases that shipped under the MIT License remain
-  under MIT for those releases.
-
 
 1. Definitions
 
@@ -117,11 +114,9 @@ component.
 
 If You violate this License, Your rights under this License terminate
 automatically. Upon termination You must cease use of the Software and
-destroy copies in Your possession, except that copies already lawfully
-obtained by third parties under a prior MIT release of the Software remain
-licensed to those third parties under MIT.
+destroy copies in Your possession.
 
-Sections 1, 5, 6, 8, 9, 10, and 11 survive termination.
+Sections 1, 5, 6, 8, 9, and 10 survive termination.
 
 
 8. Disclaimer of warranty
@@ -149,15 +144,3 @@ provisions remain in effect. Failure by Licensor to enforce a provision is
 not a waiver. Headings are for convenience only. The English text of this
 License is the authoritative text. The plain-language summary is not a
 substitute for the operative terms.
-
-
-11. Prior MIT releases
-
-Releases of Kagevi Subtitles that Licensor previously distributed under the
-MIT License remain available under MIT for those releases. This License
-applies to the Software as distributed by Licensor from version 0.7.0
-onward, and to subsequent distributions by Licensor that include this
-License.
-
-This License does not revoke rights already granted under MIT in those prior
-releases.
