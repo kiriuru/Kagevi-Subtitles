@@ -9,17 +9,12 @@
 
 Файл охватывает desktop-линию: **Kagevi Subtitles** (ранее VoiceSub, с `0.5.0`).
 
-## [Unreleased](https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.2...HEAD)
+## [0.7.2](https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...v0.7.2) - 2026-10-07
 
 ### Changed
 
 - README на все UI-локали (`en` / `de` / `ru` / `ja` / `ko` / `zh`); убрана таблица Local URLs.
 - LICENSE: убрана оговорка про прежние MIT-релизы (приложение по-прежнему proprietary, All rights reserved).
-
-## [0.7.2](https://github.com/kiriuru/Kagevi-Subtitles/compare/v0.7.1...v0.7.2) - 2026-10-07
-
-### Changed
-
 - Модуль **TTS** (`/tts`): UI как у Twitch TTS — hero со статусом и кнопкой вкл/выкл, сетка аудио/движок/playback/голос, тест-фраза в той же секции, переназначение голосов и активность отдельными блоками; окно **960×675**.
 - Модуль **Twitch** (`/twitch`): окно **960×675** (как главное −25%), горизонтальная вёрстка. Включение модуля кнопкой как у VR; **Озвучивать чат** и **SteamVR HUD** — галочки. Убран длинный подзаголовок и подсказки OAuth/каналов под полями. Аудиовыход над движком TTS; язык и мин. длина — в колонке озвучки. Фильтры и «Дополнительно» — спойлер на всю ширину в две колонки.
 - Twitch TTS: фильтр озвучки чата — **все сообщения** или **только выделенные** (награда Channel Points «Highlight My Message», IRC `msg-id=highlighted-message`; достаточно `chat:read` у токена, читающего чат).

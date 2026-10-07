@@ -12,17 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This file covers the desktop line: **Kagevi Subtitles** (formerly VoiceSub, from `0.5.0`).
 
-## [Unreleased]
+## [0.7.2] - 2026-10-07
 
 ### Changed
 
 - README localized for all UI languages (`en` / `de` / `ru` / `ja` / `ko` / `zh`); removed the Local URLs table.
 - LICENSE: dropped the prior-MIT release carve-out wording (application remains proprietary All rights reserved).
-
-## [0.7.2] - 2026-10-07
-
-### Changed
-
 - **TTS** module (`/tts`): UI aligned with Twitch TTS — status hero + enable/disable button, audio/engine/playback/voice grid, test phrase in the same section, language remaps and activity as separate blocks; window **960×675**.
 - **Twitch** module (`/twitch`): window **960×675** (main window −25%), horizontal layout. Module enable/disable via button like VR modules; **Speak chat** and **SteamVR HUD** stay checkboxes. Removed the long header blurb and OAuth/channel hint paragraphs. Audio output sits above the TTS engine; fallback language and min length stay in the speech column. Filters + Advanced sit in a full-width spoiler with two columns.
 - Twitch TTS: chat speak filter — **all messages** or **highlighted only** (Channel Points «Highlight My Message», IRC `msg-id=highlighted-message`; `chat:read` on the IRC token is enough).
