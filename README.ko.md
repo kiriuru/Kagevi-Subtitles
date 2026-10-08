@@ -134,16 +134,16 @@ Kagevi Subtitles 첫 릴리스: **`0.5.0`**. 현재 라인: **`0.7.2`**.
       <sub>IRC 채팅 로그, 연결, 선택적 채팅 TTS</sub>
     </td>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_connection.png" alt="Twitch 연결" width="420"><br>
-      <strong>Twitch 연결</strong><br>
-      <sub>Broadcaster OAuth, 채널, EventSub 알림</sub>
+      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch 필터" width="420"><br>
+      <strong>Twitch 필터</strong><br>
+      <sub>이모트, 언어, 말하기 템플릿, 닉 치환</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch 필터" width="420"><br>
-      <strong>Twitch 필터</strong><br>
-      <sub>이모트, 언어, 말하기 템플릿, 닉 치환</sub>
+      <img src="./Images/kagevi_tts_twitch_voice_remaps.png" alt="Twitch 음성 리맵" width="420"><br>
+      <strong>Twitch 음성 리맵</strong><br>
+      <sub>채팅 TTS 언어별 엔진/보이스</sub>
     </td>
     <td align="center">
       <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR 설정" width="420"><br>
@@ -158,9 +158,33 @@ Kagevi Subtitles 첫 릴리스: **`0.5.0`**. 현재 라인: **`0.7.2`**.
       <sub>VR 소셜 자막용 OSC Chatbox 출력</sub>
     </td>
     <td align="center">
+      <img src="./Images/kagevi_vrchat_2.png" alt="VRChat 템플릿" width="420"><br>
+      <strong>VRChat 템플릿</strong><br>
+      <sub>전송 내용, Mute/AFK 일시정지, Chatbox 한도</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src="./Images/kagevi_steamVR_1.png" alt="SteamVR HUD 모듈" width="420"><br>
       <strong>SteamVR HUD</strong><br>
       <sub>PCVR에서 착용자만 보는 OpenVR 오버레이</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_2.png" alt="SteamVR 배치" width="420"><br>
+      <strong>SteamVR 배치</strong><br>
+      <sub>캘리브레이션, 오프셋, 표시 내용</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_3.png" alt="SteamVR 디스플레이" width="420"><br>
+      <strong>SteamVR 디스플레이</strong><br>
+      <sub>캔버스 프리셋, 글꼴, submit 간격</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_4.png" alt="SteamVR Twitch 패널" width="420"><br>
+      <strong>SteamVR Twitch 패널</strong><br>
+      <sub>OpenVR 선택적 채팅 오버레이</sub>
     </td>
   </tr>
   <tr>

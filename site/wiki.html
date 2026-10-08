@@ -799,17 +799,17 @@ While you start a new sentence, the previous finished translation can stay until
 <h2>Twitch module</h2>
 <p align="center">
   <img loading="lazy" src="images/kagevi_tts_twitch_1.png" alt="Twitch module" width="820"><br>
-  <em><strong>Twitch</strong> — IRC chat log and optional chat TTS (up to five channels)</em>
-</p>
-
-<p align="center">
-  <img loading="lazy" src="images/kagevi_tts_twitch_connection.png" alt="Twitch connection" width="820"><br>
-  <em><strong>Twitch connection</strong> — broadcaster OAuth, channels, and EventSub alerts</em>
+  <em><strong>Twitch</strong> — IRC chat log, connection, and optional chat TTS (up to five channels)</em>
 </p>
 
 <p align="center">
   <img loading="lazy" src="images/kagevi_tts_twitch_2.png" alt="Twitch filters" width="820"><br>
   <em><strong>Twitch filters</strong> — emotes, language, speak template, nick replacements</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_voice_remaps.png" alt="Twitch voice remaps" width="820"><br>
+  <em><strong>Twitch voice remaps</strong> — per-language engine and voice overrides for chat TTS</em>
 </p>
 
 <p>Open from <strong>Modules → Twitch</strong> (<code>/twitch</code>). Settings live in <code>user-data/modules/twitch/</code>. Enable-without-window: closing the webview does <strong>not</strong> disconnect IRC or stop chat TTS.</p>
@@ -839,6 +839,11 @@ While you start a new sentence, the previous finished translation can stay until
 <p align="center">
   <img loading="lazy" src="images/kagevi_vrchat_1.png" alt="VRChat module" width="820"><br>
   <em><strong>VRChat</strong> — OSC Chatbox output for social captions in VR</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_vrchat_2.png" alt="VRChat what to send" width="820"><br>
+  <em><strong>VRChat</strong> — content template, mute/AFK pause, and Chatbox limits</em>
 </p>
 
 <p>Optional <strong>social</strong> output: pipeline text goes to the VRChat <strong>Chatbox</strong> over OSC. Other players in the instance see it. This is <strong>not</strong> a headset HUD and <strong>not</strong> KAT — for wearer-only captions in SteamVR use the <a href="#steamvr-hud-module">SteamVR HUD</a>.</p>
@@ -972,12 +977,22 @@ While you start a new sentence, the previous finished translation can stay until
 <h2>SteamVR HUD module</h2>
 <p align="center">
   <img loading="lazy" src="images/kagevi_steamVR_1.png" alt="SteamVR HUD module" width="820"><br>
-  <em><strong>SteamVR HUD</strong> — module window, placement, and what to show</em>
+  <em><strong>SteamVR HUD</strong> — module window, status, and placement origin</em>
 </p>
 
 <p align="center">
-  <img loading="lazy" src="images/kagevi_steamVR_2.png" alt="SteamVR HUD settings" width="820"><br>
+  <img loading="lazy" src="images/kagevi_steamVR_2.png" alt="SteamVR HUD placement" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — calibration, offsets, and what to show</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_3.png" alt="SteamVR HUD display" width="820"><br>
   <em><strong>SteamVR HUD</strong> — canvas presets, fonts, and submit interval</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_4.png" alt="SteamVR Twitch chat panel" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — optional Twitch chat panel in OpenVR</em>
 </p>
 
 <p align="center">
@@ -2043,17 +2058,17 @@ While you start a new sentence, the previous finished translation can stay until
 <h2>Twitch-модуль</h2>
 <p align="center">
   <img loading="lazy" src="images/kagevi_tts_twitch_1.png" alt="Модуль Twitch" width="820"><br>
-  <em><strong>Twitch</strong> — лог IRC-чата и опциональная озвучка (до пяти каналов)</em>
-</p>
-
-<p align="center">
-  <img loading="lazy" src="images/kagevi_tts_twitch_connection.png" alt="Подключение Twitch" width="820"><br>
-  <em><strong>Подключение Twitch</strong> — OAuth вещателя, каналы и EventSub-алерты</em>
+  <em><strong>Twitch</strong> — лог IRC-чата, подключение и опциональная озвучка (до пяти каналов)</em>
 </p>
 
 <p align="center">
   <img loading="lazy" src="images/kagevi_tts_twitch_2.png" alt="Фильтры Twitch" width="820"><br>
   <em><strong>Фильтры Twitch</strong> — emotes, язык, шаблон озвучки, замена ников</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_tts_twitch_voice_remaps.png" alt="Ремапы голоса Twitch" width="820"><br>
+  <em><strong>Ремапы голоса Twitch</strong> — движок и голос по языку для озвучки чата</em>
 </p>
 
 <p>Открывается из <strong>Модули → Twitch</strong> (<code>/twitch</code>). Настройки в <code>user-data/modules/twitch/</code>. Enable-without-window: закрытие webview <strong>не</strong> рвёт IRC и не глушит chat TTS.</p>
@@ -2083,6 +2098,11 @@ While you start a new sentence, the previous finished translation can stay until
 <p align="center">
   <img loading="lazy" src="images/kagevi_vrchat_1.png" alt="Модуль VRChat" width="820"><br>
   <em><strong>VRChat</strong> — OSC Chatbox для социальных субтитров в VR</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_vrchat_2.png" alt="VRChat — что отправлять" width="820"><br>
+  <em><strong>VRChat</strong> — шаблон контента, пауза Mute/AFK и лимиты Chatbox</em>
 </p>
 
 <p>Опциональный <strong>социальный</strong> вывод: текст пайплайна в <strong>Chatbox</strong> VRChat по OSC. Его видят другие игроки в инстансе. Это <strong>не</strong> HUD в шлеме и <strong>не</strong> KAT — субтитры только для себя в SteamVR даёт <a href="#steamvr-hud-%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C">SteamVR HUD</a>.</p>
@@ -2216,12 +2236,22 @@ While you start a new sentence, the previous finished translation can stay until
 <h2>SteamVR HUD-модуль</h2>
 <p align="center">
   <img loading="lazy" src="images/kagevi_steamVR_1.png" alt="Модуль SteamVR HUD" width="820"><br>
-  <em><strong>SteamVR HUD</strong> — окно модуля, размещение и что показывать</em>
+  <em><strong>SteamVR HUD</strong> — окно модуля, статус и origin размещения</em>
 </p>
 
 <p align="center">
-  <img loading="lazy" src="images/kagevi_steamVR_2.png" alt="Настройки SteamVR HUD" width="820"><br>
+  <img loading="lazy" src="images/kagevi_steamVR_2.png" alt="Позиция SteamVR HUD" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — калибровка, оффсеты и что показывать</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_3.png" alt="Display SteamVR HUD" width="820"><br>
   <em><strong>SteamVR HUD</strong> — пресеты canvas, шрифты и интервал submit</em>
+</p>
+
+<p align="center">
+  <img loading="lazy" src="images/kagevi_steamVR_4.png" alt="Панель Twitch в SteamVR" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — опциональная панель Twitch-чата в OpenVR</em>
 </p>
 
 <p align="center">

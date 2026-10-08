@@ -674,17 +674,17 @@ The Google TTS helper binary is bundled under the TTS module runtime — you do 
 
 <p align="center">
   <img src="../Images/kagevi_tts_twitch_1.png" alt="Twitch module" width="820"><br>
-  <em><strong>Twitch</strong> — IRC chat log and optional chat TTS (up to five channels)</em>
-</p>
-
-<p align="center">
-  <img src="../Images/kagevi_tts_twitch_connection.png" alt="Twitch connection" width="820"><br>
-  <em><strong>Twitch connection</strong> — broadcaster OAuth, channels, and EventSub alerts</em>
+  <em><strong>Twitch</strong> — IRC chat log, connection, and optional chat TTS (up to five channels)</em>
 </p>
 
 <p align="center">
   <img src="../Images/kagevi_tts_twitch_2.png" alt="Twitch filters" width="820"><br>
   <em><strong>Twitch filters</strong> — emotes, language, speak template, nick replacements</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_tts_twitch_voice_remaps.png" alt="Twitch voice remaps" width="820"><br>
+  <em><strong>Twitch voice remaps</strong> — per-language engine and voice overrides for chat TTS</em>
 </p>
 
 Open from **Modules → Twitch** (`/twitch`). Settings live in `user-data/modules/twitch/`. Enable-without-window: closing the webview does **not** disconnect IRC or stop chat TTS.
@@ -720,6 +720,11 @@ Filters (emotes, links, symbols, language, profanity mask) apply live — usuall
 <p align="center">
   <img src="../Images/kagevi_vrchat_1.png" alt="VRChat module" width="820"><br>
   <em><strong>VRChat</strong> — OSC Chatbox output for social captions in VR</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_vrchat_2.png" alt="VRChat what to send" width="820"><br>
+  <em><strong>VRChat</strong> — content template, mute/AFK pause, and Chatbox limits</em>
 </p>
 
 Optional **social** output: pipeline text goes to the VRChat **Chatbox** over OSC. Other players in the instance see it. This is **not** a headset HUD and **not** KAT — for wearer-only captions in SteamVR use the [SteamVR HUD](#steamvr-hud-module).
@@ -803,12 +808,22 @@ Contracts (OSC, HTTP, config keys): [Technical Architecture §18b](./TECHNICAL_A
 
 <p align="center">
   <img src="../Images/kagevi_steamVR_1.png" alt="SteamVR HUD module" width="820"><br>
-  <em><strong>SteamVR HUD</strong> — module window, placement, and what to show</em>
+  <em><strong>SteamVR HUD</strong> — module window, status, and placement origin</em>
 </p>
 
 <p align="center">
-  <img src="../Images/kagevi_steamVR_2.png" alt="SteamVR HUD settings" width="820"><br>
+  <img src="../Images/kagevi_steamVR_2.png" alt="SteamVR HUD placement" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — calibration, offsets, and what to show</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_steamVR_3.png" alt="SteamVR HUD display" width="820"><br>
   <em><strong>SteamVR HUD</strong> — canvas presets, fonts, and submit interval</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_steamVR_4.png" alt="SteamVR Twitch chat panel" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — optional Twitch chat panel in OpenVR</em>
 </p>
 
 <p align="center">

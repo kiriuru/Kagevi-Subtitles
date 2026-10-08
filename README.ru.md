@@ -134,16 +134,16 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
       <sub>Лог IRC-чата, подключение и опциональный chat TTS</sub>
     </td>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_connection.png" alt="Подключение Twitch" width="420"><br>
-      <strong>Подключение Twitch</strong><br>
-      <sub>OAuth вещателя, каналы и EventSub-алерты</sub>
+      <img src="./Images/kagevi_tts_twitch_2.png" alt="Фильтры Twitch" width="420"><br>
+      <strong>Фильтры Twitch</strong><br>
+      <sub>Эмоуты, язык, шаблон озвучки, замена ников</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_2.png" alt="Фильтры Twitch" width="420"><br>
-      <strong>Фильтры Twitch</strong><br>
-      <sub>Эмоуты, язык, шаблон озвучки, замена ников</sub>
+      <img src="./Images/kagevi_tts_twitch_voice_remaps.png" alt="Ремапы голоса Twitch" width="420"><br>
+      <strong>Ремапы голоса Twitch</strong><br>
+      <sub>Движок и голос по языку для озвучки чата</sub>
     </td>
     <td align="center">
       <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR setup" width="420"><br>
@@ -158,9 +158,33 @@ Kagevi Subtitles — Windows desktop-приложение, которое пре
       <sub>OSC Chatbox — социальные субтитры в VR</sub>
     </td>
     <td align="center">
+      <img src="./Images/kagevi_vrchat_2.png" alt="VRChat — что отправлять" width="420"><br>
+      <strong>Шаблоны VRChat</strong><br>
+      <sub>Шаблон контента, пауза Mute/AFK, лимиты Chatbox</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src="./Images/kagevi_steamVR_1.png" alt="Модуль SteamVR HUD" width="420"><br>
       <strong>SteamVR HUD</strong><br>
       <sub>OpenVR overlay только для носителя в PCVR</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_2.png" alt="Позиция SteamVR HUD" width="420"><br>
+      <strong>Позиция SteamVR</strong><br>
+      <sub>Калибровка, оффсеты и что показывать</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_3.png" alt="Display SteamVR HUD" width="420"><br>
+      <strong>Display SteamVR</strong><br>
+      <sub>Пресеты canvas, шрифты, интервал submit</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_4.png" alt="Панель Twitch в SteamVR" width="420"><br>
+      <strong>Панель Twitch SteamVR</strong><br>
+      <sub>Опциональный чат-overlay в OpenVR</sub>
     </td>
   </tr>
   <tr>

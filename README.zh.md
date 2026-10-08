@@ -134,16 +134,16 @@ Kagevi Subtitles 首个版本：**`0.5.0`**。当前产品线：**`0.7.2`**。
       <sub>IRC 聊天日志、连接与可选聊天 TTS</sub>
     </td>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_connection.png" alt="Twitch 连接" width="420"><br>
-      <strong>Twitch 连接</strong><br>
-      <sub>主播 OAuth、频道与 EventSub 提醒</sub>
+      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch 过滤" width="420"><br>
+      <strong>Twitch 过滤</strong><br>
+      <sub>表情、语言、朗读模板、昵称替换</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch 过滤" width="420"><br>
-      <strong>Twitch 过滤</strong><br>
-      <sub>表情、语言、朗读模板、昵称替换</sub>
+      <img src="./Images/kagevi_tts_twitch_voice_remaps.png" alt="Twitch 语音重映射" width="420"><br>
+      <strong>Twitch 语音重映射</strong><br>
+      <sub>按语言为聊天 TTS 选择引擎/音色</sub>
     </td>
     <td align="center">
       <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR 安装" width="420"><br>
@@ -158,9 +158,33 @@ Kagevi Subtitles 首个版本：**`0.5.0`**。当前产品线：**`0.7.2`**。
       <sub>VR 社交字幕的 OSC Chatbox 输出</sub>
     </td>
     <td align="center">
+      <img src="./Images/kagevi_vrchat_2.png" alt="VRChat 模板" width="420"><br>
+      <strong>VRChat 模板</strong><br>
+      <sub>发送内容、Mute/AFK 暂停、Chatbox 限制</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src="./Images/kagevi_steamVR_1.png" alt="SteamVR HUD 模块" width="420"><br>
       <strong>SteamVR HUD</strong><br>
       <sub>PCVR 中仅佩戴者可见的 OpenVR 叠加层</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_2.png" alt="SteamVR 定位" width="420"><br>
+      <strong>SteamVR 定位</strong><br>
+      <sub>校准、偏移与显示内容</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_3.png" alt="SteamVR 显示" width="420"><br>
+      <strong>SteamVR 显示</strong><br>
+      <sub>画布预设、字体、提交间隔</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_4.png" alt="SteamVR Twitch 面板" width="420"><br>
+      <strong>SteamVR Twitch 面板</strong><br>
+      <sub>OpenVR 可选聊天叠加层</sub>
     </td>
   </tr>
   <tr>

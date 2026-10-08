@@ -674,17 +674,17 @@ Overlay **держит крупный шрифт** внутри Browser Source (
 
 <p align="center">
   <img src="../Images/kagevi_tts_twitch_1.png" alt="Модуль Twitch" width="820"><br>
-  <em><strong>Twitch</strong> — лог IRC-чата и опциональная озвучка (до пяти каналов)</em>
-</p>
-
-<p align="center">
-  <img src="../Images/kagevi_tts_twitch_connection.png" alt="Подключение Twitch" width="820"><br>
-  <em><strong>Подключение Twitch</strong> — OAuth вещателя, каналы и EventSub-алерты</em>
+  <em><strong>Twitch</strong> — лог IRC-чата, подключение и опциональная озвучка (до пяти каналов)</em>
 </p>
 
 <p align="center">
   <img src="../Images/kagevi_tts_twitch_2.png" alt="Фильтры Twitch" width="820"><br>
   <em><strong>Фильтры Twitch</strong> — emotes, язык, шаблон озвучки, замена ников</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_tts_twitch_voice_remaps.png" alt="Ремапы голоса Twitch" width="820"><br>
+  <em><strong>Ремапы голоса Twitch</strong> — движок и голос по языку для озвучки чата</em>
 </p>
 
 Открывается из **Модули → Twitch** (`/twitch`). Настройки в `user-data/modules/twitch/`. Enable-without-window: закрытие webview **не** рвёт IRC и не глушит chat TTS.
@@ -720,6 +720,11 @@ Overlay **держит крупный шрифт** внутри Browser Source (
 <p align="center">
   <img src="../Images/kagevi_vrchat_1.png" alt="Модуль VRChat" width="820"><br>
   <em><strong>VRChat</strong> — OSC Chatbox для социальных субтитров в VR</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_vrchat_2.png" alt="VRChat — что отправлять" width="820"><br>
+  <em><strong>VRChat</strong> — шаблон контента, пауза Mute/AFK и лимиты Chatbox</em>
 </p>
 
 Опциональный **социальный** вывод: текст пайплайна в **Chatbox** VRChat по OSC. Его видят другие игроки в инстансе. Это **не** HUD в шлеме и **не** KAT — субтитры только для себя в SteamVR даёт [SteamVR HUD](#steamvr-hud-модуль).
@@ -803,12 +808,22 @@ Overlay **держит крупный шрифт** внутри Browser Source (
 
 <p align="center">
   <img src="../Images/kagevi_steamVR_1.png" alt="Модуль SteamVR HUD" width="820"><br>
-  <em><strong>SteamVR HUD</strong> — окно модуля, размещение и что показывать</em>
+  <em><strong>SteamVR HUD</strong> — окно модуля, статус и origin размещения</em>
 </p>
 
 <p align="center">
-  <img src="../Images/kagevi_steamVR_2.png" alt="Настройки SteamVR HUD" width="820"><br>
+  <img src="../Images/kagevi_steamVR_2.png" alt="Позиция SteamVR HUD" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — калибровка, оффсеты и что показывать</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_steamVR_3.png" alt="Display SteamVR HUD" width="820"><br>
   <em><strong>SteamVR HUD</strong> — пресеты canvas, шрифты и интервал submit</em>
+</p>
+
+<p align="center">
+  <img src="../Images/kagevi_steamVR_4.png" alt="Панель Twitch в SteamVR" width="820"><br>
+  <em><strong>SteamVR HUD</strong> — опциональная панель Twitch-чата в OpenVR</em>
 </p>
 
 <p align="center">

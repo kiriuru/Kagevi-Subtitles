@@ -134,16 +134,16 @@ Kompaktes Telefon-Layout für Zweitmonitore verfügbar.
       <sub>IRC-Chat-Log, Verbindung und optionales Chat-TTS</sub>
     </td>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_connection.png" alt="Twitch-Verbindung" width="420"><br>
-      <strong>Twitch-Verbindung</strong><br>
-      <sub>Broadcaster-OAuth, Kanäle und EventSub-Alerts</sub>
+      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch-Filter" width="420"><br>
+      <strong>Twitch-Filter</strong><br>
+      <sub>Emotes, Sprache, Speak-Vorlage, Nick-Ersetzungen</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch-Filter" width="420"><br>
-      <strong>Twitch-Filter</strong><br>
-      <sub>Emotes, Sprache, Speak-Vorlage, Nick-Ersetzungen</sub>
+      <img src="./Images/kagevi_tts_twitch_voice_remaps.png" alt="Twitch-Stimm-Remaps" width="420"><br>
+      <strong>Twitch-Stimm-Remaps</strong><br>
+      <sub>Engine und Stimme pro Sprache für Chat-TTS</sub>
     </td>
     <td align="center">
       <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR Setup" width="420"><br>
@@ -158,9 +158,33 @@ Kompaktes Telefon-Layout für Zweitmonitore verfügbar.
       <sub>OSC-Chatbox-Ausgabe für soziale Untertitel in VR</sub>
     </td>
     <td align="center">
+      <img src="./Images/kagevi_vrchat_2.png" alt="VRChat-Vorlagen" width="420"><br>
+      <strong>VRChat-Vorlagen</strong><br>
+      <sub>Inhaltstemplate, Mute/AFK-Pause, Chatbox-Limits</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src="./Images/kagevi_steamVR_1.png" alt="SteamVR HUD-Modul" width="420"><br>
       <strong>SteamVR HUD</strong><br>
       <sub>OpenVR-Overlay nur für den Träger in PCVR</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_2.png" alt="SteamVR-Platzierung" width="420"><br>
+      <strong>SteamVR-Platzierung</strong><br>
+      <sub>Kalibrierung, Offsets und Anzeigeinhalt</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_3.png" alt="SteamVR-Display" width="420"><br>
+      <strong>SteamVR-Display</strong><br>
+      <sub>Canvas-Presets, Schriften, Submit-Intervall</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_4.png" alt="SteamVR-Twitch-Panel" width="420"><br>
+      <strong>SteamVR-Twitch-Panel</strong><br>
+      <sub>Optionales Chat-Overlay in OpenVR</sub>
     </td>
   </tr>
   <tr>

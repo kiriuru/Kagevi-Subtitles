@@ -134,16 +134,16 @@ Kagevi Subtitles 初回リリース: **`0.5.0`**。現行ライン: **`0.7.2`**�
       <sub>IRC チャットログ、接続、任意のチャット TTS</sub>
     </td>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_connection.png" alt="Twitch 接続" width="420"><br>
-      <strong>Twitch 接続</strong><br>
-      <sub>Broadcaster OAuth、チャンネル、EventSub アラート</sub>
+      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch フィルタ" width="420"><br>
+      <strong>Twitch フィルタ</strong><br>
+      <sub>エモート、言語、読み上げテンプレート、ニック置換</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="./Images/kagevi_tts_twitch_2.png" alt="Twitch フィルタ" width="420"><br>
-      <strong>Twitch フィルタ</strong><br>
-      <sub>エモート、言語、読み上げテンプレート、ニック置換</sub>
+      <img src="./Images/kagevi_tts_twitch_voice_remaps.png" alt="Twitch ボイスリマップ" width="420"><br>
+      <strong>Twitch ボイスリマップ</strong><br>
+      <sub>チャット TTS の言語別エンジン／ボイス</sub>
     </td>
     <td align="center">
       <img src="./Images/kagevi_localASR_setup.png" alt="Local ASR セットアップ" width="420"><br>
@@ -158,9 +158,33 @@ Kagevi Subtitles 初回リリース: **`0.5.0`**。現行ライン: **`0.7.2`**�
       <sub>VR 向けソーシャル字幕の OSC Chatbox 出力</sub>
     </td>
     <td align="center">
+      <img src="./Images/kagevi_vrchat_2.png" alt="VRChat テンプレート" width="420"><br>
+      <strong>VRChat テンプレート</strong><br>
+      <sub>送信内容、Mute/AFK 一時停止、Chatbox 制限</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src="./Images/kagevi_steamVR_1.png" alt="SteamVR HUD モジュール" width="420"><br>
       <strong>SteamVR HUD</strong><br>
       <sub>PCVR で装着者のみの OpenVR オーバーレイ</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_2.png" alt="SteamVR 配置" width="420"><br>
+      <strong>SteamVR 配置</strong><br>
+      <sub>キャリブレーション、オフセット、表示内容</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_3.png" alt="SteamVR 表示" width="420"><br>
+      <strong>SteamVR 表示</strong><br>
+      <sub>キャンバス、フォント、submit 間隔</sub>
+    </td>
+    <td align="center">
+      <img src="./Images/kagevi_steamVR_4.png" alt="SteamVR Twitch パネル" width="420"><br>
+      <strong>SteamVR Twitch パネル</strong><br>
+      <sub>OpenVR の任意チャットオーバーレイ</sub>
     </td>
   </tr>
   <tr>
